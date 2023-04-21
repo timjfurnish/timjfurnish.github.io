@@ -6,7 +6,7 @@ function WTSetOption(name, value)
 }
 
 WTSetOption('gameName', 'The Flywheel')
-WTSetOption('byline', 'By Tim Furnish')
+WTSetOption('byline', 'by <A HREF="/"><Font color="#77799">Tim Furnish</FONT></A>')
 WTSetOption('linkStart', "b")
 WTSetOption('linkStartVisited', "")
 WTSetOption('defaultPrefix', "You are in the")
