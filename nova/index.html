@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <title>Nova</title>
+  <script src="tabs.js"></script>
+  <script src="specific.js"></script>
+  <script src="reader.js"></script>
+  <script src="longest.js"></script>
+  <script src="analysis.js"></script>
+  <script src="wordcount.js"></script>
+  <!--script src="visualise.js"--><!--/script-->
+  <script src="hyphenated.js"></script>
+  <script src="chapters.js"></script>
+  <script src="mentions.js"></script>
+  <script src="issues.js"></script>
+  <script src="metadata.js"></script>
+ </head>
+ <body onLoad="BuildTabs(); SetUp()">
+  <input type=checkbox id=showInput checked onChange="hideShowInputs(this.checked)"><label for="showInput">&nbsp;Show inputs</label>
+  <span id=inputsControls>
+   <button onClick="addInputBox(true)">Add input text box</button>
+   <button onClick="mergeInputBoxes()">Merge input text boxes</button>
+  </span>
+  <p id=inputs></p>
+  <P id=infoPanel></P>
+ </body>
+</html>
