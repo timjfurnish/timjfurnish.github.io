@@ -1,1 +1,143 @@
-<!DOCTYPE html><html lang="en"><head>    <meta charset="utf-8"/>	<meta http-equiv="content-type" content="text/html;charset=utf-8" />	<meta property="og:title" content="Tim Furnish - Entertainmentmonger">	<meta property="og:image" content="https://timjfurnish.github.io/gfx/main_v2.png">	<meta property="og:description" content="Some games. Some writings. Some things that are both.">	<style type="text/css" media="screen">		p { color: #666; font-size: 24px; font-family: Arial, sans-serif; margin-top: 10px; margin-bottom: 10px; margin-left: 40px; margin-right: 40px; }		h1 { color: #778fbd; font-size: 40px; word-spacing: -0.1em; font-family: Monospace; font-weight: 500; line-height: 32px; margin-top: 4px; }		h2 { color: #444; font-size: 28px; font-family: Arial, sans-serif; margin: 0.83em 0 0; }		h3 { color: #333; font-size: 30px; word-spacing: -0.3em; font-family: Monospace; margin-top: 0px; margin-bottom:20px; font-weight: bold; line-height: 27px; width: auto; }		h4 { letter-spacing: -0.066em; background: -webkit-linear-gradient(rgba(100, 100, 100, 0.5), rgba(110, 110, 110, 1)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; font-size: 20px; margin: 0px; margin-left:3%; text-align: left }		h5 { font-size: 10px; margin: 0px; padding: 0px }		td { opacity: 0; }		a { color: black; font-size: 18px; font-weight: bold; text-decoration: none; margin: 10px; padding: 8px 12px 8px 12px; background-image: linear-gradient(white, rgba(75,125,75,0.4)); border-radius: 15px; border: 1px solid #252}		div { width: 75%; color: #444; font-family: Arial, sans-serif; padding:20px; padding-bottom:30px; font-size: 24px; margin: 10px; background-image: linear-gradient(rgba(200,100,100,0.2), rgba(120,60,60,0.2)); border-radius: 2px; border: 2px solid #A55}		@media screen and (min-width: 1000px)		{			p { font-size: 18px; margin-top: 7px; margin-bottom: 7px }			h3 { font-size: 22px; margin-bottom:13px; line-height: 18px }			h4 { font-size: 15px }			h5 { font-size: 8px }			a { font-size: 13px; margin: 5px; padding: 8px }			div { font-size: 18px; padding:15px; padding-bottom:24px }		}	</style>	<script type="text/javascript" src="fade.js"></script>	<script type="text/javascript">function BuildText(text, tags){	for (var t of tags.split('|'))	{		text = "<" + t + ">" + text + "</" + (t.split(' ')[0]) + ">"	}	return text}function EndSection(collection, section){	collection.push(BuildText(section.join(''), 'td align=center id="' + FadeGetNextName() + '"|tr'))}function BuildButton(url, text, newTab){	var tag = '<A HREF="' + url + '"'		if (newTab)	{		tag += ' target="_blank" rel="noopener noreferrer"'		text = '&#10157; ' + text	}	return tag + '>' + text + '</A>'}function SetUp(){	var collection = [], section	const gap = '<h5>&nbsp;</h5>'	const bigGap = '<h5>&nbsp;<BR>&nbsp;</h5>'	EndSection(collection, ["<HR>"])		section = []	section.push(BuildText("Tim Furnish", "h1"))	section.push(BuildText("E N T E R T A I N M E N T M O N G E R", "nobr|h2"))	EndSection(collection, section)	EndSection(collection, ["<HR>"])		section = []	section.push("<I><BIG>")	section.push(BuildText("Hello.", "p"))	section.push(BuildText("My name is Tim. I make games. I write things. I smush tunes together. I'm currently redecorating my house. I own one of those old iPhones which uses a thumbprint reader instead of face recognition out of fear that, should I switch, my utterly generic and nondescript appearance would allow anyone vaguely dishevelled to access my emails. I live and work on a planet called Earth, on one of the dry land bits. I share my house with two other humans and a cat, although the latter is not contributing much to the aforementioned redecorating. (Granted, as I type this, nor am I.)", "p"))	section.push(BuildText("This website is about the first few things in the above paragraph.", "p"))	section.push("</BIG></I>")	EndSection(collection, section)	EndSection(collection, ["<HR>"])	EndSection(collection, [BuildText('SECTION 1:&nbsp; CURRENT / RECENT / ONGOING', 'h4')])	section = []	section.push("<DIV>")	section.push(BuildText("<big>THE FLYWHEEL</big><br>(<small>2020</small>)", "h3"))	section.push("An interactive story thing. It's like a text adventure in that you have to read words and then interact with the objects you find. It's also nothing like a text adventure because you do so without typing. No dead ends, just good old-fashioned puzzling and kleptomania.")    section.push(bigGap + BuildButton('flywheel/', "PLAY"))	section.push("</DIV>")	EndSection(collection, section)		section = []	section.push("<DIV>")	section.push(BuildText("<big>ASSORTED POTTERY</big><br>(<small>2015-2023</small>)", "h3"))	section.push("You know - songs without tunes.")    section.push(bigGap + BuildButton('pottery/', "READ"))	section.push("</DIV>")	EndSection(collection, section)	EndSection(collection, ["<HR>"])	EndSection(collection, [BuildText('CLUSTER 2:&nbsp; DETRITUS / RELICS / MEMORIES', 'h4')])		section = []	section.push("<DIV>")	section.push(BuildText("<big>OUT OF ORDER</big><br>(<small>2003</small>)", "h3"))	section.push("An award-winning comedy science-fiction adventure game.")    section.push(gap)	section.push("Ever woken up in the middle of the night to find you've been kidnapped... and so's your bedroom? Ever had to fend for yourself in the face of strangely hypnotic music, alien doctors, talking computers a-plenty and half-finished bathrooms? Ever found something unpleasant in a burger?")    section.push(bigGap)    section.push(BuildButton('https://en.wikipedia.org/wiki/Out_of_Order_(video_game)', 'WIKIPEDIA', true))    section.push(BuildButton('https://tvtropes.org/pmwiki/pmwiki.php/VideoGame/OutOfOrder', 'TV TROPES', true))	section.push("</DIV>")	EndSection(collection, section)		section = []	section.push("<DIV>")	section.push(BuildText("<big>SLUDGE</big><br>(<small>2003-2008 and beyond</small>)", "h3"))	section.push("An adventure game engine (it stands for Scripting Language for Unhindered Development of a Gaming Environment, as a nod to SCUMM). Used for Out Of Order and a whole bunch of other early-21st-century adventure-me-bobs.")    section.push(gap)	section.push("In 2008 the source code was released into the wild and the team that took it over added, among other changes, support for non-Windows platforms. In 2017 support for running SLUDGE games was added to ScummVM.")    section.push(bigGap)    section.push(BuildButton('http://opensludge.github.io/', 'GITHUB', true))    section.push(BuildButton('https://wiki.scummvm.org/index.php/SLUDGE', 'SCUMMVM', true))	section.push("</DIV>")	EndSection(collection, section)	EndSection(collection, ["<HR>"])	EndSection(collection, [BuildText('SEGMENT 3:&nbsp; MISCELLANEOUS / REFERENCES / APPENDICES', 'h4')])	section = []	section.push("<DIV>")	section.push(BuildText("<big>FURTHER READING</big>", "h3"))	section.push("Additional exits are available here and here.")    section.push(bigGap)    section.push(BuildButton('https://www.mobygames.com/person/138001/tim-furnish/credits/sort:date/', 'MOBYGAMES', true))    section.push(BuildButton('https://www.instagram.com/timjfurnish/', 'INSTAGRAM', true))    section.push("</DIV>")	EndSection(collection, section)	EndSection(collection, ["<HR>"])	EndSection(collection, [BuildText("&copy; Tim Furnish " + (new Date().getUTCFullYear()), "small|p")])		document.getElementById('toHere')	toHere.innerHTML = BuildText(collection.join(''), "TABLE WIDTH=90% CELLPADDING=6 CELLSPACING=3")		StartFading()}	</script>    <title>Tim Furnish - Entertainmentmonger</title></head><body onLoad="SetUp()" background="gfx/paper.png">    <center id='toHere'>    </center></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+	<meta http-equiv="content-type" content="text/html;charset=utf-8" />
+	<meta property="og:title" content="Tim Furnish - Entertainmentmonger">
+	<meta property="og:image" content="https://timjfurnish.github.io/gfx/main_v2.png">
+	<meta property="og:description" content="Some games. Some writings. Some things that are both.">
+	<style type="text/css" media="screen">
+		p { color: #666; font-size: 24px; font-family: Arial, sans-serif; margin-top: 10px; margin-bottom: 10px; margin-left: 40px; margin-right: 40px; }
+		h1 { color: #778fbd; font-size: 40px; word-spacing: -0.1em; font-family: Monospace; font-weight: 500; line-height: 32px; margin-top: 4px; }
+		h2 { color: #444; font-size: 28px; font-family: Arial, sans-serif; margin: 0.83em 0 0; }
+		h3 { color: #333; font-size: 30px; word-spacing: -0.3em; font-family: Monospace; margin-top: 0px; margin-bottom:20px; font-weight: bold; line-height: 27px; width: auto; }
+		h4 { letter-spacing: -0.066em; background: -webkit-linear-gradient(rgba(100, 100, 100, 0.5), rgba(110, 110, 110, 1)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; font-size: 20px; margin: 0px; margin-left:3%; text-align: left }
+		h5 { font-size: 10px; margin: 0px; padding: 0px }
+		td { opacity: 0; }
+		a { color: black; font-size: 18px; font-weight: bold; text-decoration: none; margin: 10px; padding: 8px 12px 8px 12px; background-image: linear-gradient(white, rgba(75,125,75,0.4)); border-radius: 15px; border: 1px solid #252}
+		div { width: 75%; color: #444; font-family: Arial, sans-serif; padding:20px; padding-bottom:30px; font-size: 24px; margin: 10px; background-image: linear-gradient(rgba(200,100,100,0.2), rgba(120,60,60,0.2)); border-radius: 2px; border: 2px solid #A55}
+		@media screen and (min-width: 1000px)
+		{
+			p { font-size: 18px; margin-top: 7px; margin-bottom: 7px }
+			h3 { font-size: 22px; margin-bottom:13px; line-height: 18px }
+			h4 { font-size: 15px }
+			h5 { font-size: 8px }
+			a { font-size: 13px; margin: 5px; padding: 8px }
+			div { font-size: 18px; padding:15px; padding-bottom:24px }
+		}
+	</style>
+	<script type="text/javascript" src="fade.js"></script>
+	<script type="text/javascript">
+function BuildText(text, tags)
+{
+	for (var t of tags.split('|'))
+	{
+		text = "<" + t + ">" + text + "</" + (t.split(' ')[0]) + ">"
+	}
+	return text
+}
+function EndSection(collection, section)
+{
+	collection.push(BuildText(section.join(''), 'td align=center id="' + FadeGetNextName() + '"|tr'))
+}
+function BuildButton(url, text, newTab)
+{
+	var tag = '<A HREF="' + url + '"'
+	
+	if (newTab)
+	{
+		tag += ' target="_blank" rel="noopener noreferrer"'
+		text = '&#10157; ' + text
+	}
+	return tag + '>' + text + '</A>'
+}
+function SetUp()
+{
+	var collection = [], section
+	const gap = '<h5>&nbsp;</h5>'
+	const bigGap = '<h5>&nbsp;<BR>&nbsp;</h5>'
+	EndSection(collection, ["<HR>"])
+	
+	section = []
+	section.push(BuildText("Tim Furnish", "h1"))
+	section.push(BuildText("E N T E R T A I N M E N T M O N G E R", "nobr|h2"))
+	EndSection(collection, section)
+	EndSection(collection, ["<HR>"])
+	
+	section = []
+	section.push("<I><BIG>")
+	section.push(BuildText("Hello.", "p"))
+	section.push(BuildText("My name is Tim. I make games. I write things. I smush tunes together. I'm currently redecorating my house. I own one of those old iPhones which uses a thumbprint reader instead of face recognition out of fear that, should I switch, my utterly generic and nondescript appearance would allow anyone vaguely dishevelled to access my emails. I live and work on a planet called Earth, on one of the dry land bits. I share my house with two other humans and a cat, although the latter is not contributing much to the aforementioned redecorating. (Granted, as I type this, nor am I.)", "p"))
+	section.push(BuildText("This website is about the first few things in the above paragraph.", "p"))
+	section.push("</BIG></I>")
+	EndSection(collection, section)
+	EndSection(collection, ["<HR>"])
+	EndSection(collection, [BuildText('SECTION 1:&nbsp; CURRENT / RECENT / ONGOING', 'h4')])
+	section = []
+	section.push("<DIV>")
+	section.push(BuildText("<big>THE FLYWHEEL</big><br>(<small>2020</small>)", "h3"))
+	section.push("An interactive story thing. It's like a text adventure in that you have to read words and then interact with the objects you find. It's also nothing like a text adventure because you do so without typing. No dead ends, just good old-fashioned puzzling and kleptomania.")
+    section.push(bigGap + BuildButton('flywheel/', "PLAY"))
+	section.push("</DIV>")
+	EndSection(collection, section)
+	
+	section = []
+	section.push("<DIV>")
+	section.push(BuildText("<big>ASSORTED POTTERY</big><br>(<small>2015-2023</small>)", "h3"))
+	section.push("You know - songs without tunes.")
+    section.push(bigGap + BuildButton('pottery/', "READ"))
+	section.push("</DIV>")
+	EndSection(collection, section)
+	EndSection(collection, ["<HR>"])
+	EndSection(collection, [BuildText('CLUSTER 2:&nbsp; DETRITUS / RELICS / MEMORIES', 'h4')])
+	
+	section = []
+	section.push("<DIV>")
+	section.push(BuildText("<big>OUT OF ORDER</big><br>(<small>2003</small>)", "h3"))
+	section.push("An award-winning comedy science-fiction adventure game.")
+    section.push(gap)
+	section.push("Ever woken up in the middle of the night to find you've been kidnapped... and so's your bedroom? Ever had to fend for yourself in the face of strangely hypnotic music, alien doctors, talking computers a-plenty and half-finished bathrooms? Ever found something unpleasant in a burger?")
+    section.push(bigGap)
+    section.push(BuildButton('https://en.wikipedia.org/wiki/Out_of_Order_(video_game)', 'WIKIPEDIA', true))
+    section.push(BuildButton('https://tvtropes.org/pmwiki/pmwiki.php/VideoGame/OutOfOrder2003', 'TV TROPES', true))
+	section.push("</DIV>")
+	EndSection(collection, section)
+	
+	section = []
+	section.push("<DIV>")
+	section.push(BuildText("<big>SLUDGE</big><br>(<small>2003-2008 and beyond</small>)", "h3"))
+	section.push("An adventure game engine (it stands for Scripting Language for Unhindered Development of a Gaming Environment, as a nod to SCUMM). Used for Out Of Order and a whole bunch of other early-21st-century adventure-me-bobs.")
+    section.push(gap)
+	section.push("In 2008 the source code was released into the wild and the team that took it over added, among other changes, support for non-Windows platforms. In 2017 support for running SLUDGE games was added to ScummVM.")
+    section.push(bigGap)
+    section.push(BuildButton('http://opensludge.github.io/', 'GITHUB', true))
+    section.push(BuildButton('https://wiki.scummvm.org/index.php/SLUDGE', 'SCUMMVM', true))
+	section.push("</DIV>")
+	EndSection(collection, section)
+	EndSection(collection, ["<HR>"])
+	EndSection(collection, [BuildText('SEGMENT 3:&nbsp; MISCELLANEOUS / REFERENCES / APPENDICES', 'h4')])
+	section = []
+	section.push("<DIV>")
+	section.push(BuildText("<big>FURTHER READING</big>", "h3"))
+	section.push("Additional exits are available here and here.")
+    section.push(bigGap)
+    section.push(BuildButton('https://www.mobygames.com/person/138001/tim-furnish/credits/sort:date/', 'MOBYGAMES', true))
+    section.push(BuildButton('https://www.instagram.com/timjfurnish/', 'INSTAGRAM', true))
+    section.push("</DIV>")
+	EndSection(collection, section)
+	EndSection(collection, ["<HR>"])
+	EndSection(collection, [BuildText("&copy; Tim Furnish " + (new Date().getUTCFullYear()), "small|p")])
+	
+	document.getElementById('toHere')
+	toHere.innerHTML = BuildText(collection.join(''), "TABLE WIDTH=90% CELLPADDING=6 CELLSPACING=3")
+	
+	StartFading()
+}
+	</script>
+    <title>Tim Furnish - Entertainmentmonger</title>
+</head>
+<body onLoad="SetUp()" background="gfx/paper.png">
+    <center id='toHere'>
+    </center>
+</body>
+</html>
