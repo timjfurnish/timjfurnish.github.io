@@ -61,17 +61,7 @@ function ShowContentForSelectedTab()
 		
 	document.getElementById('tabContents').innerHTML = displayThis.join('')
 	
-	for (var func of thenCall)
-	{
-		try
-		{
-			func()
-		}
-		catch (e)
-		{
-			alert("Exception '" + e + "' while calling " + func.name)
-		}
-	}
+	CallTheseFunctions(thenCall)
 }
 
 function SetTab(name)

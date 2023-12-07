@@ -2,10 +2,11 @@ var g_tweakableSettings =
 {
 	badWords:"tge tgey",
 	skip:["Contents"],
-	hyphenCheckPairs:["sat-nav", "set-up", "under-cover", "self-reliance reliant control esteem respect awareness aware", "short-term", "left right-hand", "sand-timer", "back-stage", "stage-left right", "dance-floor", "slow-motion", "some-thing where how what body one", "heart-break breaking breaks breakingly", "car-park parks", "brain-wave waves", "mind lip-reading reader readers read reads"],
+	hyphenCheckPairs:["sat-nav", "set-up", "under-cover", "self-reliance reliant control esteem respect awareness aware", "short-term", "left right-hand", "sand-timer", "back-stage", "stage-left right", "dance-floor", "slow-motion", "some-thing where how what body one", "heart-break breaking breaks breakingly broken", "car-park parks", "brain-wave waves", "mind lip-reading reader readers read reads", "twenty thirty forty fifty sixty seventy eighty ninety-one two three four five six seven eight nine", "one two three four five six seven eight nine ten-hundred thousand million billion"],
 	names:[],
 	headingIdentifier:"",
-	numTextBoxes:1
+	numTextBoxes:1,
+	allowNumbersWithThisManyDigits:4
 }
 
 const kSettingNames =
@@ -13,8 +14,9 @@ const kSettingNames =
 	badWords:"Bad words|size=110",
 	skip:"Skip lines starting with|cols=60",
 	headingIdentifier:"Line is a heading if it includes",
-	hyphenCheckPairs:"Hyphen check text|cols=60",
-	names:"Character/place names|cols=60"
+	hyphenCheckPairs:"Hyphen check text|cols=105",
+	names:"Character/place names|cols=60",
+	allowNumbersWithThisManyDigits:"Allow numbers with this many digits or more",
 }
 
 function GetDataType(data)
@@ -142,7 +144,8 @@ function UserChangedSetting(name)
 	var elem = document.getElementById('setting_' + name)
 	const data = g_tweakableSettings[name]
 	
-	UpdateSettingFromText(name, GetDataType(data), elem.value)
+	UpdateSettingFromText(name, GetDataType(data), elem.value)	
+	ProcessInput()
 }
 
 g_tabFunctions.settings = function(reply, thenCall)
