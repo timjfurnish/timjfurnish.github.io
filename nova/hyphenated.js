@@ -77,7 +77,9 @@ function HyphenCheck()
 	}
 
 	var output = []
-	output.push("<TABLE BORDER=1 CELLPADDING=4 CELLSPACING=0><TR><TH align=Left>Text<TH>Count")
+	TableOpen(output)
+	TableAddHeading(output, "Text")
+	TableAddHeading(output, "Count")
 	for (var txt of Object.keys(scores).sort((p1, p2) => (scores[p2] - scores[p1])))
 	{
 		const score = scores[txt]
@@ -85,7 +87,8 @@ function HyphenCheck()
 		{
 			txt = '<B ONCLICK="SetUpHyphenCheck(\'' + txt + '\')">' + txt + '</B>'
 		}
-		output.push("<TR><TD>" + txt + "<TD align=center>" + score)
+		TableNewRow(output)
+		output.push("<TD>" + txt + "<TD align=center>" + score)
 	}
 	output.push("</TABLE>")
 	document.getElementById("hyphenCheckOutput").innerHTML = output.join("")

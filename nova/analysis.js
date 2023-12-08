@@ -236,7 +236,7 @@ function ProcessInput()
 
 			if (txtIn[0] == '#')
 			{
-				MetaDataSet(txtIn.substring(1))
+				MetaDataSet(...txtIn.substring(1).split(':'))
 				continue
 			}
 			else if (txtIn[0] == '@')
@@ -302,7 +302,8 @@ function ProcessInput()
 							CheckIfLongest("sentenceChr", listOfWords.join(' ').length, s)
 
 							numWordsInPara += listOfWords.length
-
+							MetaDataAddWordCount(listOfWords.length)
+							
 							if (gatherHeadingStatsHere)
 							{
 								gatherHeadingStatsHere.numWords += listOfWords.length
@@ -340,8 +341,11 @@ function ProcessInput()
 				DoEndOfChapterChesks(workspace)
 				IssueSetHeading(txtInRaw)
 
+				const justChapterName = txtInRaw.split(/ *[\[\(]/)[0].toLowerCase()
+
 				workspace.lastHeading = txtInRaw
-				workspace.stillLookingForChapterNameInChapter = txtInRaw.split(/ *[\[\(]/)[0].toLowerCase()
+				workspace.stillLookingForChapterNameInChapter = justChapterName
+				MetaDataSet("CHAPTER", justChapterName)
 				delete workspace.foundTextBetweenHeadings
 			}
 		}
