@@ -2,7 +2,7 @@ var g_tweakableSettings =
 {
 	language:"",
 	voiceDefault:"",
-//	voiceSpeech:"",
+	voiceSpeech:"",
 	voiceHeading:"",
 	badWords:"tge tgey",
 	skip:["Contents"],
@@ -17,7 +17,7 @@ const kSettingNames =
 {
 	language:"Language|language",
 	voiceDefault:"Voice (default)|voice",
-//	voiceSpeech:"Voice (speech)|voice",
+	voiceSpeech:"Voice (speech)|voice",
 	voiceHeading:"Voice (heading)|voice",
 	badWords:"Bad words|size=110",
 	skip:"Skip lines starting with|cols=60",
@@ -69,6 +69,8 @@ function SettingsLoad()
 			UpdateSettingFromText(name, GetDataType(val), savedSetting, true)
 		}
 	}
+	
+	ReadVoices()
 }
 
 function SettingUpdate(name, newValue, isLoading)

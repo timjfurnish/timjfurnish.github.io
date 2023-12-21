@@ -9,7 +9,7 @@ function Read()
 	{
 		var speaky = new SpeechSynthesisUtterance(thingToSay.text.replace('^', ''))
 		speaky.onend = OnDoneSpeaking
-		speaky.voice = g_voiceLookUp[thingToSay.heading ? g_tweakableSettings.voiceHeading : g_tweakableSettings.voiceDefault]
+		speaky.voice = g_voiceLookUp[thingToSay.isSpeech ? g_tweakableSettings.voiceSpeech : thingToSay.heading ? g_tweakableSettings.voiceHeading : g_tweakableSettings.voiceDefault]
 		speechSynthesis.speak(speaky)
 	}
 }
@@ -79,7 +79,11 @@ function RedrawNextThingToRead()
 					text = '<SMALL>' + text + '</SMALL>'
 				}
 				
-				if (sentence.heading)
+				if (sentence.isSpeech)
+				{
+					text = '<I>' + text + '</I>'
+				}
+				else if (sentence.heading)
 				{
 					text = '<BIG><U>' + text + '</U></BIG>'
 				}
@@ -152,7 +156,6 @@ function ReadVoices()
 try
 {
 	window.speechSynthesis.onvoiceschanged = ReadVoices
-	ReadVoices()
 }
 catch (error)
 {

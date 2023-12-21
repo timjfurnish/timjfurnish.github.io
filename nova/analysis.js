@@ -100,11 +100,6 @@ function CheckParagraphForIssues(txtIn)
 			IssueAdd("Found punctuation not followed by space before '" + each + "' in '" + txtIn + "'")
 		}
 	}
-	
-	if ((txtIn.split('"').length & 1) == 0)
-	{
-		IssueAdd("Found odd number of quotation marks in '" + txtIn + "'")	
-	}
 }
 
 function CheckEachWord(wordList, s, workspace, gatherHere)
@@ -227,111 +222,143 @@ function ProcessInput()
 			txtInRaw.startsWith(" ") && IssueAdd("Found leading space in '" + txtInRaw + "'")
 			txtInRaw.endsWith(" ") && IssueAdd("Found trailing space in '" + txtInRaw + "'")
 
-			const txtIn = txtInRaw.replace(/["\.\!\?;=]+ */g, '|').replace(/\u2026/g, '|').replace(/:$/, '').replace(/\|$/, '').replace(/^\|/, '').replace(/\^/g, '.')
+			const txtInProcessed = txtInRaw.replace(/[\.\!\?;=]+ */g, '|').replace(/\u2026/g, '|').replace(/:$/, '').replace(/\|$/, '').replace(/^\|/, '').replace(/\^/g, '.')
 
-			if (txtIn === "" || txtIn === "" + Number(txtIn) || SettingsSayShouldIgnore(txtIn))
+			if (txtInProcessed === "" || txtInProcessed === "" + Number(txtInProcessed) || SettingsSayShouldIgnore(txtInProcessed))
 			{
 				continue
 			}
 
-			if (txtIn[0] == '#')
+			if (txtInProcessed[0] == '#')
 			{
-				MetaDataSet(...txtIn.substring(1).split(':'))
+				MetaDataSet(...txtInProcessed.substring(1).split(':'))
 				continue
 			}
-			else if (txtIn[0] == '@')
+			else if (txtInProcessed[0] == '@')
 			{
-				WarningEnableDisable(txtIn.substring(1))
+				WarningEnableDisable(txtInProcessed.substring(1))
 				continue
 			}
 
-			const isAHeading = (kSpecificOnlyAHeadingIfIncludes ? txtIn.includes(kSpecificOnlyAHeadingIfIncludes) : (txtIn == txtInRaw))
+			const isAHeading = (kSpecificOnlyAHeadingIfIncludes ? txtInProcessed.includes(kSpecificOnlyAHeadingIfIncludes) : (txtInProcessed == txtInRaw))
 
 			if (!isAHeading)
 			{
 				workspace.foundTextBetweenHeadings = true
 
 				CheckParagraphForIssues(txtInRaw)
-				
-				const sentences = OnlyKeepValid(txtIn.split("|"))
 
-				if (workspace.stillLookingForChapterNameInChapter)
+				const talkyNonTalky = txtInProcessed.split('"')
+
+				if ((talkyNonTalky.length & 1) == 0)
 				{
-					const putBackTogether = sentences.join(' ').toLowerCase()
-					if (putBackTogether.includes(workspace.stillLookingForChapterNameInChapter))
-					{
-						workspace.stillLookingForChapterNameInChapter = null
-					}
+					IssueAdd("Found odd number of quotation marks in '" + txtInRaw + "'")
 				}
+				
+				var isSpeech = true
 
-				const numSentences = sentences.length
-
-				if (numSentences)
+				for (var each of talkyNonTalky)
 				{
-					MetaDataProcessParagraph(numSentences)
+					var txtIn = each.trim()
+					isSpeech = !isSpeech
 
-					++ numParagraphsProcessed
-					
-					if (gatherHeadingStatsHere)
+					if (isSpeech)
 					{
-						++ gatherHeadingStatsHere.numPara
-						gatherHeadingStatsHere.numSentences += numSentences
-					}
-
-					if (workspace.lastHeading)
-					{
-						gatherHeadingStatsHere = {txt:workspace.lastHeading, startsAt:g_sentences.length, numPara:0, numSentences:0, numWords:0, mentions:{}}
-						g_headingToSentence.push(gatherHeadingStatsHere)
-						g_sentences.push({heading:true, text:workspace.lastHeading, listOfWords:[]})
-						workspace.lastHeading = null
-						++ workspace.numHeadings
-					}
-					
-					var numWordsInPara = 0
-					var prefixMe = '^'
-
-					// BAH
-					for (var s of sentences)
-					{
-						s = s.replace(/^'+/, "").replace(/'+$/, "")
-						const listOfWords = OnlyKeepValid(s.toLowerCase().split(/[^#'a-z0-9\&]+/))
-
-						if (listOfWords.length)
+						if (! txtIn)
 						{
-							CheckIfLongest("sentence", listOfWords.length, s)
-							CheckIfLongest("sentenceChr", listOfWords.join(' ').length, s)
-
-							numWordsInPara += listOfWords.length
-							MetaDataAddWordCount(listOfWords.length)
-							
-							if (gatherHeadingStatsHere)
-							{
-								gatherHeadingStatsHere.numWords += listOfWords.length
-							}
-
-							var newListOfWords = []
-							for (var wIn of listOfWords)
-							{
-								var w = wIn.replace(/^'+/, "").replace(/'+$/, "")
-								if (w)
-								{
-									newListOfWords.push(w)
-									CheckEachWord(w.split(/[-']/), s, workspace, gatherHeadingStatsHere)
-								}
-								else
-								{
-									IssueAdd("Empty word in '" + s + "'")
-								}
-							}
-							
-							g_sentences.push({text:prefixMe + s, listOfWords:newListOfWords})
-							prefixMe = ''
+							IssueAdd("Found empty speech in '" + txtInRaw + "'")
+						}
+						else if (each != txtIn)
+						{
+							IssueAdd("Found white space at beginning and/or end of speech: '" + each + "'")
 						}
 					}
 
-					CheckIfLongest("paraSentences", numSentences, sentences)
-					CheckIfLongest("paraWords", numWordsInPara, sentences)
-					CheckIfLongest("paraChr", txtIn.length, sentences)
+					if (!txtIn)
+					{
+						continue
+					}
+
+					const sentences = OnlyKeepValid(txtIn.split("|"))
+
+					if (workspace.stillLookingForChapterNameInChapter)
+					{
+						const putBackTogether = sentences.join(' ').toLowerCase()
+						if (putBackTogether.includes(workspace.stillLookingForChapterNameInChapter))
+						{
+							workspace.stillLookingForChapterNameInChapter = null
+						}
+					}
+
+					const numSentences = sentences.length
+
+					if (numSentences)
+					{
+						MetaDataProcessParagraph(numSentences)
+
+						++ numParagraphsProcessed
+						
+						if (gatherHeadingStatsHere)
+						{
+							++ gatherHeadingStatsHere.numPara
+							gatherHeadingStatsHere.numSentences += numSentences
+						}
+
+						if (workspace.lastHeading)
+						{
+							gatherHeadingStatsHere = {txt:workspace.lastHeading, startsAt:g_sentences.length, numPara:0, numSentences:0, numWords:0, mentions:{}}
+							g_headingToSentence.push(gatherHeadingStatsHere)
+							g_sentences.push({heading:true, text:workspace.lastHeading, listOfWords:[]})
+							workspace.lastHeading = null
+							++ workspace.numHeadings
+						}
+						
+						var numWordsInPara = 0
+						var prefixMe = '^'
+
+						// BAH
+						for (var s of sentences)
+						{
+							s = s.replace(/^'+/, "").replace(/'+$/, "")
+							const listOfWords = OnlyKeepValid(s.toLowerCase().split(/[^#'a-z0-9\&]+/))
+
+							if (listOfWords.length)
+							{
+								CheckIfLongest("sentence", listOfWords.length, s)
+								CheckIfLongest("sentenceChr", listOfWords.join(' ').length, s)
+
+								numWordsInPara += listOfWords.length
+								MetaDataAddWordCount(listOfWords.length)
+								
+								if (gatherHeadingStatsHere)
+								{
+									gatherHeadingStatsHere.numWords += listOfWords.length
+								}
+
+								var newListOfWords = []
+								for (var wIn of listOfWords)
+								{
+									var w = wIn.replace(/^'+/, "").replace(/'+$/, "")
+									if (w)
+									{
+										newListOfWords.push(w)
+										CheckEachWord(w.split(/[-']/), s, workspace, gatherHeadingStatsHere)
+									}
+									else
+									{
+										IssueAdd("Empty word in '" + s + "'")
+									}
+								}
+								
+								g_sentences.push({text:prefixMe + s, isSpeech:isSpeech, listOfWords:newListOfWords})
+								prefixMe = ''
+							}
+						}
+
+						CheckIfLongest("paraSentences", numSentences, sentences)
+						CheckIfLongest("paraWords", numWordsInPara, sentences)
+						CheckIfLongest("paraChr", txtIn.length, sentences)
+					}
 				}
 			}
 			else
