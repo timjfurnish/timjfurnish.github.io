@@ -131,13 +131,16 @@ function ReadVoices()
 		const wantLang = g_tweakableSettings.language
 		for (var voice of voices)
 		{
-			languages[voice.lang] = true
-			if (voice.lang == wantLang)
+			const [lang, region] = voice.lang.toUpperCase().split("-")
+			
+			languages[lang] = true
+			if (lang == wantLang)
 			{
-				g_voiceLookUp[voice.name] = voice
+				const storeAs = region ? region + " - " + voice.name : voice.name
+				g_voiceLookUp[storeAs] = voice
 			}
 		}
-		g_voiceLanguages = Object.keys(languages)
+		g_voiceLanguages = Object.keys(languages).sort()
 		console.log(Object.keys(g_voiceLookUp).length + " voices in language '" + wantLang + "' added to look-up table; " + g_voiceLanguages.length + " languages")
 	}
 	catch (error)

@@ -183,7 +183,7 @@ g_tabFunctions.settings = function(reply, thenCall)
 		if (extra == 'voice')
 		{
 			theType = 'select'
-			for (var voice of Object.keys(g_voiceLookUp))
+			for (var voice of Object.keys(g_voiceLookUp).sort())
 			{
 				theMiddle += "<option>" + voice + "</option>"
 			}
