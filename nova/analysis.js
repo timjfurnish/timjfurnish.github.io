@@ -29,7 +29,7 @@ function CallTheseFunctions(list)
 		}
 		catch(err)
 		{
-			alert("Failed to call function " + func.name + ": " + err)
+			ShowError("While calling " + func.name + ":\n\n" + err.stack)
 		}
 	}
 }
@@ -351,7 +351,7 @@ function ProcessInput()
 		}
 		catch(error)
 		{
-			alert("Failed to parse '" + txtInRaw + "': " + error)
+			ShowError("While parsing " + txtInRaw + ":\n\n" + error.stack)
 		}
 	}
 	

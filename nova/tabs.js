@@ -57,6 +57,8 @@ function ShowContentForSelectedTab()
 	var displayThis = []
 	var thenCall = []
 	
+	console.log("Showing '" + g_selectedTabName + "' tab...")
+
 	g_tabFunctions[g_selectedTabName](displayThis, thenCall)
 		
 	document.getElementById('tabContents').innerHTML = displayThis.join('')

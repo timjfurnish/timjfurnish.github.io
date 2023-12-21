@@ -1,16 +1,14 @@
+const g_wordSortModes = {Alphabetical:"Alphabetical", WordLength:"Word length", Count:"Count", Score:"Score"}
+const g_whatToCount = {All:"All words", Adverbs:"Adverbs", First:"First word in each sentence"}
+
 g_tabFunctions['word tally'] = function(reply, thenCall)
 {
-	reply.push('Sort: <select id=sortMode onChange="RedrawWordTable()">')
-	reply.push('<option value=Alphabetical>Alphabetical</option>')
-	reply.push('<option value=WordLength>Word length</option>')
-	reply.push('<option value=Count>Count</option>')
-	reply.push('<option value=Score selected>Score</option>')
-	reply.push('</select>')
-	reply.push('&nbsp;&nbsp;')
-	OptionsMakeCheckbox(reply, "RedrawWordTable", "displayUnique", "Display words/phrases only used once")
-	reply.push('&nbsp;&nbsp;')
-	OptionsMakeCheckbox(reply, "RedrawWordTable", "stopAtApostrophe", "Trim words at an apostrophe")
-	reply.push('<BR>')
+	var options = []
+	OptionsMakeSelect(options, "RedrawWordTable()", "Sort", "sortMode", g_wordSortModes, "Score")
+	OptionsMakeSelect(options, "RedrawWordTable()", "What to count", "whatToCount", g_whatToCount)
+	OptionsMakeCheckbox(options, "RedrawWordTable()", "displayUnique", "Display words/phrases only used once")
+	OptionsMakeCheckbox(options, "RedrawWordTable()", "stopAtApostrophe", "Trim words at an apostrophe")
+	reply.push(options.join('&nbsp;&nbsp;'))
 	reply.push('<P ID=wordTableHere></P>')
 
 	thenCall.push(RedrawWordTable)
@@ -23,17 +21,17 @@ function RedrawWordTable()
 
 	var g_selectFunctions =
 	{
-		All:(s) => (s.listOfWords),
-		FirstWord:(s) => (s.listOfWords.length ? [s.listOfWords[0]] : []),
+		All:list => list,
+		First:list => list.slice(0, 1),
+		Adverbs:list => list.filter(w => w.slice(-2) == "ly"),
 	}
 
-	var stopAtApostrophe = document.getElementById("stopAtApostrophe")?.checked
-
+	const stopAtApostrophe = document.getElementById("stopAtApostrophe")?.checked
+	const selectFunc = g_selectFunctions[document.getElementById("whatToCount").value]
+	
 	for (var s of g_sentences)
 	{
-		const listOfWords = g_selectFunctions['FirstWord'](s)
-
-		for (var w of listOfWords)
+		for (var w of selectFunc(s.listOfWords))
 		{
 			if (stopAtApostrophe)
 			{

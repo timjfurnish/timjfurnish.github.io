@@ -1,4 +1,5 @@
 var g_readSentenceNum = 0
+var g_voiceLookUp = {}
 
 function Read()
 {
@@ -7,6 +8,7 @@ function Read()
 	{
 		var speaky = new SpeechSynthesisUtterance(thingToSay.text.replace('^', ''))
 		speaky.onend = OnDoneSpeaking
+		speaky.voice = g_voiceLookUp[thingToSay.heading ? g_tweakableSettings.voiceHeading : g_tweakableSettings.voiceDefault]
 		speechSynthesis.speak(speaky)
 	}
 }
@@ -115,4 +117,33 @@ g_tabFunctions.voice = function(reply, thenCall)
 	
 	thenCall.push(RedrawNextThingToRead)
 	thenCall.push(SetSentenceNum)
+}
+
+try
+{
+	window.speechSynthesis.onvoiceschanged = () =>
+	{
+		try
+		{
+			const voices = window.speechSynthesis.getVoices()
+			console.log("Voices have changed! Now got " + voices.length)
+			g_voiceLookUp = {}
+			for (var voice of voices)
+			{
+				if (voice.lang == "en-GB")
+				{
+					g_voiceLookUp[voice.name] = voice
+				}
+			}
+			console.log(Object.keys(g_voiceLookUp).length + " voices added to look-up table")
+		}
+		catch (error)
+		{
+			ShowError("While handling change in available voices:\n\n" + error.stack)
+		}
+	}
+}
+catch (error)
+{
+	ShowError("While setting available voices callback:\n\n" + error.stack)
 }

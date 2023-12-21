@@ -1,5 +1,8 @@
 var g_tweakableSettings =
 {
+	voiceDefault:"",
+//	voiceSpeech:"",
+	voiceHeading:"",
 	badWords:"tge tgey",
 	skip:["Contents"],
 	hyphenCheckPairs:["sat-nav", "set-up", "under-cover", "self-reliance reliant control esteem respect awareness aware", "short-term", "left right-hand", "sand-timer", "back-stage", "stage-left right", "dance-floor", "slow-motion", "some-thing where how what body one", "heart-break breaking breaks breakingly broken", "car-park parks", "brain-wave waves", "mind lip-reading reader readers read reads", "twenty thirty forty fifty sixty seventy eighty ninety-one two three four five six seven eight nine", "one two three four five six seven eight nine ten-hundred thousand million billion"],
@@ -11,6 +14,9 @@ var g_tweakableSettings =
 
 const kSettingNames =
 {
+	voiceDefault:"Voice (default)|voice",
+//	voiceSpeech:"Voice (speech)|voice",
+	voiceHeading:"Voice (heading)|voice",
 	badWords:"Bad words|size=110",
 	skip:"Skip lines starting with|cols=60",
 	headingIdentifier:"Line is a heading if it includes",
@@ -18,6 +24,8 @@ const kSettingNames =
 	names:"Character/place names|cols=60",
 	allowNumbersWithThisManyDigits:"Allow numbers with this many digits or more",
 }
+
+const kHasNoEffect = ["voiceDefault", "voiceSpeech", "voiceHeading"]
 
 function GetDataType(data)
 {
@@ -144,8 +152,12 @@ function UserChangedSetting(name)
 	var elem = document.getElementById('setting_' + name)
 	const data = g_tweakableSettings[name]
 	
-	UpdateSettingFromText(name, GetDataType(data), elem.value)	
-	ProcessInput()
+	UpdateSettingFromText(name, GetDataType(data), elem.value)
+	
+	if (! kHasNoEffect.includes(name))
+	{
+		ProcessInput()
+	}
 }
 
 g_tabFunctions.settings = function(reply, thenCall)
@@ -154,8 +166,23 @@ g_tabFunctions.settings = function(reply, thenCall)
 	for (var [k, display] of Object.entries(kSettingNames))
 	{
 		var [displayName, extra] = display.split('|')
-		const theType = (Array.isArray(g_tweakableSettings[k])) ? ['textarea', '</textarea>'] : ['input type=text', '</input>']
-		reply.push("<tr><td><nobr>" + displayName + '</nobr></td><td><' + theType[0] + ' onChange="UserChangedSetting(\'' + k + '\')" ' + (extra ? extra + ' ' : '') + 'id="setting_' + k + '">' + theType[1])
+		var theType = (Array.isArray(g_tweakableSettings[k])) ? 'textarea': 'input type=text'
+		var theMiddle = ""
+
+		if (extra == 'voice')
+		{
+			theType = 'select'
+			for (var voice of Object.keys(g_voiceLookUp))
+			{
+				theMiddle += "<option>" + voice + "</option>"
+			}
+			extra = ''
+		}
+		
+		const theCloseTag = "</" + theType.split(' ')[0] + ">"
+		reply.push('<tr><td><nobr>' + displayName + '</nobr></td><td>')
+		reply.push('<' + theType + ' onChange="UserChangedSetting(\'' + k + '\')" ' + (extra ? extra + ' ' : '') + 'id="setting_' + k + '">')
+		reply.push(theMiddle + '</' + theType.split(' ')[0] + '>')
 	}
 	reply.push("</table>")
 	

@@ -23,5 +23,22 @@ function TableAddHeading(reply, h)
 
 function OptionsMakeCheckbox(options, funcName, id, label)
 {
-	options.push('<INPUT TYPE="checkbox" onChange="' + funcName + '()" id="' + id + '"><LABEL FOR="' + id + '"> ' + (label ?? id) + '</LABEL>')
+	options.push('<INPUT TYPE="checkbox" onChange="' + funcName + '" id="' + id + '"><LABEL FOR="' + id + '"> ' + (label ?? id) + '</LABEL>')
+}
+
+function OptionsMakeSelect(toHere, funcName, heading, id, options, selectThis)
+{
+	var reply = [heading + ': <select id="' + id + '" onChange="' + funcName + '">']
+
+	for (var [key, val] of Object.entries(options))
+	{
+		reply.push('<option value="' + key + '">' + val + '</option>')
+	}
+
+	toHere.push(reply.join('') + '</select>')
+}
+
+function ShowError(message)
+{
+	alert(message + "\n\n" + new Error().stack)
 }

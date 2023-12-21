@@ -45,19 +45,19 @@ g_tabFunctions.mentions = function(reply, thenCall)
 
 	if (specificNames.length)
 	{
-		reply.push('<nobr>Entity: <select id="entity" onChange="RedrawMentions()">')
+		var nameData = {}
 
 		for (var name of specificNames)
 		{
-			reply.push('<option value=' + name.join('+') + '>' + name[0].charAt(0).toUpperCase() + name[0].slice(1) + '</option>')
+			nameData[name.join('+')] = name[0].charAt(0).toUpperCase() + name[0].slice(1)
 		}
 		
-		reply.push('</select> </nobr><nobr>Display: <select id="searchThese" onChange="RedrawMentions()">')
-		reply.push('<option value=para>Paragraphs</option>')
-		reply.push('<option value=sent>Sentences</option>')
-		reply.push('</select></nobr><BR><BR>')
+		var options = []
+		OptionsMakeSelect(options, "RedrawMentions()", "Entity", "entity", nameData)
+		OptionsMakeSelect(options, "RedrawMentions()", "Display", "searchThese", {para:"Paragraphs", sent:"Sentences"})
+		reply.push(options.join("&nbsp;&nbsp;"))
 	}
-	reply.push("<div id=mentionsGoHere></div>")
+	reply.push("<p id=mentionsGoHere></p>")
 	
 	thenCall.push(RedrawMentions)
 }

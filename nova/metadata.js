@@ -186,10 +186,10 @@ g_tabFunctions.metadata = function(reply, thenCall)
 
 	for (var colName of selectedColumns)
 	{
-		OptionsMakeCheckbox(options, "MetaDataDrawTable", colName)
+		OptionsMakeCheckbox(options, "MetaDataDrawTable()", colName)
 	}
 
-	OptionsMakeCheckbox(options, "MetaDataDrawTable", "consolidate", "Consolidate totals")
+	OptionsMakeCheckbox(options, "MetaDataDrawTable()", "consolidate", "Consolidate totals")
 
 	reply.push(options.join('&nbsp;&nbsp;'))
 	reply.push("<P ID=metaDataOutput></P>")
