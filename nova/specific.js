@@ -1,5 +1,6 @@
 var g_tweakableSettings =
 {
+	language:"",
 	voiceDefault:"",
 //	voiceSpeech:"",
 	voiceHeading:"",
@@ -14,6 +15,7 @@ var g_tweakableSettings =
 
 const kSettingNames =
 {
+	language:"Language|language",
 	voiceDefault:"Voice (default)|voice",
 //	voiceSpeech:"Voice (speech)|voice",
 	voiceHeading:"Voice (heading)|voice",
@@ -48,7 +50,7 @@ function UpdateSettingFromText(name, type, savedSetting, isLoading)
 	}
 	else
 	{
-		console.log("Don't know how to parse '" + name + "' setting and turn it into type " + type)
+		console.warn("Don't know how to parse '" + name + "' setting and turn it into type " + type)
 	}
 }
 
@@ -85,9 +87,8 @@ function SettingUpdate(name, newValue, isLoading)
 			{
 				window.localStorage.setItem("nova_" + name, newValue)
 				console.log("Saving '" + name + "' setting: '" + newValue + "'")
+				FillInSetting(name)
 			}
-
-			FillInSetting(name)
 		}
 	}
 	else
@@ -138,6 +139,11 @@ function FillInSetting(k)
 		else
 		{
 			elem.value = data
+			
+			if (data != elem.value)
+			{
+				console.warn("Mismatch! Wanted to set '" + k + "' to '" + data + "' but it's set to '" + elem.value + "'")
+			}
 		}
 	}
 }
@@ -154,7 +160,12 @@ function UserChangedSetting(name)
 	
 	UpdateSettingFromText(name, GetDataType(data), elem.value)
 	
-	if (! kHasNoEffect.includes(name))
+	if (name == "language")
+	{
+		ReadVoices()
+		ShowContentForSelectedTab()
+	}
+	else if (! kHasNoEffect.includes(name))
 	{
 		ProcessInput()
 	}
@@ -173,6 +184,15 @@ g_tabFunctions.settings = function(reply, thenCall)
 		{
 			theType = 'select'
 			for (var voice of Object.keys(g_voiceLookUp))
+			{
+				theMiddle += "<option>" + voice + "</option>"
+			}
+			extra = ''
+		}
+		else if (extra == 'language')
+		{
+			theType = 'select'
+			for (var voice of g_voiceLanguages)
 			{
 				theMiddle += "<option>" + voice + "</option>"
 			}

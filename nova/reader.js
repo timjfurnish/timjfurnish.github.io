@@ -1,5 +1,6 @@
 var g_readSentenceNum = 0
 var g_voiceLookUp = {}
+var g_voiceLanguages = []
 
 function Read()
 {
@@ -119,29 +120,36 @@ g_tabFunctions.voice = function(reply, thenCall)
 	thenCall.push(SetSentenceNum)
 }
 
+function ReadVoices()
+{
+	try
+	{
+		const voices = window.speechSynthesis.getVoices()
+		console.log("Voices have changed! Now got " + voices.length)
+		g_voiceLookUp = {}
+		var languages = {}
+		const wantLang = g_tweakableSettings.language
+		for (var voice of voices)
+		{
+			languages[voice.lang] = true
+			if (voice.lang == wantLang)
+			{
+				g_voiceLookUp[voice.name] = voice
+			}
+		}
+		g_voiceLanguages = Object.keys(languages)
+		console.log(Object.keys(g_voiceLookUp).length + " voices in language '" + wantLang + "' added to look-up table; " + g_voiceLanguages.length + " languages")
+	}
+	catch (error)
+	{
+		ShowError("While handling change in available voices:\n\n" + error.stack)
+	}
+}
+
 try
 {
-	window.speechSynthesis.onvoiceschanged = () =>
-	{
-		try
-		{
-			const voices = window.speechSynthesis.getVoices()
-			console.log("Voices have changed! Now got " + voices.length)
-			g_voiceLookUp = {}
-			for (var voice of voices)
-			{
-				if (voice.lang == "en-GB")
-				{
-					g_voiceLookUp[voice.name] = voice
-				}
-			}
-			console.log(Object.keys(g_voiceLookUp).length + " voices added to look-up table")
-		}
-		catch (error)
-		{
-			ShowError("While handling change in available voices:\n\n" + error.stack)
-		}
-	}
+	window.speechSynthesis.onvoiceschanged = ReadVoices
+	ReadVoices()
 }
 catch (error)
 {
