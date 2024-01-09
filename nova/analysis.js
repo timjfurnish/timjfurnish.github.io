@@ -87,7 +87,7 @@ function CheckParagraphForIssues(txtIn)
 		const changed = txtIn.replace(v, matched => (matched in kIllegalSubstringsExceptions) ? matched : Highlighter(matched))
 		if (changed != txtIn)
 		{
-			IssueAdd("Found " + k + " in '" + changed + "'")
+			IssueAdd("Found " + k + " in '" + changed + "'", k.toUpperCase())
 		}
 	}
 	
@@ -219,8 +219,8 @@ function ProcessInput()
 	{
 		try
 		{
-			txtInRaw.startsWith(" ") && IssueAdd("Found leading space in '" + txtInRaw + "'")
-			txtInRaw.endsWith(" ") && IssueAdd("Found trailing space in '" + txtInRaw + "'")
+			txtInRaw.startsWith(" ") && IssueAdd("Found leading space in '" + txtInRaw + "'", "LEADING SPACE")
+			txtInRaw.endsWith(" ") && IssueAdd("Found trailing space in '" + txtInRaw + "'", "TRAILING SPACE")
 
 			const txtInProcessed = txtInRaw.replace(/[\.\!\?;=]+ */g, '|').replace(/\u2026/g, '|').replace(/:$/, '').replace(/\|$/, '').replace(/^\|/, '').replace(/\^/g, '.')
 
@@ -240,7 +240,7 @@ function ProcessInput()
 				continue
 			}
 
-			const isAHeading = (kSpecificOnlyAHeadingIfIncludes ? txtInProcessed.includes(kSpecificOnlyAHeadingIfIncludes) : (txtInProcessed == txtInRaw))
+			const isAHeading = txtInProcessed.length <= g_tweakableSettings.headingMaxCharacters && (kSpecificOnlyAHeadingIfIncludes ? txtInProcessed.includes(kSpecificOnlyAHeadingIfIncludes) : (txtInProcessed == txtInRaw))
 
 			if (!isAHeading)
 			{
@@ -252,7 +252,7 @@ function ProcessInput()
 
 				if ((talkyNonTalky.length & 1) == 0)
 				{
-					IssueAdd("Found odd number of quotation marks in '" + txtInRaw + "'")
+					IssueAdd("Found odd number of quotation marks in '" + txtInRaw + "'", "UNFINISHED QUOTE")
 				}
 				
 				var isSpeech = true
@@ -328,7 +328,7 @@ function ProcessInput()
 								CheckIfLongest("sentenceChr", listOfWords.join(' ').length, s)
 
 								numWordsInPara += listOfWords.length
-								MetaDataAddWordCount(listOfWords.length)
+								MetaDataAddWordCount(listOfWords.length, isSpeech)
 								
 								if (gatherHeadingStatsHere)
 								{
@@ -397,7 +397,7 @@ function DoEndOfChapterChesks(workspace)
 {
 	if (workspace.stillLookingForChapterNameInChapter && workspace.foundTextBetweenHeadings)
 	{
-		IssueAdd("Didn't find chapter name in chapter '" + workspace.stillLookingForChapterNameInChapter + "'")
+		IssueAdd("Didn't find chapter name in chapter '" + workspace.stillLookingForChapterNameInChapter + "'", "CHAPTER NAME IN CHAPTER")
 	}
 }
 

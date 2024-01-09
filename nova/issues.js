@@ -2,6 +2,24 @@ var g_issues = {}
 var g_disabledWarnings = {}
 var g_issueHeading = 'Global'
 var g_issueCount = 0
+var g_warningNames = MakeSet('NUMBERS', 'SPLIT INFINITIVE', 'CHAPTER NAME IN CHAPTER', 'LEADING SPACE', 'TRAILING SPACE', 'UNFINISHED QUOTE')
+
+function MakeSet(...theBits)
+{
+	var set = {}
+	for (var name of theBits)
+	{
+		set[name] = true
+	}
+	return set
+}
+
+for (var [autoErrName] of kIllegalSubstrings)
+{
+	g_warningNames[autoErrName.toUpperCase()] = true
+}
+
+console.log(g_warningNames)
 
 g_tabFunctions.issues = function(reply, thenCall)
 {
@@ -35,6 +53,12 @@ function IssueAdd(issue, theType)
 {
 	if (theType)
 	{
+		if (!g_warningNames[theType])
+		{
+			ShowError("Please add " + theType + " to list of warning names")
+			g_warningNames[theType] = true
+		}
+		
 		if (g_disabledWarnings[theType])
 		{
 			return

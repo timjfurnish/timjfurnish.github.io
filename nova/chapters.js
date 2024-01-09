@@ -60,9 +60,18 @@ g_tabFunctions.chapters = function(reply, thenCall)
 	for (var k of Object.keys(kChapterColumns))
 	{
 		var val = ""
-		if (k in g_chapterSummaryFunc)
+
+		if (k == "Complete")
 		{
-			val = g_chapterSummaryFunc[k](forSummary[k])
+			val = RenderBarFor(100 * forSummary.Words / forSummary["Words when done"], 0.75, 2, '%')
+		}
+		else if (k == "Chapter")
+		{
+			val = "<b>TOTAL</b>"
+		}
+		else if (k in g_chapterSummaryFunc)
+		{
+			val = Math.round(g_chapterSummaryFunc[k](forSummary[k]))
 		}
 		reply.push('<td>' + val)
 	}

@@ -26,6 +26,11 @@ function OptionsMakeCheckbox(options, funcName, id, label)
 	options.push('<INPUT TYPE="checkbox" onChange="' + funcName + '" id="' + id + '"><LABEL FOR="' + id + '"> ' + (label ?? id) + '</LABEL>')
 }
 
+function OptionsConcat(arr)
+{
+	return "<nobr>" + arr.join("&nbsp;</nobr> <nobr>") + "</nobr>"
+}
+
 function OptionsMakeSelect(toHere, funcName, heading, id, options, selectThis)
 {
 	var reply = [heading + ': <select id="' + id + '" onChange="' + funcName + '">']

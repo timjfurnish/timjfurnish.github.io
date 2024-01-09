@@ -5,7 +5,7 @@ var g_metaDataTally
 
 function MakeClearTally()
 {
-	return {Sentences:0, Paragraphs:0, Words:0}
+	return {sentences:0, paragraphs:0, words:0, ["words in quotes"]:0}
 }
 
 function MetaDataSet(key, val)
@@ -36,7 +36,7 @@ function MetaDataSet(key, val)
 
 function MetaDataEndProcess()
 {
-	if (g_metaDataTally.Sentences)
+	if (g_metaDataTally.sentences)
 	{
 		var info = {}
 		for (var [key, val] of Object.entries(g_metaDataCurrent))
@@ -67,13 +67,18 @@ function MetaDataReset()
 
 function MetaDataProcessParagraph(numSentences)
 {
-	g_metaDataTally.Sentences += numSentences
-	++ g_metaDataTally.Paragraphs
+	g_metaDataTally.sentences += numSentences
+	++ g_metaDataTally.paragraphs
 }
 
-function MetaDataAddWordCount(words)
+function MetaDataAddWordCount(words, isSpeech)
 {
-	g_metaDataTally.Words += words
+	g_metaDataTally.words += words
+	
+	if (isSpeech)
+	{
+		g_metaDataTally["words in quotes"] += words
+	}
 }
 
 function MetaDataDrawTable()
@@ -94,12 +99,11 @@ function MetaDataDrawTable()
 	
 	var lastDeets = ""
 	var lastTally = MakeClearTally()
-	var maximums = MakeClearTally()
 	var dataToDisplay = []
 
 	function AddLastDeets()
 	{
-		if (lastTally.Paragraphs)
+		if (lastTally.paragraphs)
 		{
 			if (consolidate && lastDeets in consolidate)
 			{
@@ -118,14 +122,6 @@ function MetaDataDrawTable()
 				if (consolidate)
 				{
 					consolidate[lastDeets] = lastTally
-				}
-			}
-
-			for (var [name, val] of Object.entries(lastTally))
-			{
-				if (val > maximums[name])
-				{
-					maximums[name] = val
 				}
 			}
 		}
@@ -158,11 +154,35 @@ function MetaDataDrawTable()
 			}
 		}
 	}
+
 	AddLastDeets()
+
+	var maximums = MakeClearTally()
+	maximums["%speech"] = 0
+
+	for (var data of dataToDisplay)
+	{
+		data.tally["%speech"] = 100 * (data.tally["words in quotes"] / data.tally.words)
+		
+		for (var [name, val] of Object.entries(data.tally))
+		{
+			if (val > maximums[name])
+			{
+				maximums[name] = val
+			}
+		}
+	}
 
 	for (var name of Object.keys(lastTally))
 	{
-		TableAddHeading(reply, "Num " + name)
+		if (name[0] == '%')
+		{
+			TableAddHeading(reply, "Percent " + name.substring(1))
+		}
+		else
+		{
+			TableAddHeading(reply, "Num " + name)
+		}
 	}
 
 	for (var data of dataToDisplay)
@@ -171,7 +191,14 @@ function MetaDataDrawTable()
 		reply.push(data.deets)
 		for (var [name, value] of Object.entries(data.tally))
 		{
-			reply.push("<TD>" + RenderBarFor(value, 200.0 / maximums[name]) + "</TD>")
+			if (name[0] == '%')
+			{
+				reply.push("<TD>" + RenderBarFor(value, 100.0 / maximums[name], 2, '%') + "</TD>")
+			}
+			else
+			{
+				reply.push("<TD>" + RenderBarFor(value, 200.0 / maximums[name]) + "</TD>")
+			}
 		}
 	}
 	
@@ -191,7 +218,7 @@ g_tabFunctions.metadata = function(reply, thenCall)
 
 	OptionsMakeCheckbox(options, "MetaDataDrawTable()", "consolidate", "Consolidate totals")
 
-	reply.push(options.join('&nbsp;&nbsp;'))
+	reply.push(OptionsConcat(options))
 	reply.push("<P ID=metaDataOutput></P>")
 	thenCall.push(MetaDataDrawTable)
 }

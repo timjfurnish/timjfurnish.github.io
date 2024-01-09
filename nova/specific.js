@@ -9,6 +9,7 @@ var g_tweakableSettings =
 	hyphenCheckPairs:["sat-nav", "set-up", "under-cover", "self-reliance reliant control esteem respect awareness aware", "short-term", "left right-hand", "sand-timer", "back-stage", "stage-left right", "dance-floor", "slow-motion", "some-thing where how what body one", "heart-break breaking breaks breakingly broken", "car-park parks", "brain-wave waves", "mind lip-reading reader readers read reads", "twenty thirty forty fifty sixty seventy eighty ninety-one two three four five six seven eight nine", "one two three four five six seven eight nine ten-hundred thousand million billion"],
 	names:[],
 	headingIdentifier:"",
+	headingMaxCharacters:100,
 	numTextBoxes:1,
 	allowNumbersWithThisManyDigits:4
 }
@@ -22,6 +23,7 @@ const kSettingNames =
 	badWords:"Bad words|size=110",
 	skip:"Skip lines starting with|cols=60",
 	headingIdentifier:"Line is a heading if it includes",
+	headingMaxCharacters:"Max characters in a heading",
 	hyphenCheckPairs:"Hyphen check text|cols=105",
 	names:"Character/place names|cols=60",
 	allowNumbersWithThisManyDigits:"Allow numbers with this many digits or more",
@@ -202,10 +204,20 @@ g_tabFunctions.settings = function(reply, thenCall)
 		}
 		
 		const theCloseTag = "</" + theType.split(' ')[0] + ">"
-		reply.push('<tr><td><nobr>' + displayName + '</nobr></td><td>')
+		reply.push('<tr><td width=10><nobr>' + displayName + '&nbsp;&nbsp;&nbsp;</nobr></td><td>')
 		reply.push('<' + theType + ' onChange="UserChangedSetting(\'' + k + '\')" ' + (extra ? extra + ' ' : '') + 'id="setting_' + k + '">')
 		reply.push(theMiddle + '</' + theType.split(' ')[0] + '>')
 	}
+	reply.push("<tr><td colspan=2><H3>Check for issues:</H3>")
+	
+	var options = []
+
+	for (var warningID of Object.keys(g_warningNames))
+	{
+		OptionsMakeCheckbox(options, "MetaDataDrawTable()", warningID)
+	}
+
+	reply.push(OptionsConcat(options))
 	reply.push("</table>")
 	
 	thenCall.push(FillInSettings)
