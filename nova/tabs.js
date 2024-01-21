@@ -1,3 +1,8 @@
+//==============================================
+// Part of NOVA - NOVel Assistant
+// Tim Furnish, 2023-2024
+//==============================================
+
 var g_tabFunctions = {}
 var g_selectedTabName = null
 
@@ -62,7 +67,8 @@ function ShowContentForSelectedTab()
 	g_tabFunctions[g_selectedTabName](displayThis, thenCall)
 		
 	document.getElementById('tabContents').innerHTML = displayThis.join('')
-	
+
+	SetOptions()
 	CallTheseFunctions(thenCall)
 }
 

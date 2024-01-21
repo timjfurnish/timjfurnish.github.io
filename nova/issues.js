@@ -1,18 +1,13 @@
+//==============================================
+// Part of NOVA - NOVel Assistant
+// Tim Furnish, 2023-2024
+//==============================================
+
 var g_issues = {}
 var g_disabledWarnings = {}
 var g_issueHeading = 'Global'
 var g_issueCount = 0
-var g_warningNames = MakeSet('NUMBERS', 'SPLIT INFINITIVE', 'CHAPTER NAME IN CHAPTER', 'LEADING SPACE', 'TRAILING SPACE', 'UNFINISHED QUOTE')
-
-function MakeSet(...theBits)
-{
-	var set = {}
-	for (var name of theBits)
-	{
-		set[name] = true
-	}
-	return set
-}
+var g_warningNames = MakeSet('NUMBERS', 'SPLIT INFINITIVE', 'CHAPTER NAME IN CHAPTER', 'LEADING SPACE', 'TRAILING SPACE', 'UNFINISHED QUOTE', 'CAPITALS')
 
 for (var [autoErrName] of kIllegalSubstrings)
 {
@@ -36,13 +31,13 @@ g_tabFunctions.issues = function(reply, thenCall)
 	}
 }
 
-function IssueClear()
+OnEvent("clear", () =>
 {
 	g_issueCount = 0
 	g_issues = {}
 	g_issueHeading = 'Global'
 	g_disabledWarnings = {}
-}
+})
 
 function IssueSetHeading(heading)
 {
@@ -79,10 +74,10 @@ function IssueAdd(issue, theType)
 	}
 }
 
-function IssuesUpdateTabText()
+OnEvent("processingDone", () =>
 {
 	SetTabTitle('issues', g_issueCount)
-}
+})
 
 function WarningEnableDisable(strIn)
 {

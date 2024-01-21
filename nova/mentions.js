@@ -1,40 +1,96 @@
+//==============================================
+// Part of NOVA - NOVel Assistant
+// Tim Furnish, 2023-2024
+//==============================================
+
+var g_nameLookup, g_txtForMentions, g_currentlyBuildingChapter
+
+OnEvent("clear", () =>
+{
+	g_nameLookup = {}
+
+	for (var nameList of SettingsGetNamesArrayArray())
+	{
+		for (var name of nameList)
+		{
+			g_nameLookup[name] = nameList[0]
+		}
+	}
+
+	g_txtForMentions = []
+	MentionsStoreHeading("Global")
+})
+
+function MentionsStoreHeading(heading)
+{
+	g_currentlyBuildingChapter = {paragraphs:[], heading:heading}
+	g_txtForMentions.push(g_currentlyBuildingChapter)
+}
+
+function MentionsStoreParagraph(para)
+{
+	g_currentlyBuildingChapter.paragraphs.push(para)
+}
+
 function RedrawMentions()
 {
 	var mentionsGoHere = document.getElementById("mentionsGoHere")
-	var mentionsOfType = document.getElementById("searchThese")?.value
-	var entityNames = document.getElementById("entity")?.value
+	var customTextBox = document.getElementById("mentions.custom")
 
-	var searchThese = (mentionsOfType == "para") ? g_txtInArray : g_sentences
-	
-	if (mentionsGoHere && searchThese && entityNames && searchThese.length)
+	var lastHeading = ""
+
+	if (mentionsGoHere && customTextBox)
 	{
 		var output = []
-		var names = entityNames.split('+')
-		var before = ""
-		var aBreak = ""
-		const theString = "\\b(?:" + names.join('|') + ")\\b"
-		const exp = new RegExp(theString, "ig");
+		var entityNames = document.getElementById("mentions.entity")?.value
 
-		console.log("Searching through " + searchThese.length + " x " + mentionsOfType + " for " + theString)
-
-		for (var sentence of searchThese)
+		if (entityNames)
 		{
-			if (sentence.text)
-			{
-				sentence = sentence.text
-			}
-			
-			var nextBefore = aBreak
-			var s2 = sentence.replace(exp, Highlighter)
-			if (sentence != s2)
-			{
-				output.push(before + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + s2.replace(/\^/g, ''))
-				nextBefore = ""
-				aBreak = "<br>"
-			}
-			
-			before = nextBefore
+			customTextBox.value = entityNames
+			customTextBox.readOnly = true
 		}
+		else
+		{
+			entityNames = customTextBox.value
+			customTextBox.readOnly = false
+		}
+
+		if (g_txtForMentions && entityNames && g_txtForMentions.length)
+		{
+			var names = entityNames.split('+')
+			var aBreak = ""
+			const theString = "\\b(?:" + names.join('|') + ")\\b"
+			const exp = new RegExp(theString, "ig");
+
+			console.log("Searching through " + g_txtForMentions.length + " paragraphs for " + theString)
+
+			for (var chapter of g_txtForMentions)
+			{
+				var showHeading = "<H3>" + chapter.heading + "</H3>"
+				var before = ""
+
+				for (var para of chapter.paragraphs)
+				{
+					var nextBefore = aBreak
+					var s2 = para.replace(exp, Highlighter)
+					if (para != s2)
+					{
+						if (showHeading)
+						{
+							before = showHeading
+							showHeading = false
+						}
+
+						output.push(before + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + s2.replace(/\^/g, ''))
+						nextBefore = ""
+						aBreak = "<br>"
+					}
+					
+					before = nextBefore
+				}
+			}
+		}
+
 		mentionsGoHere.innerHTML = output.join('<BR>')
 	}
 }
@@ -45,7 +101,7 @@ g_tabFunctions.mentions = function(reply, thenCall)
 
 	if (specificNames.length)
 	{
-		var nameData = {}
+		var nameData = {[""]:"Custom"}
 
 		for (var name of specificNames)
 		{
@@ -53,11 +109,23 @@ g_tabFunctions.mentions = function(reply, thenCall)
 		}
 		
 		var options = []
-		OptionsMakeSelect(options, "RedrawMentions()", "Entity", "entity", nameData)
-		OptionsMakeSelect(options, "RedrawMentions()", "Display", "searchThese", {para:"Paragraphs", sent:"Sentences"})
+		OptionsMakeSelect(options, "RedrawMentions()", "Entity", "entity", nameData, "")
+		OptionsMakeTextBox(options, "RedrawMentions()", "Search for", "custom")
 		reply.push(options.join("&nbsp;&nbsp;"))
 	}
 	reply.push("<p id=mentionsGoHere></p>")
 	
 	thenCall.push(RedrawMentions)
+}
+
+function SwitchToMentionsAndSearch(txt)
+{
+	OptionsMakeKey("mentions", "entity", "", true)
+	OptionsMakeKey("mentions", "custom", txt, true)
+	SetTab("mentions")
+}
+
+function MakeMentionLink(showText, searchForText)
+{
+	return '<NOBR>' + showText + ' <B onClick="SwitchToMentionsAndSearch(\'' + (searchForText ?? showText) + '\')">&#128269;</B></NOBR>'
 }

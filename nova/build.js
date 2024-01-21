@@ -1,3 +1,8 @@
+//==============================================
+// Part of NOVA - NOVel Assistant
+// Tim Furnish, 2023-2024
+//==============================================
+
 function RenderBarFor(val, scale, dp, suffix)
 {
 	const num = val * scale
@@ -21,9 +26,93 @@ function TableAddHeading(reply, h)
 	reply.push('<td bgcolor=#DDDDDD><B>' + h + '</B>')
 }
 
-function OptionsMakeCheckbox(options, funcName, id, label)
+//=======================
+// options
+//=======================
+
+const g_currentOptions =
 {
-	options.push('<INPUT TYPE="checkbox" onChange="' + funcName + '" id="' + id + '"><LABEL FOR="' + id + '"> ' + (label ?? id) + '</LABEL>')
+}
+
+function UpdateOptions()
+{
+	if (g_selectedTabName in g_currentOptions)
+	{
+		var myTabOptions = g_currentOptions[g_selectedTabName]
+		for (var key of Object.keys(myTabOptions))
+		{
+			var elem = document.getElementById(g_selectedTabName + "." + key)
+			if (elem)
+			{
+				const myType = typeof myTabOptions[key]
+				const oldVal = myTabOptions[key]
+
+				if (myType == "boolean")
+				{
+					myTabOptions[key] = elem.checked
+				}
+				else
+				{
+					myTabOptions[key] = elem.value
+				}
+				
+				if (oldVal != myTabOptions[key])
+				{
+					console.log("Updated " + (typeof elem) + " '" + g_selectedTabName + "." + key + "' to " + myType + " '" + myTabOptions[key] + "'")
+				}
+			}
+		}
+	}
+}
+
+function SetOptions()
+{
+	if (g_selectedTabName in g_currentOptions)
+	{
+		console.log("Updating on-screen option controls for '" + g_selectedTabName + "'")
+		for (var [key, val] of Object.entries(g_currentOptions[g_selectedTabName]))
+		{
+			var elem = document.getElementById(g_selectedTabName + "." + key)
+			if (elem)
+			{
+				console.log("Setting " + (typeof elem) + " '" + g_selectedTabName + "." + key + "' to " + (typeof val) + " '" + val + "'")
+				if (typeof val == "boolean")
+				{
+					elem.checked = val
+				}
+				else
+				{
+					elem.value = val
+				}
+			}
+		}
+	}
+	else
+	{
+		console.log("There are no options for '" + g_selectedTabName + "'")
+	}
+}
+
+function OptionsMakeKey(tab, id, defVal, overwrite)
+{
+	if (tab in g_currentOptions)
+	{
+		if (overwrite || ! (id in g_currentOptions[tab]))
+		{
+			g_currentOptions[tab][id] = defVal
+		}
+	}
+	else
+	{
+		g_currentOptions[tab] = {[id]:defVal}
+	}
+	return tab + "." + id
+}
+
+function OptionsMakeCheckbox(options, funcName, idIn, label)
+{
+	const id = OptionsMakeKey(g_selectedTabName, idIn, false)
+	options.push('<INPUT TYPE="checkbox" onChange="' + funcName + '; UpdateOptions()" id="' + id + '"><LABEL FOR="' + id + '"> ' + (label ?? idIn) + '</LABEL>')
 }
 
 function OptionsConcat(arr)
@@ -31,9 +120,10 @@ function OptionsConcat(arr)
 	return "<nobr>" + arr.join("&nbsp;</nobr> <nobr>") + "</nobr>"
 }
 
-function OptionsMakeSelect(toHere, funcName, heading, id, options, selectThis)
+function OptionsMakeSelect(toHere, funcName, heading, id, options, defaultVal)
 {
-	var reply = [heading + ': <select id="' + id + '" onChange="' + funcName + '">']
+	id = OptionsMakeKey(g_selectedTabName, id, defaultVal)
+	var reply = [heading + ': <select id="' + id + '" onChange="' + funcName + '; UpdateOptions()">']
 
 	for (var [key, val] of Object.entries(options))
 	{
@@ -43,7 +133,8 @@ function OptionsMakeSelect(toHere, funcName, heading, id, options, selectThis)
 	toHere.push(reply.join('') + '</select>')
 }
 
-function ShowError(message)
+function OptionsMakeTextBox(toHere, funcName, heading, id)
 {
-	alert(message + "\n\n" + new Error().stack)
+	id = OptionsMakeKey(g_selectedTabName, id, "")
+	toHere.push(heading + ': <input type=text id="' + id + '" onChange="' + funcName + '; UpdateOptions()"></input>')
 }

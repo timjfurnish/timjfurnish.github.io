@@ -1,17 +1,7 @@
-function OnlyKeepValid(arr)
-{
-	var reply = []
-
-	for (var a of arr)
-	{
-		if (a)
-		{
-			reply.push(a)
-		}
-	}
-	
-	return reply
-}
+//==============================================
+// Part of NOVA - NOVel Assistant
+// Tim Furnish, 2023-2024
+//==============================================
 
 function SetUpHyphenCheck(w)
 {
@@ -83,12 +73,9 @@ function HyphenCheck()
 	for (var txt of Object.keys(scores).sort((p1, p2) => (scores[p2] - scores[p1])))
 	{
 		const score = scores[txt]
-		if (txt.split('-').length == 2)
-		{
-			txt = '<B ONCLICK="SetUpHyphenCheck(\'' + txt + '\')">' + txt + '</B>'
-		}
+		const showText = (txt.split('-').length == 2) ? '<B ONCLICK="SetUpHyphenCheck(\'' + txt + '\')">' + txt + '</B>' : txt
 		TableNewRow(output)
-		output.push("<TD>" + txt + "<TD align=center>" + score)
+		output.push("<TD>" + MakeMentionLink(showText, txt) + "<TD align=center>" + score)
 	}
 	output.push("</TABLE>")
 	document.getElementById("hyphenCheckOutput").innerHTML = output.join("")

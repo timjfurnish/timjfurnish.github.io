@@ -1,3 +1,8 @@
+//==============================================
+// Part of NOVA - NOVel Assistant
+// Tim Furnish, 2023-2024
+//==============================================
+
 const kChapterColumns =
 {
 	Chapter:info=>info.txt.split(' [')[0],
@@ -103,25 +108,30 @@ g_tabFunctions.entities = function(reply, thenCall)
 		}
 	}
 
+	reply.push("<TD BGCOLOR=lightGray>")
+
 	const MakeCell = (bg, txt) => "<TD BGCOLOR=" + bg + "><FONT COLOR=white><B>" + txt + "</B></FONT>"
 
 	for (var [m,lastFoundInChapter] of Object.entries(allMentions))
 	{
 		reply.push("<TR ALIGN=CENTER><TD>" + m)
 		var empty = true
-		
+		var totaliser = 0
+
 		for (var headingInfo of g_headingToSentence)
 		{
 			if (m in headingInfo.mentions)
 			{
+				var num = headingInfo.mentions[m]
+				totaliser += num
 				const last = (headingInfo.txt == lastFoundInChapter)
 				if (empty)
 				{
-					reply.push(MakeCell(last ? "purple" : "green", headingInfo.mentions[m]))
+					reply.push(MakeCell(last ? "purple" : "green", num))
 				}
 				else
 				{
-					reply.push(MakeCell(last ? "red" : "blue", headingInfo.mentions[m]))
+					reply.push(MakeCell(last ? "red" : "blue", num))
 				}
 				empty = last
 			}
@@ -134,5 +144,6 @@ g_tabFunctions.entities = function(reply, thenCall)
 				reply.push("<TD BGCOLOR=lightGray>-")
 			}
 		}
+		reply.push("<TD><B>" + totaliser + "</B>")
 	}
 }

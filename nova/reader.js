@@ -1,3 +1,8 @@
+//==============================================
+// Part of NOVA - NOVel Assistant
+// Tim Furnish, 2023-2024
+//==============================================
+
 var g_readSentenceNum = 0
 var g_voiceLookUp = {}
 var g_voiceLanguages = []

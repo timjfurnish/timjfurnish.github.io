@@ -1,3 +1,8 @@
+//==============================================
+// Part of NOVA - NOVel Assistant
+// Tim Furnish, 2023-2024
+//==============================================
+
 var g_metaDataCurrent
 var g_metaDataInOrder
 var g_metaDataAvailableColumns
@@ -6,6 +11,29 @@ var g_metaDataTally
 function MakeClearTally()
 {
 	return {sentences:0, paragraphs:0, words:0, ["words in quotes"]:0}
+}
+
+function MetaDataEndProcess()
+{
+	if (g_metaDataTally.sentences)
+	{
+		var info = {}
+		for (var [key, val] of Object.entries(g_metaDataCurrent))
+		{
+			g_metaDataAvailableColumns[key] = true
+			info[key] = val
+		}
+		
+		var storeThis = {info:info}
+	
+		for (var key of Object.keys(g_metaDataTally))
+		{
+			storeThis[key] = g_metaDataTally[key]
+			g_metaDataTally[key] = 0
+		}
+
+		g_metaDataInOrder.push(storeThis)
+	}
 }
 
 function MetaDataSet(key, val)
@@ -34,36 +62,15 @@ function MetaDataSet(key, val)
 	g_metaDataCurrent[key] = val
 }
 
-function MetaDataEndProcess()
-{
-	if (g_metaDataTally.sentences)
-	{
-		var info = {}
-		for (var [key, val] of Object.entries(g_metaDataCurrent))
-		{
-			g_metaDataAvailableColumns[key] = true
-			info[key] = val
-		}
-		
-		var storeThis = {info:info}
-	
-		for (var key of Object.keys(g_metaDataTally))
-		{
-			storeThis[key] = g_metaDataTally[key]
-			g_metaDataTally[key] = 0
-		}
+OnEvent("processingDone", MetaDataEndProcess)
 
-		g_metaDataInOrder.push(storeThis)
-	}
-}
-
-function MetaDataReset()
+OnEvent("clear", () =>
 {
 	g_metaDataCurrent = {}
 	g_metaDataInOrder = []
 	g_metaDataAvailableColumns = {}
 	g_metaDataTally = MakeClearTally()
-}
+})
 
 function MetaDataProcessParagraph(numSentences)
 {
@@ -83,14 +90,14 @@ function MetaDataAddWordCount(words, isSpeech)
 
 function MetaDataDrawTable()
 {
-	var consolidate = document.getElementById("consolidate").checked ? {} : undefined
+	var consolidate = document.getElementById("metadata.consolidate").checked ? {} : undefined
 	var selectedColumns = []
 	var reply = []
 	TableOpen(reply)
 
 	for (var colName of Object.keys(g_metaDataAvailableColumns))
 	{
-		if (document.getElementById(colName).checked)
+		if (document.getElementById("metadata." + colName).checked)
 		{
 			TableAddHeading(reply, colName)
 			selectedColumns.push(colName)

@@ -1,9 +1,10 @@
+//==============================================
+// Part of NOVA - NOVel Assistant
+// Tim Furnish, 2023-2024
+//==============================================
+
 var g_sentences = null
 var g_headingToSentence = null
-var g_numParagraphsProcessed = 0
-var g_numHeadings = 0
-var g_nameLookup = {}
-var g_txtInArray = []
 var g_numInputBoxes = 0
 
 const kIllegalSubstrings = [["tab character", "\t"], ["double apostrophe", "''"], ["double quote", "\"\""], ["double space", "  "], ["dubious punctuation combo", /[;:,\.\!\?][;:,\.]/g], ["em dash", "\u8212"], ["split infinitive", / to [a-z]+ly /i]]
@@ -16,21 +17,6 @@ function SetUp_FixTitle()
 	if (location.substr(0, 4) == "file")
 	{
 		document.title += " (LOCAL)"
-	}
-}
-
-function CallTheseFunctions(list)
-{
-	for (const func of list)
-	{
-		try
-		{
-			func()
-		}
-		catch(err)
-		{
-			ShowError("While calling " + func.name + ":\n\n" + err.stack)
-		}
 	}
 }
 
@@ -48,7 +34,7 @@ function SetUp()
 
 function addInputBox(saveIt)
 {
-	document.getElementById('inputs').innerHTML += '<textarea id="txtIn' + ++ g_numInputBoxes + '" cols=140 rows=10 onChange="ProcessInput()"></textarea><BR>'
+	document.getElementById('inputs').innerHTML += '<textarea id="txtIn' + ++ g_numInputBoxes + '" cols=110 rows=10 onChange="ProcessInput()"></textarea><BR>'
 	
 	if (saveIt)
 	{
@@ -71,11 +57,6 @@ function hideShowInputs(checked)
 {
 	document.getElementById('inputsControls').style.display = checked ? '' : 'none'
 	document.getElementById('inputs').style.display = checked ? "block" : "none"
-}
-
-function Highlighter(matched)
-{
-	return "<span style=\"background-color:yellow\">" + matched + "</span>"
 }
 
 function CheckParagraphForIssues(txtIn)
@@ -125,14 +106,7 @@ function CheckEachWord(wordList, s, workspace, gatherHere)
 				const name = g_nameLookup[word]
 				if (name)
 				{
-					if (name in gatherHere.mentions)
-					{
-						++ gatherHere.mentions[name]
-					}
-					else
-					{
-						gatherHere.mentions[name] = 1
-					}
+					Tally(gatherHere.mentions, name)
 				}
 			}
 		}
@@ -170,32 +144,51 @@ function GetInputText()
 	return reply.split(/[\n\t]+/)
 }
 
+function ShouldIgnorePara(txtInProcessed)
+{
+	if (txtInProcessed === "" || txtInProcessed === "" + Number(txtInProcessed) || SettingsSayShouldIgnore(txtInProcessed))
+	{
+		return true
+	}
+
+	if (txtInProcessed[0] == '#')
+	{
+		MetaDataSet(...txtInProcessed.substring(1).split(':'))
+		return true
+	}
+	else if (txtInProcessed[0] == '@')
+	{
+		WarningEnableDisable(txtInProcessed.substring(1))
+		return true
+	}
+	
+	return false
+}
+
+function CheckStartsWithCapital(w, reason, s)
+{
+	const letter = w[0]
+
+	if (letter == letter.toLowerCase())
+	{
+		IssueAdd("Expected '" + w + "' to start with a capital letter " + (reason ?? "because it's capitalised in settings in") + " '" + s + "'", "CAPITALS")
+	}
+}
+
 function ProcessInput()
 {
-	g_txtInArray = GetInputText()
-
 	g_sentences = []
 	g_headingToSentence = []
 	
-	IssueClear()
-	MetaDataReset()
-
-	for (var resetLongest of Object.values(g_longest))
-	{
-		resetLongest.num = 0
-		resetLongest.what = null
-	}
+	DoEvent("clear")
 
 	const kSpecificOnlyAHeadingIfIncludes = g_tweakableSettings.headingIdentifier
 
 	var gatherHeadingStatsHere = null
-	var numParagraphsProcessed = 0
-	var numParagraphsIgnored = 0
 	
 	var workspace =
 	{
 		stillLookingForChapterNameInChapter:null,
-		numHeadings:0,
 		lastHeading:null,
 		badWords:{}
 	}
@@ -205,38 +198,17 @@ function ProcessInput()
 		workspace.badWords[w] = true
 	}
 
-	g_nameLookup = {}
-
-	for (var nameList of SettingsGetNamesArrayArray())
-	{
-		for (var name of nameList)
-		{
-			g_nameLookup[name] = nameList[0]
-		}
-	}
-
-	for (txtInRaw of g_txtInArray)
+	for (txtInRaw of GetInputText())
 	{
 		try
 		{
 			txtInRaw.startsWith(" ") && IssueAdd("Found leading space in '" + txtInRaw + "'", "LEADING SPACE")
 			txtInRaw.endsWith(" ") && IssueAdd("Found trailing space in '" + txtInRaw + "'", "TRAILING SPACE")
 
-			const txtInProcessed = txtInRaw.replace(/[\.\!\?;=]+ */g, '|').replace(/\u2026/g, '|').replace(/:$/, '').replace(/\|$/, '').replace(/^\|/, '').replace(/\^/g, '.')
+			const txtInProcessed = txtInRaw.replace(/[\.\!\?;=]+ */g, '|')./*replace(/\u2026/g, '|').*/replace(/:$/, '').replace(/\|$/, '').replace(/^\|/, '').replace(/\^/g, '.')
 
-			if (txtInProcessed === "" || txtInProcessed === "" + Number(txtInProcessed) || SettingsSayShouldIgnore(txtInProcessed))
+			if (ShouldIgnorePara(txtInProcessed))
 			{
-				continue
-			}
-
-			if (txtInProcessed[0] == '#')
-			{
-				MetaDataSet(...txtInProcessed.substring(1).split(':'))
-				continue
-			}
-			else if (txtInProcessed[0] == '@')
-			{
-				WarningEnableDisable(txtInProcessed.substring(1))
 				continue
 			}
 
@@ -246,6 +218,7 @@ function ProcessInput()
 			{
 				workspace.foundTextBetweenHeadings = true
 
+				MentionsStoreParagraph(txtInRaw)
 				CheckParagraphForIssues(txtInRaw)
 
 				const talkyNonTalky = txtInProcessed.split('"')
@@ -256,6 +229,7 @@ function ProcessInput()
 				}
 				
 				var isSpeech = true
+				var shouldStartWithCapital = "at the start of"
 
 				for (var each of talkyNonTalky)
 				{
@@ -280,24 +254,21 @@ function ProcessInput()
 					}
 
 					const sentences = OnlyKeepValid(txtIn.split("|"))
-
-					if (workspace.stillLookingForChapterNameInChapter)
-					{
-						const putBackTogether = sentences.join(' ').toLowerCase()
-						if (putBackTogether.includes(workspace.stillLookingForChapterNameInChapter))
-						{
-							workspace.stillLookingForChapterNameInChapter = null
-						}
-					}
-
 					const numSentences = sentences.length
 
 					if (numSentences)
 					{
+						if (workspace.stillLookingForChapterNameInChapter)
+						{
+							const putBackTogether = sentences.join(' ').toLowerCase()
+							if (putBackTogether.includes(workspace.stillLookingForChapterNameInChapter))
+							{
+								workspace.stillLookingForChapterNameInChapter = null
+							}
+						}
+
 						MetaDataProcessParagraph(numSentences)
 
-						++ numParagraphsProcessed
-						
 						if (gatherHeadingStatsHere)
 						{
 							++ gatherHeadingStatsHere.numPara
@@ -310,17 +281,21 @@ function ProcessInput()
 							g_headingToSentence.push(gatherHeadingStatsHere)
 							g_sentences.push({heading:true, text:workspace.lastHeading, listOfWords:[]})
 							workspace.lastHeading = null
-							++ workspace.numHeadings
 						}
 						
 						var numWordsInPara = 0
 						var prefixMe = '^'
 
-						// BAH
 						for (var s of sentences)
 						{
+							// Allow paragraphs to start with things like "... and a hamster," he finished.
+							if (shouldStartWithCapital && isSpeech && s[0] == "\u2026")
+							{
+								shouldStartWithCapital = false
+							}
+
 							s = s.replace(/^'+/, "").replace(/'+$/, "")
-							const listOfWords = OnlyKeepValid(s.toLowerCase().split(/[^#'a-z0-9\&]+/))
+							const listOfWords = OnlyKeepValid(s.split(/[^\-%#'a-zA-Z0-9\&]+/))
 
 							if (listOfWords.length)
 							{
@@ -341,6 +316,15 @@ function ProcessInput()
 									var w = wIn.replace(/^'+/, "").replace(/'+$/, "")
 									if (w)
 									{
+										if (shouldStartWithCapital) // TODO: or if a name
+										{
+											CheckStartsWithCapital(w, shouldStartWithCapital, s)
+										}
+
+										w = w.toLowerCase()
+
+										shouldStartWithCapital = ["mr", "dr", "mrs"].includes(w) && ("following " + w + " in")
+										
 										newListOfWords.push(w)
 										CheckEachWord(w.split(/[-']/), s, workspace, gatherHeadingStatsHere)
 									}
@@ -350,6 +334,7 @@ function ProcessInput()
 									}
 								}
 								
+//								console.log("[" + s + "] => [" + listOfWords + "] => [" + newListOfWords + "]")
 								g_sentences.push({text:prefixMe + s, isSpeech:isSpeech, listOfWords:newListOfWords})
 								prefixMe = ''
 							}
@@ -363,15 +348,14 @@ function ProcessInput()
 			}
 			else
 			{
-				++ numParagraphsIgnored
-			
-				DoEndOfChapterChesks(workspace)
+				DoEndOfChapterChecks(workspace)
 				IssueSetHeading(txtInRaw)
+				MentionsStoreHeading(txtInRaw)
 
-				const justChapterName = txtInRaw.split(/ *[\[\(]/)[0].toLowerCase()
+				const justChapterName = txtInRaw.split(/ *[\[\(]/)[0]
 
 				workspace.lastHeading = txtInRaw
-				workspace.stillLookingForChapterNameInChapter = justChapterName
+				workspace.stillLookingForChapterNameInChapter = justChapterName.toLowerCase()
 				MetaDataSet("CHAPTER", justChapterName)
 				delete workspace.foundTextBetweenHeadings
 			}
@@ -382,18 +366,15 @@ function ProcessInput()
 		}
 	}
 	
-	DoEndOfChapterChesks(workspace)
-	MetaDataEndProcess()
-
-	g_numParagraphsProcessed = numParagraphsProcessed
-	g_numHeadings = workspace.numHeadings
+	DoEndOfChapterChecks(workspace)
+	
+	DoEvent("processingDone")
 
 	SetSentenceNum(0)
 	ShowContentForSelectedTab()
-	IssuesUpdateTabText()
 }
 
-function DoEndOfChapterChesks(workspace)
+function DoEndOfChapterChecks(workspace)
 {
 	if (workspace.stillLookingForChapterNameInChapter && workspace.foundTextBetweenHeadings)
 	{

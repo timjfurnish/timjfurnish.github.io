@@ -1,4 +1,18 @@
+//==============================================
+// Part of NOVA - NOVel Assistant
+// Tim Furnish, 2023-2024
+//==============================================
+
 var g_longest = {wordCount:{}, wordScore:{}, paraSentences:{txt:"Paragraph with most sentences"}, paraWords:{txt:"Paragraph with most words"}, paraChr:{txt:"Paragraph with most characters"}, sentence:{txt:"Sentence with most words"}, sentenceChr:{txt:"Sentence with most characters"}}
+
+OnEvent("clear", () =>
+{
+	for (var resetLongest of Object.values(g_longest))
+	{
+		resetLongest.num = 0
+		resetLongest.what = null
+	}
+})
 
 function CheckIfLongest(thing, num, what)
 {
@@ -9,6 +23,7 @@ function CheckIfLongest(thing, num, what)
 	}
 }
 
+/*
 g_tabFunctions.longest = function(reply, thenCall)
 {
 	var before = ""
@@ -22,3 +37,4 @@ g_tabFunctions.longest = function(reply, thenCall)
 		}
 	}
 }
+*/

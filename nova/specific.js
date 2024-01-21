@@ -1,3 +1,8 @@
+//==============================================
+// Part of NOVA - NOVel Assistant
+// Tim Furnish, 2023-2024
+//==============================================
+
 var g_tweakableSettings =
 {
 	language:"",
@@ -26,15 +31,10 @@ const kSettingNames =
 	headingMaxCharacters:"Max characters in a heading",
 	hyphenCheckPairs:"Hyphen check text|cols=105",
 	names:"Character/place names|cols=60",
-	allowNumbersWithThisManyDigits:"Allow numbers with this many digits or more",
+	allowNumbersWithThisManyDigits:"Allow numbers with this many digits or more"
 }
 
 const kHasNoEffect = ["voiceDefault", "voiceSpeech", "voiceHeading"]
-
-function GetDataType(data)
-{
-	return Array.isArray(data) ? "array" : typeof(data)
-}
 
 function UpdateSettingFromText(name, type, savedSetting, isLoading)
 {
@@ -107,7 +107,12 @@ function SettingsGetNamesArrayArray()
 	
 	for (var n of g_tweakableSettings.names)
 	{
-		reply.push(n.split(' '))
+		var inner = []
+		for (var name of n.split(' '))
+		{
+			inner.push(name.toLowerCase())
+		}
+		reply.push(inner)
 	}
 	
 	return reply
@@ -119,7 +124,7 @@ function SettingsSayShouldIgnore(txtIn)
 	{
 		if (txtIn.startsWith(t))
 		{
-			console.log("Skipping '" + txtIn + "' because it starts with '" + t + "'")
+//			console.log("Skipping '" + txtIn + "' because it starts with '" + t + "'")
 			return true
 		}
 	}
@@ -204,17 +209,17 @@ g_tabFunctions.settings = function(reply, thenCall)
 		}
 		
 		const theCloseTag = "</" + theType.split(' ')[0] + ">"
-		reply.push('<tr><td width=10><nobr>' + displayName + '&nbsp;&nbsp;&nbsp;</nobr></td><td>')
+		reply.push('<tr><td width=10 valign=top><nobr>' + displayName + '&nbsp;&nbsp;&nbsp;</nobr></td><td>')
 		reply.push('<' + theType + ' onChange="UserChangedSetting(\'' + k + '\')" ' + (extra ? extra + ' ' : '') + 'id="setting_' + k + '">')
 		reply.push(theMiddle + '</' + theType.split(' ')[0] + '>')
 	}
-	reply.push("<tr><td colspan=2><H3>Check for issues:</H3>")
+	reply.push("<tr><td width=10 valign=top><nobr>Issues settings&nbsp;&nbsp;&nbsp;</nobr></td><td>")
 	
 	var options = []
 
 	for (var warningID of Object.keys(g_warningNames))
 	{
-		OptionsMakeCheckbox(options, "MetaDataDrawTable()", warningID)
+		OptionsMakeCheckbox(options, "MetaDataDrawTable()", warningID, "Check for " + warningID.toLowerCase())
 	}
 
 	reply.push(OptionsConcat(options))
