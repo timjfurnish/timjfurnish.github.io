@@ -26,6 +26,11 @@ function TableAddHeading(reply, h)
 	reply.push('<td bgcolor=#DDDDDD><B>' + h + '</B>')
 }
 
+function TableClose(reply)
+{
+	reply.push("</TABLE>")	
+}
+
 //=======================
 // options
 //=======================
@@ -44,7 +49,7 @@ function UpdateOptions()
 			var elem = document.getElementById(g_selectedTabName + "." + key)
 			if (elem)
 			{
-				const myType = typeof myTabOptions[key]
+				const myType = GetDataType(myTabOptions[key])
 				const oldVal = myTabOptions[key]
 
 				if (myType == "boolean")
@@ -58,7 +63,7 @@ function UpdateOptions()
 				
 				if (oldVal != myTabOptions[key])
 				{
-					console.log("Updated " + (typeof elem) + " '" + g_selectedTabName + "." + key + "' to " + myType + " '" + myTabOptions[key] + "'")
+					console.log("Updated " + GetDataType(elem) + " '" + g_selectedTabName + "." + key + "' to " + myType + " '" + myTabOptions[key] + "'")
 				}
 			}
 		}
@@ -69,13 +74,13 @@ function SetOptions()
 {
 	if (g_selectedTabName in g_currentOptions)
 	{
-		console.log("Updating on-screen option controls for '" + g_selectedTabName + "'")
 		for (var [key, val] of Object.entries(g_currentOptions[g_selectedTabName]))
 		{
 			var elem = document.getElementById(g_selectedTabName + "." + key)
 			if (elem)
 			{
-				console.log("Setting " + (typeof elem) + " '" + g_selectedTabName + "." + key + "' to " + (typeof val) + " '" + val + "'")
+				console.log("Setting " + GetDataType(elem) + " '" + g_selectedTabName + "." + key + "' to " + GetDataType(val) + " '" + val + "'")
+
 				if (typeof val == "boolean")
 				{
 					elem.checked = val
@@ -86,10 +91,6 @@ function SetOptions()
 				}
 			}
 		}
-	}
-	else
-	{
-		console.log("There are no options for '" + g_selectedTabName + "'")
 	}
 }
 
@@ -109,10 +110,28 @@ function OptionsMakeKey(tab, id, defVal, overwrite)
 	return tab + "." + id
 }
 
-function OptionsMakeCheckbox(options, funcName, idIn, label)
+function OptionsCommon(id, funcName)
 {
-	const id = OptionsMakeKey(g_selectedTabName, idIn, false)
-	options.push('<INPUT TYPE="checkbox" onChange="' + funcName + '; UpdateOptions()" id="' + id + '"><LABEL FOR="' + id + '"> ' + (label ?? idIn) + '</LABEL>')
+	var onChange = "UpdateOptions()"
+	if (funcName)
+	{
+		if (g_selectedTabName == 'settings')
+		{
+			onChange += "; " + funcName
+		}
+		else
+		{
+			onChange = funcName + "; " + onChange
+		}
+	}
+
+	return 'onChange="' + onChange + '" id="' + id + '"'
+}
+
+function OptionsMakeCheckbox(options, funcName, idIn, label, defaultVal)
+{
+	const id = OptionsMakeKey(g_selectedTabName, idIn, defaultVal ? true : false)
+	options.push('<INPUT TYPE="checkbox" ' + OptionsCommon(id, funcName) + '><LABEL FOR="' + id + '"> ' + (label ?? idIn) + '</LABEL>')
 }
 
 function OptionsConcat(arr)
@@ -123,7 +142,7 @@ function OptionsConcat(arr)
 function OptionsMakeSelect(toHere, funcName, heading, id, options, defaultVal)
 {
 	id = OptionsMakeKey(g_selectedTabName, id, defaultVal)
-	var reply = [heading + ': <select id="' + id + '" onChange="' + funcName + '; UpdateOptions()">']
+	var reply = [heading + ': <select ' + OptionsCommon(id, funcName) + '>']
 
 	for (var [key, val] of Object.entries(options))
 	{
@@ -136,5 +155,5 @@ function OptionsMakeSelect(toHere, funcName, heading, id, options, defaultVal)
 function OptionsMakeTextBox(toHere, funcName, heading, id)
 {
 	id = OptionsMakeKey(g_selectedTabName, id, "")
-	toHere.push(heading + ': <input type=text id="' + id + '" onChange="' + funcName + '; UpdateOptions()"></input>')
+	toHere.push(heading + ': <input type=text ' + OptionsCommon(id, funcName) + '></input>')
 }

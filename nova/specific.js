@@ -34,13 +34,18 @@ const kSettingNames =
 	allowNumbersWithThisManyDigits:"Allow numbers with this many digits or more"
 }
 
+const kOptionCustomNames =
+{
+	SCRIPT:"Use script format checking rules"
+}
+
 const kHasNoEffect = ["voiceDefault", "voiceSpeech", "voiceHeading"]
 
 function UpdateSettingFromText(name, type, savedSetting, isLoading)
 {
 	if (type == 'array')
 	{
-		SettingUpdate(name, savedSetting.split(isLoading ? ',' : '\n'), isLoading)
+		SettingUpdate(name, OnlyKeepValid(savedSetting.split(isLoading ? ',' : '\n')), isLoading)
 	}
 	else if (type == 'number')
 	{
@@ -97,7 +102,7 @@ function SettingUpdate(name, newValue, isLoading)
 	}
 	else
 	{
-		window.log("There's no setting called '" + name + "' in settings structure")
+		console.log("There's no setting called '" + name + "' in settings structure")
 	}
 }
 
@@ -124,7 +129,6 @@ function SettingsSayShouldIgnore(txtIn)
 	{
 		if (txtIn.startsWith(t))
 		{
-//			console.log("Skipping '" + txtIn + "' because it starts with '" + t + "'")
 			return true
 		}
 	}
@@ -180,6 +184,11 @@ function UserChangedSetting(name)
 	}
 }
 
+function SettingsAdd(reply, txt, formBits)
+{
+	reply.push("<tr><td width=10 valign=top><nobr>" + txt + "&nbsp;&nbsp;&nbsp;</nobr></td><td>" + formBits + "</td></tr>")
+}
+
 g_tabFunctions.settings = function(reply, thenCall)
 {
 	reply.push("<table>")
@@ -208,22 +217,29 @@ g_tabFunctions.settings = function(reply, thenCall)
 			extra = ''
 		}
 		
-		const theCloseTag = "</" + theType.split(' ')[0] + ">"
-		reply.push('<tr><td width=10 valign=top><nobr>' + displayName + '&nbsp;&nbsp;&nbsp;</nobr></td><td>')
-		reply.push('<' + theType + ' onChange="UserChangedSetting(\'' + k + '\')" ' + (extra ? extra + ' ' : '') + 'id="setting_' + k + '">')
-		reply.push(theMiddle + '</' + theType.split(' ')[0] + '>')
+		SettingsAdd(reply, displayName, '<' + theType + ' onChange="UserChangedSetting(\'' + k + '\')" ' + (extra ? extra + ' ' : '') + 'id="setting_' + k + '">' + theMiddle + '</' + theType.split(' ')[0] + '>')
 	}
-	reply.push("<tr><td width=10 valign=top><nobr>Issues settings&nbsp;&nbsp;&nbsp;</nobr></td><td>")
 	
-	var options = []
+	var issueChecks = []
+	var issueSettings = []
 
 	for (var warningID of Object.keys(g_warningNames))
 	{
-		OptionsMakeCheckbox(options, "MetaDataDrawTable()", warningID, "Check for " + warningID.toLowerCase())
+		if (warningID in kOptionCustomNames)
+		{
+			// Options default to false
+			OptionsMakeCheckbox(issueSettings, "ProcessInput()", warningID, kOptionCustomNames[warningID])
+		}
+		else
+		{
+			// Checks default to true
+			OptionsMakeCheckbox(issueChecks, "ProcessInput()", warningID, "Check for " + warningID.toLowerCase(), true)
+		}
 	}
 
-	reply.push(OptionsConcat(options))
-	reply.push("</table>")
+	SettingsAdd(reply, "Issue checks (default)", OptionsConcat(issueChecks))
+	SettingsAdd(reply, "Issue settings (default)", OptionsConcat(issueSettings))
+	TableClose(reply)
 	
 	thenCall.push(FillInSettings)
 }

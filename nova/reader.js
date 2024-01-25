@@ -21,7 +21,7 @@ function Read()
 
 function OnDoneSpeaking()
 {
-	if (document.getElementById('keepTalking')?.checked)
+	if (document.getElementById('voice.keepTalking')?.checked)
 	{
 		ResetWhatToRead(g_readSentenceNum + 1)
 		Read()
@@ -121,9 +121,9 @@ g_tabFunctions.voice = function(reply, thenCall)
 	reply.push('<BUTTON ONCLICK="Read()">Read next sentence</BUTTON> &nbsp; ')
 	reply.push('<button onclick="ResetWhatToRead(g_readSentenceNum - 1)" id="sentenceBack">&lt;</button>')
 	reply.push('<input type="text" id="sentenceNum" readonly>')
-	reply.push('<button onclick="ResetWhatToRead(g_readSentenceNum + 1)" id="sentenceFwd">&gt;</button> &nbsp; ')	
-	reply.push('<INPUT TYPE="checkbox" id="keepTalking"><LABEL FOR="keepTalking"> Keep talking</LABEL><BR><BR>')
-	reply.push("<div id=whatToRead></div>")
+	reply.push('<button onclick="ResetWhatToRead(g_readSentenceNum + 1)" id="sentenceFwd">&gt;</button> &nbsp; ')
+	OptionsMakeCheckbox(reply, null, "keepTalking", "Keep talking")
+	reply.push("<p id=whatToRead></p>")
 	
 	thenCall.push(RedrawNextThingToRead)
 	thenCall.push(SetSentenceNum)

@@ -98,21 +98,17 @@ function RedrawMentions()
 g_tabFunctions.mentions = function(reply, thenCall)
 {
 	const specificNames = SettingsGetNamesArrayArray()
+	var nameData = {[""]:"Custom"}
 
-	if (specificNames.length)
+	for (var name of specificNames)
 	{
-		var nameData = {[""]:"Custom"}
-
-		for (var name of specificNames)
-		{
-			nameData[name.join('+')] = name[0].charAt(0).toUpperCase() + name[0].slice(1)
-		}
-		
-		var options = []
-		OptionsMakeSelect(options, "RedrawMentions()", "Entity", "entity", nameData, "")
-		OptionsMakeTextBox(options, "RedrawMentions()", "Search for", "custom")
-		reply.push(options.join("&nbsp;&nbsp;"))
+		nameData[name.join('+')] = name[0].charAt(0).toUpperCase() + name[0].slice(1)
 	}
+	
+	var options = []
+	OptionsMakeSelect(options, "RedrawMentions()", "Entity", "entity", nameData, "")
+	OptionsMakeTextBox(options, "RedrawMentions()", "Search for", "custom")
+	reply.push(OptionsConcat(options))
 	reply.push("<p id=mentionsGoHere></p>")
 	
 	thenCall.push(RedrawMentions)

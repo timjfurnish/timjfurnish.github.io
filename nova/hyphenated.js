@@ -45,7 +45,6 @@ function HyphenCheck()
 				{
 					const both = justSawFirstWord + " " + w
 					scores[both] = (scores[both] ?? 0) + 1
-//						console.log("Found '" + both + "' in '" + s + "'")
 				}
 
 				justSawFirstWord = firstWord.includes(w) ? w : null

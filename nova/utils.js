@@ -7,13 +7,13 @@ var g_eventFuncs = {}
 
 function GetDataType(data)
 {
-	return Array.isArray(data) ? "array" : typeof(data)
+	return (data === null) ? "null" : Array.isArray(data) ? "array" : data.tagName ? data.tagName + " (" + data.type + ")" : typeof(data)
 }
 
 function MakeSet(...theBits)
 {
 	var set = {}
-	for (var name of theBits)
+	for (var name of theBits.sort())
 	{
 		set[name] = true
 	}
@@ -74,7 +74,7 @@ function DoEvent(eventName)
 {
 	if (eventName in g_eventFuncs)
 	{
-		console.log("Calling '" + g_eventFuncs[eventName].length + " '" + eventName + "' callbacks")
+		console.log("Calling " + g_eventFuncs[eventName].length + " '" + eventName + "' callbacks")
 		CallTheseFunctions(g_eventFuncs[eventName])
 	}
 }

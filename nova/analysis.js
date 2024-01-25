@@ -7,8 +7,10 @@ var g_sentences = null
 var g_headingToSentence = null
 var g_numInputBoxes = 0
 
-const kIllegalSubstrings = [["tab character", "\t"], ["double apostrophe", "''"], ["double quote", "\"\""], ["double space", "  "], ["dubious punctuation combo", /[;:,\.\!\?][;:,\.]/g], ["em dash", "\u8212"], ["split infinitive", / to [a-z]+ly /i]]
+const kIllegalSubstrings = [["tab character", "\t"], ["double apostrophe", "''"], ["double quote", "\"\""], ["double space", "  "], ["dubious punctuation combo", /[;:,\.\!\?][;:,\.]/g], ["split infinitive", / to [a-z]+ly /i]]
 const kIllegalSubstringsExceptions = {[" to apply "]:true}
+const kValidFinalCharactersSpeech = MakeSet("\u2026", ".", "!", "?", "\u2014")
+const kValidFinalCharactersNarrative = MakeSet("\u2026", ".", "!", "?")
 
 function SetUp_FixTitle()
 {
@@ -29,6 +31,7 @@ function SetUp()
 		addInputBox(false)
 	}
 
+	ShowContentForSelectedTab()
 	setTimeout(ProcessInput, 0)
 }
 
@@ -92,6 +95,15 @@ function CheckEachWord(wordList, s, workspace, gatherHere)
 			if (word in workspace.badWords)
 			{
 				IssueAdd("Found disallowed word '" + word + "' in '" + s + "'")
+			}
+			else if (word == "todo")
+			{
+				workspace.foundToDo = true
+				workspace.foundToDoInParagraph = true
+				if (workspace.percentComplete >= 100)
+				{
+					IssueAdd("Chapter complete but contains a TODO in '" + s + "'", "TODO")
+				}
 			}
 			else if (word.length < g_tweakableSettings.allowNumbersWithThisManyDigits)
 			{
@@ -230,6 +242,8 @@ function ProcessInput()
 				
 				var isSpeech = true
 				var shouldStartWithCapital = "at the start of"
+				var finalCharacter = ""
+				var endedWithSpeech = false
 
 				for (var each of talkyNonTalky)
 				{
@@ -293,6 +307,12 @@ function ProcessInput()
 							{
 								shouldStartWithCapital = false
 							}
+							
+							// If we're in SCRIPT mode then allow paragraphs like "(whispered)"
+							if (! g_disabledWarnings.SCRIPT && !isSpeech && s[0] == '(')
+							{
+								shouldStartWithCapital = false
+							}
 
 							s = s.replace(/^'+/, "").replace(/'+$/, "")
 							const listOfWords = OnlyKeepValid(s.split(/[^\-%#'a-zA-Z0-9\&]+/))
@@ -345,6 +365,13 @@ function ProcessInput()
 						CheckIfLongest("paraChr", txtIn.length, sentences)
 					}
 				}
+				
+				if (g_disabledWarnings.SCRIPT && !workspace.foundToDoInParagraph)
+				{
+					CheckFinalCharacter(txtInRaw)
+				}
+				
+				delete workspace.foundToDoInParagraph
 			}
 			else
 			{
@@ -354,7 +381,9 @@ function ProcessInput()
 
 				const justChapterName = txtInRaw.split(/ *[\[\(]/)[0]
 
+				workspace.percentComplete = parseInt(txtInRaw.split('[')[1] ?? "100")
 				workspace.lastHeading = txtInRaw
+//				console.log("Chapter " + workspace.lastHeading + " says it's " + workspace.percentComplete + "% complete")
 				workspace.stillLookingForChapterNameInChapter = justChapterName.toLowerCase()
 				MetaDataSet("CHAPTER", justChapterName)
 				delete workspace.foundTextBetweenHeadings
@@ -371,14 +400,54 @@ function ProcessInput()
 	DoEvent("processingDone")
 
 	SetSentenceNum(0)
-	ShowContentForSelectedTab()
+	
+	if (g_selectedTabName != 'settings')
+	{
+		ShowContentForSelectedTab()
+	}
+}
+
+function CheckFinalCharacter(txtIn)
+{
+	const txtFull = txtIn
+	var finalCharacter = txtIn.slice(-1)
+	var endsWithSpeech = false
+
+	while (finalCharacter == '"' || finalCharacter == ')')
+	{
+		if (finalCharacter == '"')
+		{
+			if (endsWithSpeech)
+			{
+				break
+			}
+
+			endsWithSpeech = true
+		}
+		
+		txtIn = txtIn.slice(0, -1)
+		finalCharacter = txtIn.slice(-1)
+	}
+
+	const checkHere = endsWithSpeech ? kValidFinalCharactersSpeech : kValidFinalCharactersNarrative
+	if (! (finalCharacter in checkHere))
+	{
+		IssueAdd("Final important character of '" + txtFull + "' is '" + finalCharacter + "' (valid=" + Object.keys(checkHere).join("") + ")", "INVALID FINAL CHARACTER")
+	}
 }
 
 function DoEndOfChapterChecks(workspace)
 {
+	if (workspace.percentComplete < 100 && !workspace.foundToDo)
+	{
+		IssueAdd("Chapter is incomplete but contains no TODO", "TODO")
+	}
+
 	if (workspace.stillLookingForChapterNameInChapter && workspace.foundTextBetweenHeadings)
 	{
 		IssueAdd("Didn't find chapter name in chapter '" + workspace.stillLookingForChapterNameInChapter + "'", "CHAPTER NAME IN CHAPTER")
 	}
+	
+	delete workspace.foundToDo
 }
 

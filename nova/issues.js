@@ -7,14 +7,20 @@ var g_issues = {}
 var g_disabledWarnings = {}
 var g_issueHeading = 'Global'
 var g_issueCount = 0
-var g_warningNames = MakeSet('NUMBERS', 'SPLIT INFINITIVE', 'CHAPTER NAME IN CHAPTER', 'LEADING SPACE', 'TRAILING SPACE', 'UNFINISHED QUOTE', 'CAPITALS')
 
-for (var [autoErrName] of kIllegalSubstrings)
+function BuildWarningNamesList()
 {
-	g_warningNames[autoErrName.toUpperCase()] = true
+	const list = ['SCRIPT', 'NUMBERS', 'TODO', 'INVALID FINAL CHARACTER', 'SPLIT INFINITIVE', 'CHAPTER NAME IN CHAPTER', 'LEADING SPACE', 'TRAILING SPACE', 'UNFINISHED QUOTE', 'CAPITALS']
+
+	for (var [autoErrName] of kIllegalSubstrings)
+	{
+		list.push(autoErrName.toUpperCase())
+	}
+	
+	return MakeSet(...list)
 }
 
-console.log(g_warningNames)
+var g_warningNames = BuildWarningNamesList()
 
 g_tabFunctions.issues = function(reply, thenCall)
 {
@@ -37,6 +43,17 @@ OnEvent("clear", () =>
 	g_issues = {}
 	g_issueHeading = 'Global'
 	g_disabledWarnings = {}
+	
+	if (g_currentOptions.settings)
+	{
+		for (var [key, val] of Object.entries(g_currentOptions.settings))
+		{
+			if (!val)
+			{
+				g_disabledWarnings[key] = true
+			}
+		}
+	}
 })
 
 function IssueSetHeading(heading)
