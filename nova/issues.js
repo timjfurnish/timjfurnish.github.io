@@ -1,6 +1,6 @@
 //==============================================
 // Part of NOVA - NOVel Assistant
-// Tim Furnish, 2023-2024
+// (c) Tim Furnish, 2023-2024
 //==============================================
 
 var g_issues = {}
@@ -10,7 +10,16 @@ var g_issueCount = 0
 
 function BuildWarningNamesList()
 {
-	const list = ['SCRIPT', 'NUMBERS', 'TODO', 'INVALID FINAL CHARACTER', 'SPLIT INFINITIVE', 'CHAPTER NAME IN CHAPTER', 'LEADING SPACE', 'TRAILING SPACE', 'UNFINISHED QUOTE', 'CAPITALS']
+	const list =
+	[
+		'SCRIPT', 'NUMBERS', 'TODO', 'LEADING SPACE', "DISALLOWED WORD", "ILLEGAL CHARACTERS",
+		'INVALID FINAL NARRATIVE CHARACTER',
+		'INVALID FINAL SPEECH CHARACTER',
+		'SPLIT INFINITIVE', 'CHAPTER NAME IN CHAPTER',
+		'TRAILING SPACE', 'UNFINISHED QUOTE', 'CAPITALS', 'SPACE BEFORE PUNCTUATION',
+		'MARKUP ERROR', 'SPACE IN SPEECH', 'EMPTY SPEECH', 'EMPTY PARAGRAPH', 'EMPTY SENTENCE',
+		'PUNCTUATION WITHOUT SPACE', 'ILLEGAL START CHARACTER', 'EMPTY WORD'
+	]
 
 	for (var [autoErrName] of kIllegalSubstrings)
 	{
@@ -41,7 +50,6 @@ OnEvent("clear", () =>
 {
 	g_issueCount = 0
 	g_issues = {}
-	g_issueHeading = 'Global'
 	g_disabledWarnings = {}
 	
 	if (g_currentOptions.settings)
@@ -56,12 +64,12 @@ OnEvent("clear", () =>
 	}
 })
 
-function IssueSetHeading(heading)
+function IssueGetTotal()
 {
-	g_issueHeading = heading
+	return g_issueCount
 }
 
-function IssueAdd(issue, theType)
+function IssueAdd(addThis, theType)
 {
 	if (theType)
 	{
@@ -76,18 +84,18 @@ function IssueAdd(issue, theType)
 			return
 		}
 		
-		issue = theType + ": " + issue
+		addThis = "<NOBR id=issueType>" + theType + "</NOBR> " + addThis
 	}
 
 	++ g_issueCount
 
 	if (g_issueHeading in g_issues)
 	{
-		g_issues[g_issueHeading].push(issue)
+		g_issues[g_issueHeading].push(addThis)
 	}
 	else
 	{
-		g_issues[g_issueHeading] = [issue]
+		g_issues[g_issueHeading] = [addThis]
 	}
 }
 
@@ -102,16 +110,23 @@ function WarningEnableDisable(strIn)
 	key = key.toUpperCase()
 	val = val.toUpperCase()
 
-	if (val == "ON")
+	if (key in g_warningNames)
 	{
-		delete g_disabledWarnings[key]
-	}
-	else if (val == "OFF")
-	{
-		g_disabledWarnings[key] = true
+		if (val == "ON")
+		{
+			delete g_disabledWarnings[key]
+		}
+		else if (val == "OFF")
+		{
+			g_disabledWarnings[key] = true
+		}
+		else
+		{
+			IssueAdd("To turn a warning on/off say " + FixStringHTML(key + ":ON") + " or " + FixStringHTML(key + ":OFF") + " - you said " + FixStringHTML(strIn), "MARKUP ERROR")
+		}
 	}
 	else
 	{
-		IssueAdd("To turn a warning on/off say '" + key + ":ON' or '" + key + ":OFF' - you said '" + strIn + "'")
+		IssueAdd("Parsing instruction " + FixStringHTML(strIn) + " - " + FixStringHTML(key) + " is not a known issue type", "MARKUP ERROR")
 	}
 }

@@ -1,19 +1,23 @@
 //==============================================
 // Part of NOVA - NOVel Assistant
-// Tim Furnish, 2023-2024
+// (c) Tim Furnish, 2023-2024
 //==============================================
 
-var g_nameLookup, g_txtForMentions, g_currentlyBuildingChapter
+var g_nameLookup, g_txtForMentions, g_currentlyBuildingChapter, g_permittedNameCapitalisations
 
 OnEvent("clear", () =>
 {
 	g_nameLookup = {}
+	g_permittedNameCapitalisations = {}
 
 	for (var nameList of SettingsGetNamesArrayArray())
 	{
 		for (var name of nameList)
 		{
-			g_nameLookup[name] = nameList[0]
+			g_nameLookup[name.toLowerCase()] = nameList[0]
+			g_permittedNameCapitalisations[name] = true
+			g_permittedNameCapitalisations[CapitaliseFirstLetter(name)] = true
+			g_permittedNameCapitalisations[name.toUpperCase()] = true
 		}
 	}
 
@@ -23,6 +27,7 @@ OnEvent("clear", () =>
 
 function MentionsStoreHeading(heading)
 {
+	g_issueHeading = heading
 	g_currentlyBuildingChapter = {paragraphs:[], heading:heading}
 	g_txtForMentions.push(g_currentlyBuildingChapter)
 }
@@ -81,7 +86,7 @@ function RedrawMentions()
 							showHeading = false
 						}
 
-						output.push(before + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + s2.replace(/\^/g, ''))
+						output.push(before + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + s2)
 						nextBefore = ""
 						aBreak = "<br>"
 					}
@@ -102,7 +107,7 @@ g_tabFunctions.mentions = function(reply, thenCall)
 
 	for (var name of specificNames)
 	{
-		nameData[name.join('+')] = name[0].charAt(0).toUpperCase() + name[0].slice(1)
+		nameData[name.join('+')] = CapitaliseFirstLetter(name[0])
 	}
 	
 	var options = []
@@ -123,5 +128,5 @@ function SwitchToMentionsAndSearch(txt)
 
 function MakeMentionLink(showText, searchForText)
 {
-	return '<NOBR>' + showText + ' <B onClick="SwitchToMentionsAndSearch(\'' + (searchForText ?? showText) + '\')">&#128269;</B></NOBR>'
+	return '<NOBR>' + showText + ' ' + CreateClickableText(kIconSearch, "SwitchToMentionsAndSearch('" + (searchForText ?? showText) + "')") + '</NOBR>'
 }

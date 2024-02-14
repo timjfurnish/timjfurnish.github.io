@@ -1,16 +1,25 @@
 //==============================================
 // Part of NOVA - NOVel Assistant
-// Tim Furnish, 2023-2024
+// (c) Tim Furnish, 2023-2024
 //==============================================
 
 var g_sentences = null
 var g_headingToSentence = null
-var g_numInputBoxes = 0
 
-const kIllegalSubstrings = [["tab character", "\t"], ["double apostrophe", "''"], ["double quote", "\"\""], ["double space", "  "], ["dubious punctuation combo", /[;:,\.\!\?][;:,\.]/g], ["split infinitive", / to [a-z]+ly /i]]
-const kIllegalSubstringsExceptions = {[" to apply "]:true}
-const kValidFinalCharactersSpeech = MakeSet("\u2026", ".", "!", "?", "\u2014")
-const kValidFinalCharactersNarrative = MakeSet("\u2026", ".", "!", "?")
+const kIllegalSubstrings =
+[
+	["tab character", "\t"],
+	["double apostrophe", "''"],
+	["misused hyphen", /( \-)|(\- )/g],
+	["double quote", "\"\""],
+	["double space", "  "],
+	["dubious punctuation combo", /[;:,\.\!\?][;:,\.\!\?]/g],
+	["space before punctuation", / [;:,\.\!\?]/g],
+	["split infinitive", /\bto [a-z]+ly /gi]
+]
+const kIllegalSubstringsExceptions = MakeSet("to apply ", "!?")
+const kValidFinalCharactersSpeech = MakeSet(kCharacterElipsis, ".", "!", "?", "\u2014", "'")
+const kValidFinalCharactersNarrative = MakeSet(kCharacterElipsis, ".", "!", "?", ":")
 
 function SetUp_FixTitle()
 {
@@ -24,46 +33,16 @@ function SetUp_FixTitle()
 
 function SetUp()
 {
-	CallTheseFunctions([BuildTabs, SetUp_FixTitle, SettingsLoad])
+	CallTheseFunctions(BuildTabs, SetUp_FixTitle, SettingsLoad, AddAllInputBoxes, ShowContentForSelectedTab, ProcessInput)
+}
 
-	for (var i = 0; i < g_tweakableSettings.numTextBoxes; ++ i)
+function CheckParagraphForIssues(txtIn, txtInProcessed)
+{
+	if (! g_tweakableSettings.allowedStartCharacters.includes(txtIn[0].toUpperCase()))
 	{
-		addInputBox(false)
-	}
+		IssueAdd("First character of " + FixStringHTML(txtIn) + " is not an allowed start character " + FixStringHTML(g_tweakableSettings.allowedStartCharacters), "ILLEGAL START CHARACTER")
+	}		
 
-	ShowContentForSelectedTab()
-	setTimeout(ProcessInput, 0)
-}
-
-function addInputBox(saveIt)
-{
-	document.getElementById('inputs').innerHTML += '<textarea id="txtIn' + ++ g_numInputBoxes + '" cols=110 rows=10 onChange="ProcessInput()"></textarea><BR>'
-	
-	if (saveIt)
-	{
-		SettingUpdate('numTextBoxes', g_numInputBoxes)
-	}
-}
-
-function mergeInputBoxes()
-{
-	const contents = GetInputTextRaw()
-
-	document.getElementById('inputs').innerHTML = ''
-	g_numInputBoxes = 0
-	addInputBox(true)
-	
-	document.getElementById('txtIn1').value = contents
-}
-
-function hideShowInputs(checked)
-{
-	document.getElementById('inputsControls').style.display = checked ? '' : 'none'
-	document.getElementById('inputs').style.display = checked ? "block" : "none"
-}
-
-function CheckParagraphForIssues(txtIn)
-{
 	txtIn = txtIn.replace(/[\(\)]/g, '')
 
 	for (var [k,v] of kIllegalSubstrings)
@@ -71,89 +50,71 @@ function CheckParagraphForIssues(txtIn)
 		const changed = txtIn.replace(v, matched => (matched in kIllegalSubstringsExceptions) ? matched : Highlighter(matched))
 		if (changed != txtIn)
 		{
-			IssueAdd("Found " + k + " in '" + changed + "'", k.toUpperCase())
+			IssueAdd("Found " + k + " in " + FixStringHTML(changed), k.toUpperCase())
 		}
 	}
 	
-	const splittyFun = txtIn.split(/[\.,!\?]+"*/)
+	const splittyFun = txtInProcessed.split(/[\.,!\?]+["\)]?/)
 	splittyFun.shift()
 	for (var each of splittyFun)
 	{
 		if (each && ! each.startsWith(' ') && ! each.startsWith("'"))
 		{
-			IssueAdd("Found punctuation not followed by space before '" + each + "' in '" + txtIn + "'")
+			IssueAdd("Found punctuation not followed by space before " + FixStringHTML(each) + " in " + FixStringHTML(txtIn), "PUNCTUATION WITHOUT SPACE")
 		}
 	}
 }
 
-function CheckEachWord(wordList, s, workspace, gatherHere)
+function CheckEachWord(word, s, workspace, gatherHere)
 {
-	for (word of wordList)
+	// TODO: This catches things like 1234 and -10 but not 2.4 or E3
+	if (word.length < g_tweakableSettings.allowNumbersWithThisManyDigits)
 	{
-		if (word)
+		if (parseInt(word) + "" == word)
 		{
-			if (word in workspace.badWords)
-			{
-				IssueAdd("Found disallowed word '" + word + "' in '" + s + "'")
-			}
-			else if (word == "todo")
-			{
-				workspace.foundToDo = true
-				workspace.foundToDoInParagraph = true
-				if (workspace.percentComplete >= 100)
-				{
-					IssueAdd("Chapter complete but contains a TODO in '" + s + "'", "TODO")
-				}
-			}
-			else if (word.length < g_tweakableSettings.allowNumbersWithThisManyDigits)
-			{
-				if (parseInt(word) + "" == word)
-				{
-					IssueAdd("Found number '" + word + "' in '" + s + "'", "NUMBERS")
-				}
-			}
-
-			if (gatherHere)
-			{
-				const name = g_nameLookup[word]
-				if (name)
-				{
-					Tally(gatherHere.mentions, name)
-				}
-			}
+			IssueAdd("Found number " + FixStringHTML(word) + " in " + FixStringHTML(s), "NUMBERS")
 		}
 	}
-}
 
-function GetInputTextRaw()
-{
-	var reply = []
+	const wordLower = word.toLowerCase()
 
-	for (var n = 1; n <= g_numInputBoxes; ++ n)
+	if (wordLower in workspace.badWords)
 	{
-		reply.push(document.getElementById('txtIn' + n).value.trim())
+		IssueAdd("Found disallowed word " + FixStringHTML(word) + " in " + FixStringHTML(s), "DISALLOWED WORD")
+	}
+	else if (wordLower == "todo")
+	{
+		workspace.foundToDo = true
+		workspace.foundToDoInParagraph = true
+		if (workspace.percentComplete >= 100)
+		{
+			IssueAdd("Chapter complete but contains a TODO in " + FixStringHTML(s), "TODO")
+		}
+	}
+
+	const name = g_nameLookup[wordLower]
+
+	if (name)
+	{
+		if (! (word in g_permittedNameCapitalisations))
+		{
+			IssueAdd("Check capitalisation of " + FixStringHTML(word) + " in "  + FixStringHTML(s), "CAPITALS")			
+		}
+		
+		if (gatherHere)
+		{
+			Tally(gatherHere.mentionedInThisChapter, name)
+		}
 	}
 	
-	return reply.join('\n')
-}
-
-function GetInputText()
-{
-	var reply = GetInputTextRaw()
-
-	reply = reply.replace(/[\u201C\u201D]/g, '"')
-	reply = reply.replace(/[\u2018\u2019]/g, "'")
-	reply = reply.replace(/([0-9])\.([0-9])/g, "$1^$2")
-	reply = reply.replace(/Dr\./g, 'Dr^')
-	reply = reply.replace(/Mr\./g, 'Mr^')
-	reply = reply.replace(/Mrs\./g, 'Mrs^')
-	reply = reply.replace(/O\.S\./g, 'O^S^')
-	reply = reply.replace(/i\.e\./g, 'i^e^')
-	reply = reply.replace(/e\.g\./g, 'e^g^')
-	reply = reply.replace(/[<>]/g, '')
-	reply = reply.replace(/:\n([^\n])/g, ': $1')
+	const lastApostrophe = word.lastIndexOf("'")
+	if (lastApostrophe > 0)
+	{
+		CheckEachWord(word.substr(0, lastApostrophe), s, workspace, gatherHere)
+		return false
+	}
 	
-	return reply.split(/[\n\t]+/)
+	return ["mr.", "dr.", "mrs."].includes(wordLower)
 }
 
 function ShouldIgnorePara(txtInProcessed)
@@ -183,8 +144,43 @@ function CheckStartsWithCapital(w, reason, s)
 
 	if (letter == letter.toLowerCase())
 	{
-		IssueAdd("Expected '" + w + "' to start with a capital letter " + (reason ?? "because it's capitalised in settings in") + " '" + s + "'", "CAPITALS")
+		IssueAdd("Expected " + FixStringHTML(w) + " to start with a capital letter " + (reason ?? "because it's capitalised in settings in") + " " + FixStringHTML(s), "CAPITALS")
 	}
+}
+
+function HandleNewHeading(workspace, txtInRaw)
+{
+	if (g_tweakableSettings.headingIdentifier)
+	{
+		if (txtInRaw.length <= g_tweakableSettings.headingMaxCharacters)
+		{
+			if (txtInRaw.includes(g_tweakableSettings.headingIdentifier))
+			{
+				DoEndOfChapterChecks(workspace)
+				MentionsStoreHeading(txtInRaw)
+
+				const justChapterName = txtInRaw.split(/ *[\[\(]/)[0]
+
+				workspace.percentComplete = parseInt(txtInRaw.split('[')[1] ?? "100")
+				workspace.lastHeading = txtInRaw
+				workspace.stillLookingForChapterNameInChapter = justChapterName.toLowerCase()
+				MetaDataSet("CHAPTER", justChapterName)
+
+				delete workspace.foundTextBetweenHeadings
+				return true
+			}
+		}
+	}
+	
+	return false
+}
+
+function EscapeRegExSpecialChars(txtIn)
+{
+	const txtOut = txtIn.replace(/[.*+?^${}()|[\]\\\-]/g, "\\$&")
+//	console.log("BEFORE: " + txtIn)
+//	console.log("AFTER:  " + txtOut)
+	return txtOut
 }
 
 function ProcessInput()
@@ -194,15 +190,15 @@ function ProcessInput()
 	
 	DoEvent("clear")
 
-	const kSpecificOnlyAHeadingIfIncludes = g_tweakableSettings.headingIdentifier
-
 	var gatherHeadingStatsHere = null
 	
 	var workspace =
 	{
 		stillLookingForChapterNameInChapter:null,
 		lastHeading:null,
-		badWords:{}
+		badWords:{},
+		replaceRules:[],
+		regexForRemovingValidChars:new RegExp('[' + EscapeRegExSpecialChars(g_tweakableSettings.allowedCharacters) + ']', 'g')
 	}
 	
 	for (var w of g_tweakableSettings.badWords.split(" "))
@@ -210,43 +206,74 @@ function ProcessInput()
 		workspace.badWords[w] = true
 	}
 
+	for (var ruleText of g_tweakableSettings.replace)
+	{
+		const bits = ruleText.split('/', 3)
+		if (bits[0])
+		{
+			if (bits.length >= 2)
+			{
+				try
+				{
+					workspace.replaceRules.push({regex:new RegExp(bits[0], 'g' + (bits[2] ?? '')), replaceWith:bits[1] ?? ''})
+				}
+				catch
+				{
+					IssueAdd("Replace rule " + FixStringHTML(ruleText) + " is invalid")
+				}					
+			}
+			else
+			{
+				IssueAdd("Replace rule " + FixStringHTML(ruleText) + " doesn't specify what to turn " + FixStringHTML(bits[0]) + " into")
+			}
+		}
+	}
+
 	for (txtInRaw of GetInputText())
 	{
 		try
 		{
-			txtInRaw.startsWith(" ") && IssueAdd("Found leading space in '" + txtInRaw + "'", "LEADING SPACE")
-			txtInRaw.endsWith(" ") && IssueAdd("Found trailing space in '" + txtInRaw + "'", "TRAILING SPACE")
+			txtInRaw.startsWith(" ") && IssueAdd("Found leading space in " + FixStringHTML(txtInRaw), "LEADING SPACE")
+			txtInRaw.endsWith(" ") && IssueAdd("Found trailing space in " + FixStringHTML(txtInRaw), "TRAILING SPACE")
 
-			const txtInProcessed = txtInRaw.replace(/[\.\!\?;=]+ */g, '|')./*replace(/\u2026/g, '|').*/replace(/:$/, '').replace(/\|$/, '').replace(/^\|/, '').replace(/\^/g, '.')
-
-			if (ShouldIgnorePara(txtInProcessed))
+			if (! ShouldIgnorePara(txtInRaw) && ! HandleNewHeading(workspace, txtInRaw))
 			{
-				continue
-			}
+				var txtInProcessed = txtInRaw
+				
+				for (var rule of workspace.replaceRules)
+				{
+//					const prev = txtInProcessed
 
-			const isAHeading = txtInProcessed.length <= g_tweakableSettings.headingMaxCharacters && (kSpecificOnlyAHeadingIfIncludes ? txtInProcessed.includes(kSpecificOnlyAHeadingIfIncludes) : (txtInProcessed == txtInRaw))
+					txtInProcessed = txtInProcessed.replace(rule.regex, rule.replaceWith)
 
-			if (!isAHeading)
-			{
+/*
+					if (txtInProcessed != prev)
+					{
+						console.log("Using custom replace rule '" + rule.regex + "' we turned '" + prev + "' into '" + txtInProcessed + "'")
+					}
+*/
+				}
+
 				workspace.foundTextBetweenHeadings = true
 
 				MentionsStoreParagraph(txtInRaw)
-				CheckParagraphForIssues(txtInRaw)
+				CheckParagraphForIssues(txtInRaw, txtInProcessed)
 
 				const talkyNonTalky = txtInProcessed.split('"')
 
 				if ((talkyNonTalky.length & 1) == 0)
 				{
-					IssueAdd("Found odd number of quotation marks in '" + txtInRaw + "'", "UNFINISHED QUOTE")
+					IssueAdd("Found odd number of quotation marks in " + FixStringHTML(txtInRaw), "UNFINISHED QUOTE")
 				}
 				
 				var isSpeech = true
 				var shouldStartWithCapital = "at the start of"
-				var finalCharacter = ""
-				var endedWithSpeech = false
+				var processedSomething = false
 
-				for (var each of talkyNonTalky)
+				for (var eachIn of talkyNonTalky)
 				{
+					const each = eachIn.replace(/[\(\)]/g, '').replace(/[\.\!\?;:=]+ */g, '|').replace(/\|$/, '').replace(/\^/g, '.')
+
 					var txtIn = each.trim()
 					isSpeech = !isSpeech
 
@@ -254,11 +281,11 @@ function ProcessInput()
 					{
 						if (! txtIn)
 						{
-							IssueAdd("Found empty speech in '" + txtInRaw + "'")
+							IssueAdd("Found empty speech in " + FixStringHTML(txtInRaw), "EMPTY SPEECH")
 						}
 						else if (each != txtIn)
 						{
-							IssueAdd("Found white space at beginning and/or end of speech: '" + each + "'")
+							IssueAdd("Found white space at beginning and/or end of speech: " + FixStringHTML(each), "SPACE IN SPEECH")
 						}
 					}
 
@@ -267,8 +294,16 @@ function ProcessInput()
 						continue
 					}
 
-					const sentences = OnlyKeepValid(txtIn.split("|"))
+					// If we're in SCRIPT mode then allow paragraphs like "(whispered)"
+					if (! g_disabledWarnings.SCRIPT && !isSpeech && eachIn[0] == '(')
+					{
+						shouldStartWithCapital = false
+					}
+
+					const sentences = txtIn.split("|")
 					const numSentences = sentences.length
+					var expectNextBitToDoSomething = isSpeech
+					var lastSentenceThatDidSomething = "at start of"
 
 					if (numSentences)
 					{
@@ -291,102 +326,108 @@ function ProcessInput()
 
 						if (workspace.lastHeading)
 						{
-							gatherHeadingStatsHere = {txt:workspace.lastHeading, startsAt:g_sentences.length, numPara:0, numSentences:0, numWords:0, mentions:{}}
+							gatherHeadingStatsHere = {txt:workspace.lastHeading, startsAt:g_sentences.length, numPara:0, numSentences:0, numWords:0, mentionedInThisChapter:{}}
 							g_headingToSentence.push(gatherHeadingStatsHere)
-							g_sentences.push({heading:true, text:workspace.lastHeading, listOfWords:[]})
+							g_sentences.push({heading:true, text:workspace.lastHeading/*, listOfWords:[]*/})
 							workspace.lastHeading = null
 						}
 						
-						var numWordsInPara = 0
-						var prefixMe = '^'
-
 						for (var s of sentences)
 						{
+							var sentenceDidSomething = false
+							const oldNumIssues = IssueGetTotal()
+
 							// Allow paragraphs to start with things like "... and a hamster," he finished.
-							if (shouldStartWithCapital && isSpeech && s[0] == "\u2026")
+							if (shouldStartWithCapital && isSpeech && s[0] == kCharacterElipsis)
 							{
 								shouldStartWithCapital = false
+							}
+
+							const remains = s.replace(workspace.regexForRemovingValidChars, '')
+							if (remains != '')
+							{
+								IssueAdd("Characters " + FixStringHTML(remains) + " found in " + FixStringHTML(s), "ILLEGAL CHARACTERS")
 							}
 							
-							// If we're in SCRIPT mode then allow paragraphs like "(whispered)"
-							if (! g_disabledWarnings.SCRIPT && !isSpeech && s[0] == '(')
-							{
-								shouldStartWithCapital = false
-							}
-
 							s = s.replace(/^'+/, "").replace(/'+$/, "")
-							const listOfWords = OnlyKeepValid(s.split(/[^\-%#'a-zA-Z0-9\&]+/))
+							const myListOfWords = OnlyKeepValid(s.split(/[^\-\.%#'a-zA-Z0-9\&]+/))
 
-							if (listOfWords.length)
+							if (myListOfWords.length)
 							{
-								CheckIfLongest("sentence", listOfWords.length, s)
-								CheckIfLongest("sentenceChr", listOfWords.join(' ').length, s)
+								CheckIfLongest("sentence", myListOfWords.length, s)
+								CheckIfLongest("sentenceChr", myListOfWords.join(' ').length, s)
 
-								numWordsInPara += listOfWords.length
-								MetaDataAddWordCount(listOfWords.length, isSpeech)
+								MetaDataAddWordCount(myListOfWords.length, isSpeech)
 								
 								if (gatherHeadingStatsHere)
 								{
-									gatherHeadingStatsHere.numWords += listOfWords.length
+									gatherHeadingStatsHere.numWords += myListOfWords.length
 								}
 
-								var newListOfWords = []
-								for (var wIn of listOfWords)
+//								var newListOfWords = []
+
+								for (var word of myListOfWords)
 								{
-									var w = wIn.replace(/^'+/, "").replace(/'+$/, "")
-									if (w)
+									word = word.replace(/^[\-']+/, "").replace(/[\-']+$/, "")
+									
+									if (word)
 									{
 										if (shouldStartWithCapital) // TODO: or if a name
 										{
-											CheckStartsWithCapital(w, shouldStartWithCapital, s)
+											CheckStartsWithCapital(word, shouldStartWithCapital, s)
 										}
-
-										w = w.toLowerCase()
-
-										shouldStartWithCapital = ["mr", "dr", "mrs"].includes(w) && ("following " + w + " in")
 										
-										newListOfWords.push(w)
-										CheckEachWord(w.split(/[-']/), s, workspace, gatherHeadingStatsHere)
+//										newListOfWords.push(wordLower)
+										shouldStartWithCapital = CheckEachWord(word, s, workspace, gatherHeadingStatsHere) && ("following " + word + " in")
 									}
 									else
 									{
-										IssueAdd("Empty word in '" + s + "'")
+										IssueAdd("Empty word in " + FixStringHTML(s), "EMPTY WORD")
 									}
 								}
 								
-//								console.log("[" + s + "] => [" + listOfWords + "] => [" + newListOfWords + "]")
-								g_sentences.push({text:prefixMe + s, isSpeech:isSpeech, listOfWords:newListOfWords})
-								prefixMe = ''
+								var newElement = {text:s, isSpeech:isSpeech/*, listOfWords:newListOfWords*/}
+								
+								if (IssueGetTotal() != oldNumIssues)
+								{
+									newElement.hasIssues = true
+								}
+
+								g_sentences.push(newElement)
+								sentenceDidSomething = true
 							}
+
+							if (sentenceDidSomething)
+							{
+								processedSomething = true
+								lastSentenceThatDidSomething = "after '" + s + "' in"
+							}
+							else
+							{
+								if (expectNextBitToDoSomething)
+								{
+									IssueAdd("Expected next chunk of text to be a valid sentence " + lastSentenceThatDidSomething + " '" + txtInProcessed + "'", "EMPTY SENTENCE")
+								}
+							}
+							expectNextBitToDoSomething = true
 						}
 
 						CheckIfLongest("paraSentences", numSentences, sentences)
-						CheckIfLongest("paraWords", numWordsInPara, sentences)
 						CheckIfLongest("paraChr", txtIn.length, sentences)
 					}
 				}
 				
 				if (g_disabledWarnings.SCRIPT && !workspace.foundToDoInParagraph)
 				{
-					CheckFinalCharacter(txtInRaw)
+					CheckFinalCharacter(txtInProcessed)
+				}
+				
+				if (! processedSomething)
+				{
+					IssueAdd("Paragraph '" + txtInRaw + "' contained no sentences", "EMPTY PARAGRAPH")
 				}
 				
 				delete workspace.foundToDoInParagraph
-			}
-			else
-			{
-				DoEndOfChapterChecks(workspace)
-				IssueSetHeading(txtInRaw)
-				MentionsStoreHeading(txtInRaw)
-
-				const justChapterName = txtInRaw.split(/ *[\[\(]/)[0]
-
-				workspace.percentComplete = parseInt(txtInRaw.split('[')[1] ?? "100")
-				workspace.lastHeading = txtInRaw
-//				console.log("Chapter " + workspace.lastHeading + " says it's " + workspace.percentComplete + "% complete")
-				workspace.stillLookingForChapterNameInChapter = justChapterName.toLowerCase()
-				MetaDataSet("CHAPTER", justChapterName)
-				delete workspace.foundTextBetweenHeadings
 			}
 		}
 		catch(error)
@@ -403,7 +444,7 @@ function ProcessInput()
 	
 	if (g_selectedTabName != 'settings')
 	{
-		ShowContentForSelectedTab()
+		CallTheseFunctions(ShowContentForSelectedTab)
 	}
 }
 
@@ -432,7 +473,8 @@ function CheckFinalCharacter(txtIn)
 	const checkHere = endsWithSpeech ? kValidFinalCharactersSpeech : kValidFinalCharactersNarrative
 	if (! (finalCharacter in checkHere))
 	{
-		IssueAdd("Final important character of '" + txtFull + "' is '" + finalCharacter + "' (valid=" + Object.keys(checkHere).join("") + ")", "INVALID FINAL CHARACTER")
+		const issueType = endsWithSpeech ? "INVALID FINAL SPEECH CHARACTER" : "INVALID FINAL NARRATIVE CHARACTER"
+		IssueAdd("Final important character of " + FixStringHTML(txtFull) + " is " + FixStringHTML(finalCharacter) + " (valid characters are " + FixStringHTML(Object.keys(checkHere).join(" ")) + ")", issueType)
 	}
 }
 

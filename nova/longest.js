@@ -1,6 +1,6 @@
 //==============================================
 // Part of NOVA - NOVel Assistant
-// Tim Furnish, 2023-2024
+// (c) Tim Furnish, 2023-2024
 //==============================================
 
 var g_longest = {wordCount:{}, wordScore:{}, paraSentences:{txt:"Paragraph with most sentences"}, paraWords:{txt:"Paragraph with most words"}, paraChr:{txt:"Paragraph with most characters"}, sentence:{txt:"Sentence with most words"}, sentenceChr:{txt:"Sentence with most characters"}}
@@ -32,7 +32,7 @@ g_tabFunctions.longest = function(reply, thenCall)
 		if (longData.what && longData.txt)
 		{
 			reply.push(before + "<B>" + longData.txt + ":</B><BR><BR>")
-			reply.push((Array.isArray(longData.what) ? longData.what.join('<BR>') : longData.what).replace('^', ''))
+			reply.push(Array.isArray(longData.what) ? longData.what.join('<BR>') : longData.what)
 			before = "<BR><BR>"
 		}
 	}

@@ -1,6 +1,6 @@
 //==============================================
 // Part of NOVA - NOVel Assistant
-// Tim Furnish, 2023-2024
+// (c) Tim Furnish, 2023-2024
 //==============================================
 
 const kChapterColumns =
@@ -12,7 +12,7 @@ const kChapterColumns =
 //	Paragraphs:info=>info.numPara,
 //	["Sentences/paragraph"]:info=>(info.numSentences/info.numPara),
 	["Words when done"]:info=>info.numWords * 100 / parseInt(info.txt.split('[')[1]),
-	Mentions:info=>Object.keys(info.mentions).join(' ')
+	Mentions:info=>Object.keys(info.mentionedInThisChapter).join(' ')
 }
 
 const kChapterValueDecorator =
@@ -84,6 +84,7 @@ g_tabFunctions.chapters = function(reply, thenCall)
 	reply.push("</TABLE>")
 }
 
+/*
 g_tabFunctions.contents = function(reply, thenCall)
 {
 	for (var headingInfo of g_headingToSentence)
@@ -91,6 +92,7 @@ g_tabFunctions.contents = function(reply, thenCall)
 		reply.push("<H3>" + headingInfo.txt + "</H3>")
 	}
 }
+*/
 
 g_tabFunctions.entities = function(reply, thenCall)
 {
@@ -100,9 +102,9 @@ g_tabFunctions.entities = function(reply, thenCall)
 
 	for (var headingInfo of g_headingToSentence)
 	{
-		reply.push('<TD WIDTH=25 VALIGN=middle><DIV STYLE="transform:rotate(180deg); writing-mode:vertical-rl">' + headingInfo.txt.split(' [')[0]) + "</DIV>"
+		reply.push('<TD WIDTH=25 VALIGN=bottom><DIV STYLE="transform:rotate(180deg); writing-mode:vertical-rl"><NOBR>' + headingInfo.txt.split(' [')[0]) + "</NOBR></DIV>"
 		
-		for (var m of Object.keys(headingInfo.mentions))
+		for (var m of Object.keys(headingInfo.mentionedInThisChapter))
 		{
 			allMentions[m] = headingInfo.txt
 		}
@@ -120,9 +122,9 @@ g_tabFunctions.entities = function(reply, thenCall)
 
 		for (var headingInfo of g_headingToSentence)
 		{
-			if (m in headingInfo.mentions)
+			if (m in headingInfo.mentionedInThisChapter)
 			{
-				var num = headingInfo.mentions[m]
+				var num = headingInfo.mentionedInThisChapter[m]
 				totaliser += num
 				const last = (headingInfo.txt == lastFoundInChapter)
 				if (empty)

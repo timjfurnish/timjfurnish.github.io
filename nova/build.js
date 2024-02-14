@@ -1,24 +1,38 @@
 //==============================================
 // Part of NOVA - NOVel Assistant
-// Tim Furnish, 2023-2024
+// (c) Tim Furnish, 2023-2024
 //==============================================
 
-function RenderBarFor(val, scale, dp, suffix)
-{
-	const num = val * scale
-	const greenness = num * 2
-	const col = "rgb(" + Math.floor(300 - greenness) + ", " + Math.floor(greenness) + ", " + Math.floor(255 - greenness) + ")"
-	return '<DIV STYLE="width:' + Math.floor(num) + 'px;height:16px;background:' + col + '"><B><SMALL>' + ((dp === undefined) ? val : val.toFixed(dp)) + (suffix ?? '') + '</S<ALL></B></DIV>'
-}
+//=======================
+// ICONS
+//=======================
+
+const kIconSearch = "&#128269;"
+const kIconPaste = "&#128203;"
+const kIconRevert = "&hookleftarrow;"
+
+const kCharacterElipsis = "\u2026"
+const kCharacterEmDash = "\u2014"
+
+//=======================
+// TABLES
+//=======================
 
 function TableOpen(reply)
 {
 	reply.push("<TABLE CELLPADDING=2 CELLSPACING=0 BORDER=1><TR>")
 }
 
-function TableNewRow(reply)
+function TableNewRow(reply, extra)
 {
-	reply.push("</TR><TR>")
+	if (extra)
+	{
+		reply.push("</TR><TR " + extra + ">")
+	}
+	else
+	{
+		reply.push("</TR><TR>")
+	}
 }
 
 function TableAddHeading(reply, h)
@@ -29,6 +43,23 @@ function TableAddHeading(reply, h)
 function TableClose(reply)
 {
 	reply.push("</TABLE>")	
+}
+
+//=======================
+// HTML BITS
+//=======================
+
+function CreateClickableText(theText, callThis)
+{
+	return '<B id=clicky onClick="' + callThis + '">' + theText + '</B>'
+}
+
+function RenderBarFor(val, scale, dp, suffix)
+{
+	const num = val * scale
+	const greenness = num * 2
+	const col = "rgb(" + Math.floor(300 - greenness) + ", " + Math.floor(greenness) + ", " + Math.floor(255 - greenness) + ")"
+	return '<DIV STYLE="width:' + Math.floor(num) + 'px;height:16px;background:' + col + '"><B><SMALL>' + ((dp === undefined) ? val : val.toFixed(dp)) + (suffix ?? '') + '</S<ALL></B></DIV>'
 }
 
 //=======================
@@ -50,7 +81,7 @@ function UpdateOptions()
 			if (elem)
 			{
 				const myType = GetDataType(myTabOptions[key])
-				const oldVal = myTabOptions[key]
+				// const oldVal = myTabOptions[key]
 
 				if (myType == "boolean")
 				{
@@ -61,10 +92,12 @@ function UpdateOptions()
 					myTabOptions[key] = elem.value
 				}
 				
+				/*
 				if (oldVal != myTabOptions[key])
 				{
 					console.log("Updated " + GetDataType(elem) + " '" + g_selectedTabName + "." + key + "' to " + myType + " '" + myTabOptions[key] + "'")
 				}
+				*/
 			}
 		}
 	}
@@ -79,7 +112,7 @@ function SetOptions()
 			var elem = document.getElementById(g_selectedTabName + "." + key)
 			if (elem)
 			{
-				console.log("Setting " + GetDataType(elem) + " '" + g_selectedTabName + "." + key + "' to " + GetDataType(val) + " '" + val + "'")
+//				console.log("Setting " + GetDataType(elem) + " '" + g_selectedTabName + "." + key + "' to " + GetDataType(val) + " '" + val + "'")
 
 				if (typeof val == "boolean")
 				{

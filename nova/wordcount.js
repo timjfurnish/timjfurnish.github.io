@@ -1,8 +1,9 @@
 //==============================================
 // Part of NOVA - NOVel Assistant
-// Tim Furnish, 2023-2024
+// (c) Tim Furnish, 2023-2024
 //==============================================
 
+/* TODO: word count 2.0
 const g_wordSortModes = {Alphabetical:"Alphabetical", WordLength:"Word length", Count:"Count", Score:"Score"}
 const g_whatToCount = {All:"All words", Adverbs:"Adverbs", First:"First word in each sentence"}
 const g_displayUnique = {All:"Everything", Repeated:"Repeated words only", Unique:"Unique words only"}
@@ -98,4 +99,4 @@ function RedrawWordTable()
 
 	document.getElementById("wordTableHere").innerHTML = reply.join("")
 }
-
+*/

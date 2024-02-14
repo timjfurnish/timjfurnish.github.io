@@ -1,16 +1,19 @@
 //==============================================
 // Part of NOVA - NOVel Assistant
-// Tim Furnish, 2023-2024
+// (c) Tim Furnish, 2023-2024
 //==============================================
 
-var g_tweakableSettings =
+const kTweakableDefaults =
 {
-	language:"",
+	language:"EN",
 	voiceDefault:"",
 	voiceSpeech:"",
 	voiceHeading:"",
 	badWords:"tge tgey",
+	allowedStartCharacters:'ABCDEFGHIJKLMNOPQRSTUVWXYZ"',
+	allowedCharacters:'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ()"\'?.,!',
 	skip:["Contents"],
+	replace:['Dr\\./Dr^', 'Mr\\./Mr^', 'Mrs\\./Mrs^'],
 	hyphenCheckPairs:["sat-nav", "set-up", "under-cover", "self-reliance reliant control esteem respect awareness aware", "short-term", "left right-hand", "sand-timer", "back-stage", "stage-left right", "dance-floor", "slow-motion", "some-thing where how what body one", "heart-break breaking breaks breakingly broken", "car-park parks", "brain-wave waves", "mind lip-reading reader readers read reads", "twenty thirty forty fifty sixty seventy eighty ninety-one two three four five six seven eight nine", "one two three four five six seven eight nine ten-hundred thousand million billion"],
 	names:[],
 	headingIdentifier:"",
@@ -19,13 +22,26 @@ var g_tweakableSettings =
 	allowNumbersWithThisManyDigits:4
 }
 
+var g_tweakableSettings = {}
+
+function CopyToSetting([key, val])
+{
+	g_tweakableSettings[key] = Array.isArray(val) ? [...val] : val
+//	console.log("Set " + key + " to " + val)
+}
+
+Object.entries(kTweakableDefaults).forEach(CopyToSetting)
+
 const kSettingNames =
 {
 	language:"Language|language",
-	voiceDefault:"Voice (default)|voice",
+	voiceDefault:"Voice (narrative)|voice",
 	voiceSpeech:"Voice (speech)|voice",
 	voiceHeading:"Voice (heading)|voice",
 	badWords:"Bad words|size=110",
+	replace:"Replace (regex)|cols=60",
+	allowedStartCharacters:"Valid characters for start of paragraph|size=110",
+	allowedCharacters:"Valid characters|size=110",
 	skip:"Skip lines starting with|cols=60",
 	headingIdentifier:"Line is a heading if it includes",
 	headingMaxCharacters:"Max characters in a heading",
@@ -88,14 +104,9 @@ function SettingUpdate(name, newValue, isLoading)
 		{
 			g_tweakableSettings[name] = newValue
 
-			if (isLoading)
-			{
-				console.log("Loaded '" + name + "' setting: '" + newValue + "'")
-			}
-			else
+			if (! isLoading)
 			{
 				window.localStorage.setItem("nova_" + name, newValue)
-				console.log("Saving '" + name + "' setting: '" + newValue + "'")
 				FillInSetting(name)
 			}
 		}
@@ -115,7 +126,7 @@ function SettingsGetNamesArrayArray()
 		var inner = []
 		for (var name of n.split(' '))
 		{
-			inner.push(name.toLowerCase())
+			inner.push(name)
 		}
 		reply.push(inner)
 	}
@@ -175,18 +186,27 @@ function UserChangedSetting(name)
 	
 	if (name == "language")
 	{
-		ReadVoices()
-		ShowContentForSelectedTab()
+		CallTheseFunctions(ReadVoices, ShowContentForSelectedTab)
 	}
 	else if (! kHasNoEffect.includes(name))
 	{
-		ProcessInput()
+		CallTheseFunctions(ProcessInput)
 	}
 }
 
 function SettingsAdd(reply, txt, formBits)
 {
 	reply.push("<tr><td width=10 valign=top><nobr>" + txt + "&nbsp;&nbsp;&nbsp;</nobr></td><td>" + formBits + "</td></tr>")
+}
+
+function SettingAskRevert(whichOne)
+{
+	if (confirm("Do you really want to revert '" + kSettingNames[whichOne].split('|', 1)[0] + "' to its default value?"))
+	{
+		CopyToSetting([whichOne, kTweakableDefaults[whichOne]])
+		FillInSetting(whichOne)
+		UserChangedSetting(whichOne)
+	}
 }
 
 g_tabFunctions.settings = function(reply, thenCall)
@@ -197,6 +217,7 @@ g_tabFunctions.settings = function(reply, thenCall)
 		var [displayName, extra] = display.split('|')
 		var theType = (Array.isArray(g_tweakableSettings[k])) ? 'textarea': 'input type=text'
 		var theMiddle = ""
+		var revert = ""
 
 		if (extra == 'voice')
 		{
@@ -216,8 +237,12 @@ g_tabFunctions.settings = function(reply, thenCall)
 			}
 			extra = ''
 		}
+		else
+		{
+			revert = "&nbsp;" + CreateClickableText(kIconRevert, "SettingAskRevert('" + k + "')")
+		}
 		
-		SettingsAdd(reply, displayName, '<' + theType + ' onChange="UserChangedSetting(\'' + k + '\')" ' + (extra ? extra + ' ' : '') + 'id="setting_' + k + '">' + theMiddle + '</' + theType.split(' ')[0] + '>')
+		SettingsAdd(reply, displayName, '<' + theType + ' onChange="UserChangedSetting(\'' + k + '\')" ' + (extra ? extra + ' ' : '') + 'id="setting_' + k + '">' + theMiddle + '</' + theType.split(' ')[0] + '>' + revert)
 	}
 	
 	var issueChecks = []

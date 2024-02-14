@@ -1,0 +1,20 @@
+#issueType
+{
+	border:1px solid rgba(0, 0, 0, 0.2);
+	padding:1px 2px 1px 2px;
+	font-size:70%;
+	font-family:Arial, Helvetica, sans-serif;
+	background-color:rgba(0, 0, 0, 0.05);
+	border-radius:4px;
+}
+#clicky
+{
+	cursor:pointer;
+}
+#issueText
+{
+	font-size:85%;
+	padding:1px 3px 1px 3px;
+	font-family:Arial, Helvetica, sans-serif;
+	background-color:rgba(255, 255, 255, 1);
+}

@@ -1,14 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
  <head>
+  <meta charset="utf-8">
   <title>NOVA</title>
+  <link rel="stylesheet" href="nova.css" type="text/css">
   <script src="build.js"></script>
   <script src="utils.js"></script>
   <script src="tabs.js"></script>
   <script src="specific.js"></script>
   <script src="reader.js"></script>
   <script src="longest.js"></script>
-  <!--script src="phrases.js"--><!--/script-->
+  <script src="phrases.js"></script>
+  <script src="inputs.js"></script>
   <script src="analysis.js"></script>
   <script src="wordcount.js"></script>
   <!--script src="visualise.js"--><!--/script-->
@@ -23,6 +26,8 @@
   <span id=inputsControls>
    <button onClick="addInputBox(true)">Add input text box</button>
    <button onClick="mergeInputBoxes()">Merge input text boxes</button>
+   <button onClick="CallTheseFunctions(ClearInputBoxes, ProcessInput)">Clear</button>
+   <button onClick="pasteToInputBox()">Paste</button>
   </span>
   <p id=inputs></p>
   <P id=infoPanel></P>

@@ -1,6 +1,6 @@
 //==============================================
 // Part of NOVA - NOVel Assistant
-// Tim Furnish, 2023-2024
+// (c) Tim Furnish, 2023-2024
 //==============================================
 
 var g_metaDataCurrent
@@ -24,6 +24,8 @@ function MetaDataEndProcess()
 			info[key] = val
 		}
 		
+//		console.log(g_metaDataTally.sentences + " sentences in " + Object.entries(info).join (" and "))
+		
 		var storeThis = {info:info}
 	
 		for (var key of Object.keys(g_metaDataTally))
@@ -45,11 +47,11 @@ function MetaDataSet(key, val)
 	// TODO: custom callback
 	if (key == 'LOC')
 	{
-		const newBits = val.split('|')
+		const newBits = val.split('.')
 
 		if (key in g_metaDataCurrent)
 		{
-			const oldBits = g_metaDataCurrent[key].split('|')
+			const oldBits = g_metaDataCurrent[key].split('.')
 			if (oldBits[0] != newBits[0] && oldBits != 'sparks' && newBits != 'sparks' && oldBits != 'movie' && newBits != 'movie')
 			{
 				IssueAdd("Moving straight from " + oldBits + " to " + newBits)
@@ -90,9 +92,12 @@ function MetaDataAddWordCount(words, isSpeech)
 
 function MetaDataDrawTable()
 {
-	var consolidate = document.getElementById("metadata.consolidate").checked ? {} : undefined
+	var sort = document.getElementById("metadata.sort").value
+	var consolidate = sort ? {} : undefined
 	var selectedColumns = []
 	var reply = []
+	var seenThings = {}
+
 	TableOpen(reply)
 
 	for (var colName of Object.keys(g_metaDataAvailableColumns))
@@ -101,12 +106,14 @@ function MetaDataDrawTable()
 		{
 			TableAddHeading(reply, colName)
 			selectedColumns.push(colName)
+			seenThings[colName] = {}
 		}
 	}
 	
 	var lastDeets = ""
 	var lastTally = MakeClearTally()
 	var dataToDisplay = []
+	var lastMetaData = ""
 
 	function AddLastDeets()
 	{
@@ -119,10 +126,12 @@ function MetaDataDrawTable()
 					consolidate[lastDeets][name] += val
 				}
 				lastTally = consolidate[lastDeets]
+//				console.log("Reusing entry for " + lastDeets)
 			}
 			else
-			{				
-				var newData = {deets:lastDeets, tally:lastTally}
+			{
+//				console.log("Creating entry for " + Object.entries(lastMetaData).join(" ") + " i.e. " + lastDeets)
+				var newData = {deets:lastDeets, tally:lastTally, metaData:lastMetaData}
 
 				dataToDisplay.push(newData)
 				
@@ -134,19 +143,29 @@ function MetaDataDrawTable()
 		}
 	}
 
+//	console.log("MetaDataDrawTable - g_metaDataInOrder has " + g_metaDataInOrder.length + " elements")
+
 	for (var elem of g_metaDataInOrder)
 	{
 		var deets = ''
 		for (var colName of selectedColumns)
 		{
 			deets += "<TD>" + elem.info[colName] + "</TD>"
+			
+			seenThings[colName][elem.info[colName]] = true
 		}
 		if (deets != lastDeets)
 		{
 			AddLastDeets()
 
 			lastTally = MakeClearTally()
-			lastDeets = deets
+			lastDeets = deets			
+			lastMetaData = {}
+			
+			for (var colName of selectedColumns)
+			{
+				lastMetaData[colName] = elem.info[colName]
+			}
 
 			for (var name of Object.keys(lastTally))
 			{
@@ -164,8 +183,31 @@ function MetaDataDrawTable()
 
 	AddLastDeets()
 
+	// Now work out which of the visible metadata types has the fewest entries
+//	console.log(seenThings)
+
+	var colourBasedOn
+	var lowestSize
+
+	for (var [key,val] of Object.entries(seenThings))
+	{
+		var total = Object.keys(val).length
+		if (!colourBasedOn || total < lowestSize)
+		{
+			lowestSize = total
+			colourBasedOn = key
+		}
+	}
+
+	const colourLookUp = colourBasedOn ? MakeColourLookUpTable(Object.keys(seenThings[colourBasedOn])) : null
+
 	var maximums = MakeClearTally()
 	maximums["%speech"] = 0
+	
+	if (sort in maximums)
+	{
+		dataToDisplay.sort((a,b) => b.tally[sort] - a.tally[sort])
+	}
 
 	for (var data of dataToDisplay)
 	{
@@ -194,7 +236,14 @@ function MetaDataDrawTable()
 
 	for (var data of dataToDisplay)
 	{
-		TableNewRow(reply)
+		if (colourBasedOn)
+		{
+			TableNewRow(reply, 'BGCOLOR="' + colourLookUp[data.metaData[colourBasedOn]] + '"')
+		}
+		else
+		{
+			TableNewRow(reply)
+		}
 		reply.push(data.deets)
 		for (var [name, value] of Object.entries(data.tally))
 		{
@@ -207,6 +256,9 @@ function MetaDataDrawTable()
 				reply.push("<TD>" + RenderBarFor(value, 200.0 / maximums[name]) + "</TD>")
 			}
 		}
+
+		// DEBUG
+//		reply.push("<TD>" + Object.entries(data.metaData).join(" ") + "</TD>")
 	}
 	
 	reply.push("</TABLE>")
@@ -223,7 +275,15 @@ g_tabFunctions.metadata = function(reply, thenCall)
 		OptionsMakeCheckbox(options, "MetaDataDrawTable()", colName)
 	}
 
-	OptionsMakeCheckbox(options, "MetaDataDrawTable()", "consolidate", "Consolidate totals")
+	var sortData = {"":"Do not consolidate", none:"Chronological"}
+	var emptyTally = MakeClearTally()
+
+	for (var name of Object.keys(emptyTally))
+	{
+		sortData[name] = name.charAt(0).toUpperCase() + name.slice(1)
+	}
+	
+	OptionsMakeSelect(options, "MetaDataDrawTable()", "Sort", "sort", sortData, "none")
 
 	reply.push(OptionsConcat(options))
 	reply.push("<P ID=metaDataOutput></P>")

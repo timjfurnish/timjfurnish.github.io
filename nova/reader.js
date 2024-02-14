@@ -1,6 +1,6 @@
 //==============================================
 // Part of NOVA - NOVel Assistant
-// Tim Furnish, 2023-2024
+// (c) Tim Furnish, 2023-2024
 //==============================================
 
 var g_readSentenceNum = 0
@@ -12,7 +12,7 @@ function Read()
 	const thingToSay = g_sentences[g_readSentenceNum]
 	if (thingToSay)
 	{
-		var speaky = new SpeechSynthesisUtterance(thingToSay.text.replace('^', ''))
+		var speaky = new SpeechSynthesisUtterance(thingToSay.text)
 		speaky.onend = OnDoneSpeaking
 		speaky.voice = g_voiceLookUp[thingToSay.isSpeech ? g_tweakableSettings.voiceSpeech : thingToSay.heading ? g_tweakableSettings.voiceHeading : g_tweakableSettings.voiceDefault]
 		speechSynthesis.speak(speaky)
@@ -74,7 +74,7 @@ function RedrawNextThingToRead()
 			const sentence = g_sentences[i]
 			if (sentence)
 			{
-				var text = sentence.text.replace('^', '')
+				var text = sentence.text
 				if (i == g_readSentenceNum)
 				{
 					text = '<B>' + text + '</B>'
@@ -91,6 +91,11 @@ function RedrawNextThingToRead()
 				else if (sentence.heading)
 				{
 					text = '<BIG><U>' + text + '</U></BIG>'
+				}
+				
+				if (sentence.hasIssues)
+				{
+					text = '<FONT COLOR=red>' + text + '</FONT>'
 				}
 				
 				output.push(text)

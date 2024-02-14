@@ -1,7 +1,9 @@
 //==============================================
 // Part of NOVA - NOVel Assistant
-// Tim Furnish, 2023-2024
+// (c) Tim Furnish, 2023-2024
 //==============================================
+
+/* TODO: hyphen check 2.0
 
 function SetUpHyphenCheck(w)
 {
@@ -104,3 +106,4 @@ g_tabFunctions.hyphen_check = function(reply, thenCall)
 	reply.push("</TABLE><P ID=hyphenCheckOutput></P>")
 	thenCall.push(HyphenCheck)
 }
+*/
