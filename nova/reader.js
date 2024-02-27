@@ -7,15 +7,31 @@ var g_readSentenceNum = 0
 var g_voiceLookUp = {}
 var g_voiceLanguages = []
 
+function SpeakUsingVoice(thingToSay, voiceType, onEnd)
+{
+	const theVoice = g_tweakableSettings[voiceType]
+	console.log("Saying '" + thingToSay + "' using voice '" + voiceType + "' i.e. '" + theVoice + "'")
+	var speaky = new SpeechSynthesisUtterance(thingToSay)
+	if (onEnd)
+	{
+		speaky.onend = onEnd
+	}
+	speaky.voice = g_voiceLookUp[theVoice]
+	speechSynthesis.speak(speaky)
+}
+
 function Read()
 {
 	const thingToSay = g_sentences[g_readSentenceNum]
 	if (thingToSay)
 	{
+		SpeakUsingVoice(thingToSay.text, thingToSay.isSpeech ? "voiceSpeech" : thingToSay.heading ? "voiceHeading" : "voiceDefault", OnDoneSpeaking)
+		/*
 		var speaky = new SpeechSynthesisUtterance(thingToSay.text)
 		speaky.onend = OnDoneSpeaking
 		speaky.voice = g_voiceLookUp[thingToSay.isSpeech ? g_tweakableSettings.voiceSpeech : thingToSay.heading ? g_tweakableSettings.voiceHeading : g_tweakableSettings.voiceDefault]
 		speechSynthesis.speak(speaky)
+		*/
 	}
 }
 

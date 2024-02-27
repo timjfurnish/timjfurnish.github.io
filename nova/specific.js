@@ -13,8 +13,8 @@ const kTweakableDefaults =
 	allowedStartCharacters:'ABCDEFGHIJKLMNOPQRSTUVWXYZ"',
 	allowedCharacters:'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ()"\'?.,!',
 	skip:["Contents"],
-	replace:['Dr\\./Dr^', 'Mr\\./Mr^', 'Mrs\\./Mrs^'],
-	hyphenCheckPairs:["sat-nav", "set-up", "under-cover", "self-reliance reliant control esteem respect awareness aware", "short-term", "left right-hand", "sand-timer", "back-stage", "stage-left right", "dance-floor", "slow-motion", "some-thing where how what body one", "heart-break breaking breaks breakingly broken", "car-park parks", "brain-wave waves", "mind lip-reading reader readers read reads", "twenty thirty forty fifty sixty seventy eighty ninety-one two three four five six seven eight nine", "one two three four five six seven eight nine ten-hundred thousand million billion"],
+	replace:['\\bDr\\./Dr^', '\\bMr\\./Mr^', '\\bMrs\\./Mrs^', '\\bO\\.S\\./O^S^', '\\bi\\.e\\./i^e^', '\\be\\.g\\./e^g^', '([0-9]+)\\.([0-9]+)/$1^$2', '^(== .* ==)$/$1.'],
+	hyphenCheckPairs:["sat-nav", "set-up", "under-cover", "self-reliance reliant control esteem respect awareness aware", "short-term", "left right-hand", "sand-timer", "back-stage", "stage-left right", "dance-floor", "slow-motion", "some-thing where how what body one", "heart-break breaking breaks breakingly broken", "car-park parks", "brain-wave waves", "mind lip-reading reader readers read reads", "twenty thirty forty fifty sixty seventy eighty ninety-one two three four five six seven eight nine", "one two three four five six seven eight nine ten-hundred thousand million billion trillion"],
 	names:[],
 	headingIdentifier:"",
 	headingMaxCharacters:100,
@@ -209,13 +209,39 @@ function SettingAskRevert(whichOne)
 	}
 }
 
+function SettingFixArray(whichOne)
+{
+	var didAnything = false
+
+	for (var a of kTweakableDefaults[whichOne])
+	{
+		if (! g_tweakableSettings[whichOne].includes(a))
+		{
+			g_tweakableSettings[whichOne].push(a)
+			didAnything = true
+		}
+	}
+	
+	if (didAnything)
+	{
+		FillInSetting(whichOne)
+		UserChangedSetting(whichOne)
+	}
+}
+
+function SettingTestSpeech(whichOne)
+{
+	console.log("Test speech: " + g_tweakableSettings[whichOne])
+	SpeakUsingVoice("Testing, one two three!", whichOne)
+}
+
 g_tabFunctions.settings = function(reply, thenCall)
 {
 	reply.push("<table>")
 	for (var [k, display] of Object.entries(kSettingNames))
 	{
 		var [displayName, extra] = display.split('|')
-		var theType = (Array.isArray(g_tweakableSettings[k])) ? 'textarea': 'input type=text'
+		var theType = 'input type=text'
 		var theMiddle = ""
 		var revert = ""
 
@@ -227,6 +253,7 @@ g_tabFunctions.settings = function(reply, thenCall)
 				theMiddle += "<option>" + voice + "</option>"
 			}
 			extra = ''
+			revert = "&nbsp;" + CreateClickableText(kIconSpeech, "SettingTestSpeech('" + k + "')")
 		}
 		else if (extra == 'language')
 		{
@@ -240,6 +267,14 @@ g_tabFunctions.settings = function(reply, thenCall)
 		else
 		{
 			revert = "&nbsp;" + CreateClickableText(kIconRevert, "SettingAskRevert('" + k + "')")
+			if (Array.isArray(g_tweakableSettings[k]))
+			{
+				theType = 'textarea'
+				if (kTweakableDefaults[k].length)
+				{
+					revert += CreateClickableText(kIconFix, "SettingFixArray('" + k + "')")
+				}
+			}
 		}
 		
 		SettingsAdd(reply, displayName, '<' + theType + ' onChange="UserChangedSetting(\'' + k + '\')" ' + (extra ? extra + ' ' : '') + 'id="setting_' + k + '">' + theMiddle + '</' + theType.split(' ')[0] + '>' + revert)

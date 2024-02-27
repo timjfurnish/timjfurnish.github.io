@@ -71,7 +71,7 @@ function GetInputTextRaw()
 
 	for (var n = 1; n <= g_numInputBoxes; ++ n)
 	{
-		reply.push(document.getElementById('txtIn' + n).value.trim())
+		reply.push(document.getElementById('txtIn' + n).value)
 	}
 	
 	return reply.join('\n').replace(/\</g, '[').replace(/\>/g, ']')
