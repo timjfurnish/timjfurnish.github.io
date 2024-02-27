@@ -47,14 +47,11 @@ function MakeColourLookUpTable(names)
 	var count = 0
 	var total = names.length
 
-//	console.log("Making colour look up table for " + names)
-
 	for (var each of names)
 	{
 		var colourWheelAngle = Math.PI * 2 * count / total
 		++ count
 		reply[each] = rgbToHex(0.9 + Math.sin(colourWheelAngle) * 0.1, 0.9 + Math.sin(colourWheelAngle + 2) * 0.1, 0.9 + Math.sin(colourWheelAngle + 4) * 0.1)
-//		console.log("name=" + each + " angle=" + colourWheelAngle + " col=" + reply[each])
 	}
 	
 	return reply
@@ -94,9 +91,14 @@ function ShowError(message)
 	}
 }
 
-function Tally(toHere, key)
+function Tally(toHere, key, num)
 {
-	(key in toHere) ? ++ toHere[key] : (toHere[key] = 1)
+	if (typeof num != "number")
+	{
+		num = 1
+	}
+
+	(key in toHere) ? toHere[key] += num : (toHere[key] = num)
 }
 
 //=========================

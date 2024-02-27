@@ -13,7 +13,7 @@ const kTweakableDefaults =
 	allowedStartCharacters:'ABCDEFGHIJKLMNOPQRSTUVWXYZ"',
 	allowedCharacters:'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ()"\'?.,!',
 	skip:["Contents"],
-	replace:['\\bDr\\./Dr^', '\\bMr\\./Mr^', '\\bMrs\\./Mrs^', '\\bO\\.S\\./O^S^', '\\bi\\.e\\./i^e^', '\\be\\.g\\./e^g^', '([0-9]+)\\.([0-9]+)/$1^$2', '^(== .* ==)$/$1.'],
+	replace:['\\bDr\\./Dr^', '\\bMr\\./Mr^', '\\bMrs\\./Mrs^', '\\bO\\.S\\./O^S^', '\\bi\\.e\\./i^e^', '\\be\\.g\\./e^g^', '([0-9]+)\\.([0-9]+)/$1^$2', '^== (.*) ==$/$1.'],
 	hyphenCheckPairs:["sat-nav", "set-up", "under-cover", "self-reliance reliant control esteem respect awareness aware", "short-term", "left right-hand", "sand-timer", "back-stage", "stage-left right", "dance-floor", "slow-motion", "some-thing where how what body one", "heart-break breaking breaks breakingly broken", "car-park parks", "brain-wave waves", "mind lip-reading reader readers read reads", "twenty thirty forty fifty sixty seventy eighty ninety-one two three four five six seven eight nine", "one two three four five six seven eight nine ten-hundred thousand million billion trillion"],
 	names:[],
 	headingIdentifier:"",
@@ -27,7 +27,6 @@ var g_tweakableSettings = {}
 function CopyToSetting([key, val])
 {
 	g_tweakableSettings[key] = Array.isArray(val) ? [...val] : val
-//	console.log("Set " + key + " to " + val)
 }
 
 Object.entries(kTweakableDefaults).forEach(CopyToSetting)
@@ -231,7 +230,6 @@ function SettingFixArray(whichOne)
 
 function SettingTestSpeech(whichOne)
 {
-	console.log("Test speech: " + g_tweakableSettings[whichOne])
 	SpeakUsingVoice("Testing, one two three!", whichOne)
 }
 
@@ -288,12 +286,12 @@ g_tabFunctions.settings = function(reply, thenCall)
 		if (warningID in kOptionCustomNames)
 		{
 			// Options default to false
-			OptionsMakeCheckbox(issueSettings, "ProcessInput()", warningID, kOptionCustomNames[warningID])
+			OptionsMakeCheckbox(issueSettings, "ProcessInput()", warningID, kOptionCustomNames[warningID], false, true)
 		}
 		else
 		{
 			// Checks default to true
-			OptionsMakeCheckbox(issueChecks, "ProcessInput()", warningID, "Check for " + warningID.toLowerCase(), true)
+			OptionsMakeCheckbox(issueChecks, "ProcessInput()", warningID, "Check for " + warningID.toLowerCase(), true, true)
 		}
 	}
 

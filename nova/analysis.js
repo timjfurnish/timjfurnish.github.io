@@ -105,6 +105,8 @@ function CheckEachWord(word, s, workspace, gatherHere)
 		{
 			Tally(gatherHere.mentionedInThisChapter, name)
 		}
+		
+		MetaDataIncreaseCount(name)
 	}
 	
 	const lastApostrophe = word.lastIndexOf("'")
@@ -159,12 +161,14 @@ function HandleNewHeading(workspace, txtInRaw)
 				DoEndOfChapterChecks(workspace)
 				MentionsStoreHeading(txtInRaw)
 
-				const justChapterName = txtInRaw.split(/ *[\[\(]/)[0]
+				const bits = txtInRaw.split(/ *\[/)
+				const justChapterName = bits[0]
 
-				workspace.percentComplete = parseInt(txtInRaw.split('[')[1] ?? "100")
+				workspace.percentComplete = parseInt(bits[1] ?? "100")
 				workspace.lastHeading = txtInRaw
-				workspace.stillLookingForChapterNameInChapter = justChapterName.toLowerCase()
+				workspace.stillLookingForChapterNameInChapter = justChapterName.split(/ *\(/)[0].toLowerCase()
 				MetaDataSet("CHAPTER", justChapterName)
+				MetaDataSet("COMPLETENESS", workspace.percentComplete)
 
 				delete workspace.foundTextBetweenHeadings
 				return true
@@ -272,7 +276,7 @@ function ProcessInput()
 
 				for (var eachIn of talkyNonTalky)
 				{
-					const each = eachIn.replace(/[\(\)]/g, '').replace(/[\.\!\?;:=]+ */g, '|').replace(/\|$/, '').replace(/\^/g, '.')
+					const each = eachIn.replace(/[\(\)]/g, '').replace(/[\.\!\?;:]+ */g, '|').replace(/\|$/, '').replace(/\^/g, '.')
 
 					var txtIn = each.trim()
 					isSpeech = !isSpeech
@@ -318,17 +322,11 @@ function ProcessInput()
 
 						MetaDataProcessParagraph(numSentences)
 
-						if (gatherHeadingStatsHere)
-						{
-							++ gatherHeadingStatsHere.numPara
-							gatherHeadingStatsHere.numSentences += numSentences
-						}
-
 						if (workspace.lastHeading)
 						{
-							gatherHeadingStatsHere = {txt:workspace.lastHeading, startsAt:g_sentences.length, numPara:0, numSentences:0, numWords:0, mentionedInThisChapter:{}}
+							gatherHeadingStatsHere = {txt:workspace.lastHeading, startsAt:g_sentences.length, mentionedInThisChapter:{}}
 							g_headingToSentence.push(gatherHeadingStatsHere)
-							g_sentences.push({heading:true, text:workspace.lastHeading/*, listOfWords:[]*/})
+							g_sentences.push({heading:true, text:workspace.lastHeading})
 							workspace.lastHeading = null
 						}
 						
@@ -354,30 +352,19 @@ function ProcessInput()
 
 							if (myListOfWords.length)
 							{
-								CheckIfLongest("sentence", myListOfWords.length, s)
-								CheckIfLongest("sentenceChr", myListOfWords.join(' ').length, s)
-
 								MetaDataAddWordCount(myListOfWords.length, isSpeech)
 								
-								if (gatherHeadingStatsHere)
-								{
-									gatherHeadingStatsHere.numWords += myListOfWords.length
-								}
-
-//								var newListOfWords = []
-
 								for (var word of myListOfWords)
 								{
 									word = word.replace(/^[\-']+/, "").replace(/[\-']+$/, "")
 									
 									if (word)
 									{
-										if (shouldStartWithCapital) // TODO: or if a name
+										if (shouldStartWithCapital)
 										{
 											CheckStartsWithCapital(word, shouldStartWithCapital, s)
 										}
 										
-//										newListOfWords.push(wordLower)
 										shouldStartWithCapital = CheckEachWord(word, s, workspace, gatherHeadingStatsHere) && ("following " + word + " in")
 									}
 									else
@@ -386,7 +373,7 @@ function ProcessInput()
 									}
 								}
 								
-								var newElement = {text:s, isSpeech:isSpeech/*, listOfWords:newListOfWords*/}
+								var newElement = {text:s, isSpeech:isSpeech}
 								
 								if (IssueGetTotal() != oldNumIssues)
 								{
@@ -411,9 +398,6 @@ function ProcessInput()
 							}
 							expectNextBitToDoSomething = true
 						}
-
-						CheckIfLongest("paraSentences", numSentences, sentences)
-						CheckIfLongest("paraChr", txtIn.length, sentences)
 					}
 				}
 				

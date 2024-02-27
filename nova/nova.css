@@ -18,3 +18,52 @@
 	font-family:Arial, Helvetica, sans-serif;
 	background-color:rgba(255, 255, 255, 1);
 }
+#tabContents
+{
+	padding:10px;
+	background-color:#F5F5F5;
+	border-left:1px solid #000000;
+	border-bottom:1px solid #000000;
+	border-right:1px solid #000000;
+}
+.tabSelected, .tabDeselected
+{
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:92%;
+	font-weight:500;
+	padding-top: 6px;
+	padding-bottom: 4px;
+	padding-left: 6px;
+	padding-right: 6px;
+	white-space:nowrap;
+	cursor:pointer;
+	border:1px solid #000000;
+}
+.tabSelected
+{
+	background-color:#F5F5F5;
+	border-bottom:0px
+}
+.tabDeselected
+{
+	background-color:#DDDDDD;
+}
+.cell, .cellNoWrap
+{
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:85%;
+	font-weight:500;
+	padding-top: 3px;
+	padding-bottom: 3px;
+	padding-left: 3px;
+	padding-right: 3px;
+}
+.cellNoWrap
+{
+	white-space:nowrap;
+}
+.rotate90
+{
+	transform:rotate(180deg);
+	writing-mode:vertical-rl;
+}

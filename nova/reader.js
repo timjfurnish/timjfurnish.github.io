@@ -9,14 +9,14 @@ var g_voiceLanguages = []
 
 function SpeakUsingVoice(thingToSay, voiceType, onEnd)
 {
-	const theVoice = g_tweakableSettings[voiceType]
-	console.log("Saying '" + thingToSay + "' using voice '" + voiceType + "' i.e. '" + theVoice + "'")
 	var speaky = new SpeechSynthesisUtterance(thingToSay)
+
 	if (onEnd)
 	{
 		speaky.onend = onEnd
 	}
-	speaky.voice = g_voiceLookUp[theVoice]
+
+	speaky.voice = g_voiceLookUp[g_tweakableSettings[voiceType]]
 	speechSynthesis.speak(speaky)
 }
 
@@ -26,12 +26,6 @@ function Read()
 	if (thingToSay)
 	{
 		SpeakUsingVoice(thingToSay.text, thingToSay.isSpeech ? "voiceSpeech" : thingToSay.heading ? "voiceHeading" : "voiceDefault", OnDoneSpeaking)
-		/*
-		var speaky = new SpeechSynthesisUtterance(thingToSay.text)
-		speaky.onend = OnDoneSpeaking
-		speaky.voice = g_voiceLookUp[thingToSay.isSpeech ? g_tweakableSettings.voiceSpeech : thingToSay.heading ? g_tweakableSettings.voiceHeading : g_tweakableSettings.voiceDefault]
-		speechSynthesis.speak(speaky)
-		*/
 	}
 }
 
@@ -134,7 +128,7 @@ g_tabFunctions.voice = function(reply, thenCall)
 			
 		for (var headingInfo of g_headingToSentence)
 		{
-			reply.push('<option value=' + headingInfo.startsAt + '>' + headingInfo.txt + ' (' + headingInfo.numPara + ' paragraphs, ' + headingInfo.numSentences + ' sentences)</option>')
+			reply.push('<option value=' + headingInfo.startsAt + '>' + headingInfo.txt + '</option>')
 		}
 		
 		reply.push('</select><BR><BR>')
@@ -155,7 +149,7 @@ function ReadVoices()
 	try
 	{
 		const voices = window.speechSynthesis.getVoices()
-		console.log("Voices have changed! Now got " + voices.length)
+//		console.log("Voices have changed! Now got " + voices.length)
 		g_voiceLookUp = {}
 		var languages = {}
 		const wantLang = g_tweakableSettings.language

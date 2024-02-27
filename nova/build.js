@@ -39,7 +39,7 @@ function TableNewRow(reply, extra)
 
 function TableAddHeading(reply, h)
 {
-	reply.push('<td bgcolor=#DDDDDD><B>' + h + '</B>')
+	reply.push('<td bgcolor=#DDDDDD CLASS=cellNoWrap><B>' + h + '</B>')
 }
 
 function TableClose(reply)
@@ -83,7 +83,6 @@ function UpdateOptions()
 			if (elem)
 			{
 				const myType = GetDataType(myTabOptions[key])
-				// const oldVal = myTabOptions[key]
 
 				if (myType == "boolean")
 				{
@@ -93,13 +92,6 @@ function UpdateOptions()
 				{
 					myTabOptions[key] = elem.value
 				}
-				
-				/*
-				if (oldVal != myTabOptions[key])
-				{
-					console.log("Updated " + GetDataType(elem) + " '" + g_selectedTabName + "." + key + "' to " + myType + " '" + myTabOptions[key] + "'")
-				}
-				*/
 			}
 		}
 	}
@@ -114,8 +106,6 @@ function SetOptions()
 			var elem = document.getElementById(g_selectedTabName + "." + key)
 			if (elem)
 			{
-//				console.log("Setting " + GetDataType(elem) + " '" + g_selectedTabName + "." + key + "' to " + GetDataType(val) + " '" + val + "'")
-
 				if (typeof val == "boolean")
 				{
 					elem.checked = val
@@ -145,12 +135,12 @@ function OptionsMakeKey(tab, id, defVal, overwrite)
 	return tab + "." + id
 }
 
-function OptionsCommon(id, funcName)
+function OptionsCommon(id, funcName, callFuncLate)
 {
 	var onChange = "UpdateOptions()"
 	if (funcName)
 	{
-		if (g_selectedTabName == 'settings')
+		if (callFuncLate)
 		{
 			onChange += "; " + funcName
 		}
@@ -163,15 +153,15 @@ function OptionsCommon(id, funcName)
 	return 'onChange="' + onChange + '" id="' + id + '"'
 }
 
-function OptionsMakeCheckbox(options, funcName, idIn, label, defaultVal)
+function OptionsMakeCheckbox(options, funcName, idIn, label, defaultVal, callFuncLate)
 {
 	const id = OptionsMakeKey(g_selectedTabName, idIn, defaultVal ? true : false)
-	options.push('<INPUT TYPE="checkbox" ' + OptionsCommon(id, funcName) + '><LABEL FOR="' + id + '"> ' + (label ?? idIn) + '</LABEL>')
+	options.push('<INPUT TYPE="checkbox" ' + OptionsCommon(id, funcName, callFuncLate) + '><LABEL FOR="' + id + '"> ' + (label ?? idIn) + '</LABEL>')
 }
 
 function OptionsConcat(arr)
 {
-	return "<nobr>" + arr.join("&nbsp;</nobr> <nobr>") + "</nobr>"
+	return "<nobr>" + arr.join("&nbsp;</nobr> <nobr>") + "</nobr><br>"
 }
 
 function OptionsMakeSelect(toHere, funcName, heading, id, options, defaultVal)

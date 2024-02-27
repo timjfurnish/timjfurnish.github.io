@@ -7,15 +7,26 @@ var g_metaDataCurrent
 var g_metaDataInOrder
 var g_metaDataAvailableColumns
 var g_metaDataTally
+var g_metaDataTotals
 
-function MakeClearTally()
+const kMetaDataDefaultDisplay = MakeSet("Words", "Estimated final words")
+const kMetaDataDefaultGroup = MakeSet("PART", "CHAPTER")
+
+function MakeClearTally(createMentions)
 {
-	return {sentences:0, paragraphs:0, words:0, ["words in quotes"]:0}
+	var reply = {Sentences:0, Paragraphs:0, Words:0, ["Estimated final words"]:0, ["Words in quotes"]:0}
+	
+	if (createMentions)
+	{
+		reply.Mentions = {}
+	}
+	
+	return reply
 }
 
 function MetaDataEndProcess()
 {
-	if (g_metaDataTally.sentences)
+	if (g_metaDataTally.Sentences)
 	{
 		var info = {}
 		for (var [key, val] of Object.entries(g_metaDataCurrent))
@@ -24,16 +35,31 @@ function MetaDataEndProcess()
 			info[key] = val
 		}
 		
-//		console.log(g_metaDataTally.sentences + " sentences in " + Object.entries(info).join (" and "))
-		
 		var storeThis = {info:info}
+
+		const completenessPercentage = parseInt(g_metaDataCurrent?.COMPLETENESS ?? "100")
+		g_metaDataTally["Estimated final words"] = Math.round((g_metaDataTally.Words * 100) / completenessPercentage)
 	
-		for (var key of Object.keys(g_metaDataTally))
+		for (var [key, val] of Object.entries(g_metaDataTally))
 		{
-			storeThis[key] = g_metaDataTally[key]
-			g_metaDataTally[key] = 0
+			if (typeof val == "number")
+			{
+				storeThis[key] = val
+				g_metaDataTotals[key] += val
+			}
+			else
+			{
+				storeThis[key] = {}
+				
+				for (var [k, v] of Object.entries(val))
+				{
+//					console.log(key + ": " + k + "=" + v)
+					Tally(storeThis[key], k, v)
+				}
+			}
 		}
 
+		g_metaDataTally = MakeClearTally(true)
 		g_metaDataInOrder.push(storeThis)
 	}
 }
@@ -71,23 +97,29 @@ OnEvent("clear", () =>
 	g_metaDataCurrent = {}
 	g_metaDataInOrder = []
 	g_metaDataAvailableColumns = {}
-	g_metaDataTally = MakeClearTally()
+	g_metaDataTally = MakeClearTally(true)
+	g_metaDataTotals = MakeClearTally()
 })
 
 function MetaDataProcessParagraph(numSentences)
 {
-	g_metaDataTally.sentences += numSentences
-	++ g_metaDataTally.paragraphs
+	g_metaDataTally.Sentences += numSentences
+	++ g_metaDataTally.Paragraphs
 }
 
 function MetaDataAddWordCount(words, isSpeech)
 {
-	g_metaDataTally.words += words
+	g_metaDataTally.Words += words
 	
 	if (isSpeech)
 	{
-		g_metaDataTally["words in quotes"] += words
+		g_metaDataTally["Words in quotes"] += words
 	}
+}
+
+function MetaDataIncreaseCount(counterName)
+{
+	Tally(g_metaDataTally.Mentions, counterName)
 }
 
 function MetaDataDrawTable()
@@ -95,6 +127,7 @@ function MetaDataDrawTable()
 	var sort = document.getElementById("metadata.sort").value
 	var consolidate = sort ? {} : undefined
 	var selectedColumns = []
+	var selectedDisplay = []
 	var reply = []
 	var seenThings = {}
 
@@ -102,7 +135,7 @@ function MetaDataDrawTable()
 
 	for (var colName of Object.keys(g_metaDataAvailableColumns))
 	{
-		if (document.getElementById("metadata." + colName).checked)
+		if (g_currentOptions.metadata["process_" + colName])
 		{
 			TableAddHeading(reply, colName)
 			selectedColumns.push(colName)
@@ -111,26 +144,43 @@ function MetaDataDrawTable()
 	}
 	
 	var lastDeets = ""
-	var lastTally = MakeClearTally()
+	var lastTally = MakeClearTally(true)
 	var dataToDisplay = []
 	var lastMetaData = ""
 
+//	console.log("============================")
+
 	function AddLastDeets()
 	{
-		if (lastTally.paragraphs)
+		if (lastTally.Paragraphs)
 		{
+//			console.log("  > " + lastDeets + ": " + Object.entries(lastTally.Mentions).join(' '))
+
 			if (consolidate && lastDeets in consolidate)
 			{
+				var addLastTallyToHere = consolidate[lastDeets]
+
 				for (var [name, val] of Object.entries(lastTally))
 				{
-					consolidate[lastDeets][name] += val
+					if (typeof val == "number")
+					{
+						addLastTallyToHere[name] += val
+					}
+					else
+					{
+						for (var [objName, objVal] of Object.entries(val))
+						{
+							Tally(addLastTallyToHere[name], objName, objVal)
+						}
+					}
 				}
-				lastTally = consolidate[lastDeets]
-//				console.log("Reusing entry for " + lastDeets)
+
+				lastTally = addLastTallyToHere
+//				console.log("    Reusing entry for " + lastDeets)
 			}
 			else
 			{
-//				console.log("Creating entry for " + Object.entries(lastMetaData).join(" ") + " i.e. " + lastDeets)
+//				console.log("   Creating entry for '" + Object.entries(lastMetaData).join(" ") + "' i.e. '" + lastDeets + "'")
 				var newData = {deets:lastDeets, tally:lastTally, metaData:lastMetaData}
 
 				dataToDisplay.push(newData)
@@ -143,22 +193,24 @@ function MetaDataDrawTable()
 		}
 	}
 
-//	console.log("MetaDataDrawTable - g_metaDataInOrder has " + g_metaDataInOrder.length + " elements")
-
 	for (var elem of g_metaDataInOrder)
 	{
 		var deets = ''
+		
 		for (var colName of selectedColumns)
 		{
-			deets += "<TD>" + elem.info[colName] + "</TD>"
+			deets += "<TD CLASS=cellNoWrap>" + elem.info[colName] + "</TD>"
 			
 			seenThings[colName][elem.info[colName]] = true
 		}
+
+//		console.log("[D] " + Object.entries(elem.Mentions).join(' '))
+		
 		if (deets != lastDeets)
 		{
 			AddLastDeets()
 
-			lastTally = MakeClearTally()
+			lastTally = MakeClearTally(true)
 			lastDeets = deets			
 			lastMetaData = {}
 			
@@ -169,14 +221,41 @@ function MetaDataDrawTable()
 
 			for (var name of Object.keys(lastTally))
 			{
-				lastTally[name] = elem[name]
+				var val = elem[name]
+
+				if (typeof val == "number")
+				{
+					lastTally[name] = val
+				}
+				else
+				{
+					lastTally[name] = {}
+					
+					for (var [k, v] of Object.entries(val))
+					{
+//						console.log(name + ": " + k + "=" + v)
+						Tally(lastTally[name], k, v)
+					}
+				}
 			}
 		}
 		else
 		{
 			for (var name of Object.keys(lastTally))
 			{
-				lastTally[name] += elem[name]
+				const val = elem[name]
+
+				if (typeof val == "number")
+				{
+					lastTally[name] += val
+				}
+				else
+				{
+					for (var [objName, objVal] of Object.entries(val))
+					{
+						Tally(lastTally[name], objName, objVal)
+					}
+				}
 			}
 		}
 	}
@@ -201,8 +280,8 @@ function MetaDataDrawTable()
 
 	const colourLookUp = colourBasedOn ? MakeColourLookUpTable(Object.keys(seenThings[colourBasedOn])) : null
 
-	var maximums = MakeClearTally()
-	maximums["%speech"] = 0
+	var maximums = MakeClearTally(false)
+	maximums["Percent speech"] = 0
 	
 	if (sort in maximums)
 	{
@@ -211,7 +290,7 @@ function MetaDataDrawTable()
 
 	for (var data of dataToDisplay)
 	{
-		data.tally["%speech"] = 100 * (data.tally["words in quotes"] / data.tally.words)
+		data.tally["Percent speech"] = 100 * (data.tally["Words in quotes"] / data.tally.Words)
 		
 		for (var [name, val] of Object.entries(data.tally))
 		{
@@ -224,13 +303,10 @@ function MetaDataDrawTable()
 
 	for (var name of Object.keys(lastTally))
 	{
-		if (name[0] == '%')
+		if (g_currentOptions.metadata["display_" + name])
 		{
-			TableAddHeading(reply, "Percent " + name.substring(1))
-		}
-		else
-		{
-			TableAddHeading(reply, "Num " + name)
+			TableAddHeading(reply, name)
+			selectedDisplay.push(name)
 		}
 	}
 
@@ -245,47 +321,87 @@ function MetaDataDrawTable()
 			TableNewRow(reply)
 		}
 		reply.push(data.deets)
-		for (var [name, value] of Object.entries(data.tally))
+		for (var name of selectedDisplay)
 		{
-			if (name[0] == '%')
+			var value = data.tally[name]
+			var contents = ""
+
+			if (typeof value == "object")
 			{
-				reply.push("<TD>" + RenderBarFor(value, 100.0 / maximums[name], 2, '%') + "</TD>")
+				contents = Object.keys(value).join(" ")
+			}
+			else if (name == "Percent speech")
+			{
+				contents = RenderBarFor(value, 100.0 / maximums[name], 2, '%')
 			}
 			else
 			{
-				reply.push("<TD>" + RenderBarFor(value, 200.0 / maximums[name]) + "</TD>")
+				contents = RenderBarFor(value, 200.0 / maximums[name])
 			}
+
+			reply.push("<TD CLASS=cell>" + contents + "</TD>")
 		}
 
 		// DEBUG
-//		reply.push("<TD>" + Object.entries(data.metaData).join(" ") + "</TD>")
+//		reply.push("<TD CLASS=cell>" + Object.entries(data.metaData).join(" ") + "</TD>")
+	}
+
+	// Only need to display total if we had any columns selected...
+	if (selectedColumns.length)
+	{
+		reply.push('<TR><TD COLSPAN="' + selectedColumns.length + '" CLASS="cellNoWrap"><B><SMALL>TOTAL:</SMALL></B></TD>')
+
+		for (var name of selectedDisplay)
+		{
+			if (name in g_metaDataTotals)
+			{
+				reply.push('<TD CLASS="cell">' + g_metaDataTotals[name] + '</TD>')				
+			}
+			else
+			{
+				reply.push('<TD CLASS="cell"></TD>')
+			}
+		}
 	}
 	
 	reply.push("</TABLE>")
+	const estimatedSize = g_metaDataTotals["Estimated final words"]
+	if (estimatedSize)
+	{
+		reply.push("<H4>Complete: " + (100 * g_metaDataTotals.Words / estimatedSize).toFixed(2) + "%</H4>")
+	}
 	document.getElementById("metaDataOutput").innerHTML = reply.join("")
 }
 
 g_tabFunctions.metadata = function(reply, thenCall)
 {
 	var options = []
+	var optionsDisplay = []
 	const selectedColumns = Object.keys(g_metaDataAvailableColumns)
 
 	for (var colName of selectedColumns)
 	{
-		OptionsMakeCheckbox(options, "MetaDataDrawTable()", colName)
+		OptionsMakeCheckbox(options, "MetaDataDrawTable()", "process_" + colName, colName, kMetaDataDefaultGroup[colName], true)
 	}
 
 	var sortData = {"":"Do not consolidate", none:"Chronological"}
-	var emptyTally = MakeClearTally()
+	var emptyTally = MakeClearTally(true)
+	emptyTally["Percent speech"] = undefined
 
 	for (var name of Object.keys(emptyTally))
 	{
-		sortData[name] = name.charAt(0).toUpperCase() + name.slice(1)
+		if (typeof emptyTally[name] == "number")
+		{
+			sortData[name] = name.charAt(0).toUpperCase() + name.slice(1)
+		}
+
+		OptionsMakeCheckbox(optionsDisplay, "MetaDataDrawTable()", "display_" + name, name, kMetaDataDefaultDisplay[name], true)
 	}
 	
 	OptionsMakeSelect(options, "MetaDataDrawTable()", "Sort", "sort", sortData, "none")
 
 	reply.push(OptionsConcat(options))
+	reply.push(OptionsConcat(optionsDisplay))
 	reply.push("<P ID=metaDataOutput></P>")
 	thenCall.push(MetaDataDrawTable)
 }
