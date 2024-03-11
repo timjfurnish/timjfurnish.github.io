@@ -5,18 +5,19 @@
 
 var g_issues = {}
 var g_disabledWarnings = {}
-var g_issueHeading = 'Global'
+var g_issueHeading
 var g_issueCount = 0
+var g_issueStats = {}
 
 function BuildWarningNamesList()
 {
 	const list =
 	[
-		'SCRIPT', 'NUMBERS', 'TODO', 'LEADING SPACE', "DISALLOWED WORD", "ILLEGAL CHARACTERS",
+		'SCRIPT', 'NUMBERS', 'TODO', 'DISALLOWED WORD', 'ILLEGAL CHARACTERS',
 		'INVALID FINAL NARRATIVE CHARACTER',
 		'INVALID FINAL SPEECH CHARACTER',
-		'SPLIT INFINITIVE', 'CHAPTER NAME IN CHAPTER',
-		'TRAILING SPACE', 'UNFINISHED QUOTE', 'CAPITALS', 'SPACE BEFORE PUNCTUATION',
+		'SPLIT INFINITIVE', 'CHAPTER NAME IN CHAPTER', 'ILLEGAL MOVE BETWEEN LOCATIONS',
+		'UNFINISHED QUOTE', 'CAPITALS', 'SPACE BEFORE PUNCTUATION',
 		'MARKUP ERROR', 'SPACE IN SPEECH', 'EMPTY SPEECH', 'EMPTY PARAGRAPH', 'EMPTY SENTENCE',
 		'PUNCTUATION WITHOUT SPACE', 'ILLEGAL START CHARACTER', 'EMPTY WORD'
 	]
@@ -31,7 +32,7 @@ function BuildWarningNamesList()
 
 var g_warningNames = BuildWarningNamesList()
 
-g_tabFunctions.issues = function(reply, thenCall)
+TabDefine("issues", function(reply, thenCall)
 {
 	if (g_issueCount)
 	{
@@ -44,14 +45,18 @@ g_tabFunctions.issues = function(reply, thenCall)
 	{
 		reply.push("No issues found")
 	}
-}
+})
 
 OnEvent("clear", () =>
 {
 	g_issueCount = 0
 	g_issues = {}
 	g_disabledWarnings = {}
-	
+	g_issueStats = {}
+	g_issueHeading = "Global"
+
+	Object.keys(g_warningNames).forEach(theName => g_issueStats[theName] = 0)
+
 	if (g_currentOptions.settings)
 	{
 		for (var [key, val] of Object.entries(g_currentOptions.settings))
@@ -84,8 +89,10 @@ function IssueAdd(addThis, theType)
 			return
 		}
 		
-		addThis = "<NOBR id=issueType>" + theType + "</NOBR> " + addThis
+		addThis = '<NOBR id="issueType">' + theType + '</NOBR> ' + addThis
 	}
+
+	Tally(g_issueStats, theType ?? "NO TYPE")
 
 	++ g_issueCount
 
@@ -106,7 +113,7 @@ OnEvent("processingDone", () =>
 
 function WarningEnableDisable(strIn)
 {
-	var [key, val] = strIn.split(':')
+	var [key, val] = strIn.split(':', 2)
 	key = key.toUpperCase()
 	val = val.toUpperCase()
 

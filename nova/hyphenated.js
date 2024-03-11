@@ -7,7 +7,7 @@
 
 function SetUpHyphenCheck(w)
 {
-	const [w1, w2] = w.split('-')
+	const [w1, w2] = w.split('-', 2)
 	document.getElementById("hyphenCheckFirst").value = w1
 	document.getElementById("hyphenCheckSecond").value = w2
 	HyphenCheck()
@@ -74,7 +74,7 @@ function HyphenCheck()
 	for (var txt of Object.keys(scores).sort((p1, p2) => (scores[p2] - scores[p1])))
 	{
 		const score = scores[txt]
-		const showText = (txt.split('-').length == 2) ? '<B ONCLICK="SetUpHyphenCheck(\'' + txt + '\')">' + txt + '</B>' : txt
+		const showText = (txt.split('-', 3).length == 2) ? '<B ONCLICK="SetUpHyphenCheck(\'' + txt + '\')">' + txt + '</B>' : txt
 		TableNewRow(output)
 		output.push("<TD>" + MakeMentionLink(showText, txt) + "<TD align=center>" + score)
 	}
@@ -89,21 +89,21 @@ function HyphenClear()
 	HyphenCheck()
 }
 
-g_tabFunctions.hyphen_check = function(reply, thenCall)
+TabDefine("hyphen_check", function(reply, thenCall)
 {
 	reply.push("<TABLE CELLPADDING=0 CELLSPACING=0>")
 	var after = '<TD ROWSPAN=2>&nbsp;<BUTTON tabindex="-1" ONCLICK="HyphenClear()">Clear</BUTTON>'
 	for (var example of g_tweakableSettings.hyphenCheckPairs ?? [])
 	{
-		var [w1, w2] = example.split('-')
-		after += ' <A tabindex="-1" HREF="javascript:SetUpHyphenCheck(\'' + example + '\')">' + w1.split(' ')[0] + w2.split(' ')[0] + '</A>'
+		var [w1, w2] = example.split('-', 2)
+		after += ' <A tabindex="-1" HREF="javascript:SetUpHyphenCheck(\'' + example + '\')">' + w1.split(' ', 1)[0] + w2.split(' ', 1)[0] + '</A>'
 	}
 	for (var a of ["First", "Second"])
 	{
 		reply.push("<TR><TD>" + a + " word(s):&nbsp;<TD><INPUT TYPE=text ID=hyphenCheck" + a + ' onChange="HyphenCheck()">' + after)
 		after = ''
 	}
-	reply.push("</TABLE><P ID=hyphenCheckOutput></P>")
+	reply.push('</TABLE><P ID="hyphenCheckOutput"></P>')
 	thenCall.push(HyphenCheck)
-}
+})
 */

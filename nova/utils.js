@@ -3,11 +3,50 @@
 // (c) Tim Furnish, 2023-2024
 //==============================================
 
+//---------------------------
+// Web browser things
+//---------------------------
+
+var g_canShowError = true
+
+function SetUp_FixTitle()
+{
+	const location = document.location.href
+
+	if (location.substr(0, 4) == "file")
+	{
+		document.title += " (LOCAL)"
+	}
+}
+
+function ShowError(message)
+{
+	if (g_canShowError)
+	{
+		console.warn(message)
+		g_canShowError = confirm(message + "\n\n" + new Error().stack + "\n\nKeep showing errors?")
+	}
+}
+
+//---------------------------
 // String things
+//---------------------------
 
 function CapitaliseFirstLetter(name)
 {
 	return name.charAt(0).toUpperCase() + name.slice(1)
+}
+
+function MakeParamsString(...theParams)
+{
+	var out = []
+
+	for (var param of theParams)
+	{
+		out.push("'" + param.replace(/'/g, "\\'") + "'")
+	}
+
+	return out.join(", ")
 }
 
 function FixStringHTML(stringIn)
@@ -22,16 +61,36 @@ function AddEscapeChars(stringIn)
 
 function Highlighter(matched)
 {
-	return "<span style=\"background-color:yellow\">" + matched + "</span>"
+	return '<span class="highlighter">' + matched + '</span>'
 }
 
-var g_eventFuncs = {}
-var g_canShowError = true
+function HighlighterWithDots(matched)
+{
+	return '<span class="highlighterWithDots">' + matched + '</span>'
+}
+
+function TrySetElementClass(elemName, className, add)
+{
+	var elem = document.getElementById(elemName)
+	
+	if (elem)
+	{
+		add ? elem.classList.add(className) : elem.classList.remove(className)
+	}
+}
+
+//---------------------------
+// Data management
+//---------------------------
 
 function GetDataType(data)
 {
 	return (data === null) ? "null" : (data === undefined) ? "undefined" : Array.isArray(data) ? "array" : data.tagName ? data.tagName + " (" + data.type + ")" : typeof(data)
 }
+
+//---------------------------
+// Colours
+//---------------------------
 
 function rgbToHex(rIn, gIn, bIn)
 {
@@ -56,6 +115,10 @@ function MakeColourLookUpTable(names)
 	
 	return reply
 }
+
+//---------------------------
+// Array/object utils
+//---------------------------
 
 function MakeSet(...theBits)
 {
@@ -82,15 +145,6 @@ function OnlyKeepValid(arr)
 	return reply
 }
 
-function ShowError(message)
-{
-	if (g_canShowError)
-	{
-		console.warn(message)
-		g_canShowError = confirm(message + "\n\n" + new Error().stack + "\n\nKeep showing errors?")
-	}
-}
-
 function Tally(toHere, key, num)
 {
 	if (typeof num != "number")
@@ -101,9 +155,9 @@ function Tally(toHere, key, num)
 	(key in toHere) ? toHere[key] += num : (toHere[key] = num)
 }
 
-//=========================
+//---------------------------
 // Function-calling fun
-//=========================
+//---------------------------
 
 var g_functionsStillToCall = []
 
@@ -139,6 +193,11 @@ function QueueFunction(func)
 	{
 		setTimeout(CallNextQueuedFunction, 0)
 	}
+	else if (g_functionsStillToCall.includes(func))
+	{
+		console.log("Not queueing " + DescribeFunction(func) + " at it's already in the queue")
+		return
+	}
 
 	console.log("Queued " + DescribeFunction(func))
 	g_functionsStillToCall.push(func)
@@ -163,6 +222,12 @@ function CallTheseFunctionsNow(...list)
 		}
 	}
 }
+
+//---------------------------
+// Event stuff
+//---------------------------
+
+var g_eventFuncs = {}
 
 function OnEvent(eventName, call)
 {

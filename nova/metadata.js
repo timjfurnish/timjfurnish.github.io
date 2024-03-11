@@ -8,8 +8,10 @@ var g_metaDataInOrder
 var g_metaDataAvailableColumns
 var g_metaDataTally
 var g_metaDataTotals
+var g_metaDataCurrentCompleteness
+var g_metaDataGatherParagraphs
 
-const kMetaDataDefaultDisplay = MakeSet("Words", "Estimated final words")
+const kMetaDataDefaultDisplay = MakeSet("Words", "Estimated final words", "Percent done")
 const kMetaDataDefaultGroup = MakeSet("PART", "CHAPTER")
 
 function MakeClearTally(createMentions)
@@ -24,6 +26,38 @@ function MakeClearTally(createMentions)
 	return reply
 }
 
+function MetaDataCombine(container, name, addThisValue)
+{
+	const addThisType = GetDataType(addThisValue)
+
+	if (! (name in container))
+	{
+		console.log("Adding " + name + " data '" + addThisValue + "' of type " + addThisType + " to container that only contains this data: [" + Object.keys(container).join(", ") + "]")
+		container[name] = (addThisType == "number") ? 0 : {}
+	}
+
+	const toHereType = GetDataType(container[name])
+
+	if (toHereType == addThisType)
+	{
+		if (toHereType == "number")
+		{
+			container[name] += addThisValue
+		}
+		else
+		{
+			for (var [objName, objVal] of Object.entries(addThisValue))
+			{
+				Tally(container[name], objName, objVal)
+			}
+		}
+	}
+	else
+	{
+		console.warn("Can't add " + name + " data [" + addThisValue + "] of type " + addThisType + " to member [" + container[name] + "] of type " + toHereType)
+	}
+}
+
 function MetaDataEndProcess()
 {
 	if (g_metaDataTally.Sentences)
@@ -35,10 +69,10 @@ function MetaDataEndProcess()
 			info[key] = val
 		}
 		
-		var storeThis = {info:info}
+		var storeThis = {info:info, myParagraphs:g_metaDataGatherParagraphs}
 
-		const completenessPercentage = parseInt(g_metaDataCurrent?.COMPLETENESS ?? "100")
-		g_metaDataTally["Estimated final words"] = Math.round((g_metaDataTally.Words * 100) / completenessPercentage)
+		const completenessPercentage = g_metaDataCurrentCompleteness
+		g_metaDataTally["Estimated final words"] = (g_metaDataTally.Words * 100) / completenessPercentage
 	
 		for (var [key, val] of Object.entries(g_metaDataTally))
 		{
@@ -61,6 +95,7 @@ function MetaDataEndProcess()
 
 		g_metaDataTally = MakeClearTally(true)
 		g_metaDataInOrder.push(storeThis)
+		g_metaDataGatherParagraphs = []
 	}
 }
 
@@ -73,18 +108,18 @@ function MetaDataSet(key, val)
 	// TODO: custom callback
 	if (key == 'LOC')
 	{
-		const newBits = val.split('.')
+		const world = val.split('.', 1)[0]
 
 		if (key in g_metaDataCurrent)
 		{
-			const oldBits = g_metaDataCurrent[key].split('.')
-			if (oldBits[0] != newBits[0] && oldBits != 'sparks' && newBits != 'sparks' && oldBits != 'movie' && newBits != 'movie')
+			const old = g_metaDataCurrent[key]
+			if (old.split('.', 1)[0] != world && old != 'sparks' && val != 'sparks' && old != 'movie' && val != 'movie' && old != 'log' && val != 'log')
 			{
-				IssueAdd("Moving straight from " + oldBits + " to " + newBits)
+				IssueAdd("Moving from " + old + " to " + val, "ILLEGAL MOVE BETWEEN LOCATIONS")
 			}
 		}
 
-		g_metaDataCurrent['WORLD'] = newBits[0]
+		g_metaDataCurrent['WORLD'] = world
 	}
 
 	g_metaDataCurrent[key] = val
@@ -94,11 +129,13 @@ OnEvent("processingDone", MetaDataEndProcess)
 
 OnEvent("clear", () =>
 {
-	g_metaDataCurrent = {}
+	g_metaDataCurrent = {CHAPTER:"None"}
 	g_metaDataInOrder = []
 	g_metaDataAvailableColumns = {}
 	g_metaDataTally = MakeClearTally(true)
 	g_metaDataTotals = MakeClearTally()
+	g_metaDataCurrentCompleteness = 100
+	g_metaDataGatherParagraphs = []
 })
 
 function MetaDataProcessParagraph(numSentences)
@@ -130,6 +167,12 @@ function MetaDataDrawTable()
 	var selectedDisplay = []
 	var reply = []
 	var seenThings = {}
+
+	const estimatedSize = g_metaDataTotals["Estimated final words"]
+	if (estimatedSize)
+	{
+		reply.push("<H4>Complete: " + (100 * g_metaDataTotals.Words / estimatedSize).toFixed(2) + "%</H4>")
+	}
 
 	TableOpen(reply)
 
@@ -243,19 +286,7 @@ function MetaDataDrawTable()
 		{
 			for (var name of Object.keys(lastTally))
 			{
-				const val = elem[name]
-
-				if (typeof val == "number")
-				{
-					lastTally[name] += val
-				}
-				else
-				{
-					for (var [objName, objVal] of Object.entries(val))
-					{
-						Tally(lastTally[name], objName, objVal)
-					}
-				}
+				MetaDataCombine(lastTally, name, elem[name])
 			}
 		}
 	}
@@ -282,6 +313,7 @@ function MetaDataDrawTable()
 
 	var maximums = MakeClearTally(false)
 	maximums["Percent speech"] = 0
+	maximums["Percent done"] = 0
 	
 	if (sort in maximums)
 	{
@@ -291,6 +323,7 @@ function MetaDataDrawTable()
 	for (var data of dataToDisplay)
 	{
 		data.tally["Percent speech"] = 100 * (data.tally["Words in quotes"] / data.tally.Words)
+		data.tally["Percent done"] = 100 * (data.tally.Words / data.tally["Estimated final words"])
 		
 		for (var [name, val] of Object.entries(data.tally))
 		{
@@ -330,13 +363,13 @@ function MetaDataDrawTable()
 			{
 				contents = Object.keys(value).join(" ")
 			}
-			else if (name == "Percent speech")
+			else if (name.startsWith("Percent"))
 			{
 				contents = RenderBarFor(value, 100.0 / maximums[name], 2, '%')
 			}
 			else
 			{
-				contents = RenderBarFor(value, 200.0 / maximums[name])
+				contents = RenderBarFor(value, 200.0 / maximums[name], 0)
 			}
 
 			reply.push("<TD CLASS=cell>" + contents + "</TD>")
@@ -355,7 +388,7 @@ function MetaDataDrawTable()
 		{
 			if (name in g_metaDataTotals)
 			{
-				reply.push('<TD CLASS="cell">' + g_metaDataTotals[name] + '</TD>')				
+				reply.push('<TD CLASS="cell">' + Math.round(g_metaDataTotals[name]) + '</TD>')				
 			}
 			else
 			{
@@ -365,15 +398,12 @@ function MetaDataDrawTable()
 	}
 	
 	reply.push("</TABLE>")
-	const estimatedSize = g_metaDataTotals["Estimated final words"]
-	if (estimatedSize)
-	{
-		reply.push("<H4>Complete: " + (100 * g_metaDataTotals.Words / estimatedSize).toFixed(2) + "%</H4>")
-	}
 	document.getElementById("metaDataOutput").innerHTML = reply.join("")
 }
 
-g_tabFunctions.metadata = function(reply, thenCall)
+TabDefine("metadata", TabFunctionStats, "Stats")
+
+function TabFunctionStats(reply, thenCall)
 {
 	var options = []
 	var optionsDisplay = []
@@ -387,6 +417,7 @@ g_tabFunctions.metadata = function(reply, thenCall)
 	var sortData = {"":"Do not consolidate", none:"Chronological"}
 	var emptyTally = MakeClearTally(true)
 	emptyTally["Percent speech"] = undefined
+	emptyTally["Percent done"] = undefined
 
 	for (var name of Object.keys(emptyTally))
 	{

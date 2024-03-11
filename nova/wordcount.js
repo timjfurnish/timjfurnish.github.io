@@ -8,7 +8,7 @@ const g_wordSortModes = {Alphabetical:"Alphabetical", WordLength:"Word length", 
 const g_whatToCount = {All:"All words", Adverbs:"Adverbs", First:"First word in each sentence"}
 const g_displayUnique = {All:"Everything", Repeated:"Repeated words only", Unique:"Unique words only"}
 
-g_tabFunctions['words'] = function(reply, thenCall)
+TabDefine("words", function(reply, thenCall)
 {
 	var options = []
 	OptionsMakeSelect(options, "RedrawWordTable()", "Sort", "sortMode", g_wordSortModes, "Score")
@@ -16,10 +16,10 @@ g_tabFunctions['words'] = function(reply, thenCall)
 	OptionsMakeSelect(options, "RedrawWordTable()", "Show one-offs", "displayUnique", g_displayUnique, "Unique")
 	OptionsMakeCheckbox(options, "RedrawWordTable()", "stopAtApostrophe", "Trim words at apostrophes/hyphens")
 	reply.push(options.join('&nbsp;&nbsp;'))
-	reply.push('<P ID=wordTableHere></P>')
+	reply.push('<P ID="wordTableHere"></P>')
 
 	thenCall.push(RedrawWordTable)
-}
+})
 
 function RedrawWordTable()
 {
@@ -36,23 +36,29 @@ function RedrawWordTable()
 	const stopAtApostrophe = document.getElementById("words.stopAtApostrophe")?.checked
 	const selectFunc = g_selectFunctions[document.getElementById("words.whatToCount").value]
 	
-	for (var s of g_sentences)
-	{
-		for (var ww of selectFunc(s.listOfWords))
+	for (var metadata of g_metaDataInOrder)
+	{			
+		for (var para of metadata.myParagraphs)
 		{
-			for (var w of stopAtApostrophe ? ww.split(/[\-']/) : [ww])
+			for (var fragment of para.fragments)
 			{
-				const length = w.length
-				const myScore = (length * (length + 1)) / 2
-				
-				if (w in wordCounts)
+				for (var ww of selectFunc(fragment.split(' '))
 				{
-					++ wordCounts[w].count
-					wordCounts[w].score += myScore
-				}
-				else
-				{
-					wordCounts[w] = {count:1, score:myScore}
+					for (var w of stopAtApostrophe ? ww.split(/[\-']/) : [ww])
+					{
+						const length = w.length
+						const myScore = (length * (length + 1)) / 2
+						
+						if (w in wordCounts)
+						{
+							++ wordCounts[w].count
+							wordCounts[w].score += myScore
+						}
+						else
+						{
+							wordCounts[w] = {count:1, score:myScore}
+						}
+					}
 				}
 			}
 		}

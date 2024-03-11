@@ -8,18 +8,23 @@ const kTweakableDefaults =
 	language:"EN",
 	voiceDefault:"",
 	voiceSpeech:"",
-	voiceHeading:"",
+//	voiceHeading:"",
 	badWords:"tge tgey",
 	allowedStartCharacters:'ABCDEFGHIJKLMNOPQRSTUVWXYZ"',
 	allowedCharacters:'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ()"\'?.,!',
+	endOfSpeech:kCharacterElipsis + ".!?\u2014,",
+	endOfParagraphSpeech:kCharacterElipsis + ".!?\u2014",
+	endOfParagraphNarrative:kCharacterElipsis + ".!?:",
 	skip:["Contents"],
 	replace:['\\bDr\\./Dr^', '\\bMr\\./Mr^', '\\bMrs\\./Mrs^', '\\bO\\.S\\./O^S^', '\\bi\\.e\\./i^e^', '\\be\\.g\\./e^g^', '([0-9]+)\\.([0-9]+)/$1^$2', '^== (.*) ==$/$1.'],
 	hyphenCheckPairs:["sat-nav", "set-up", "under-cover", "self-reliance reliant control esteem respect awareness aware", "short-term", "left right-hand", "sand-timer", "back-stage", "stage-left right", "dance-floor", "slow-motion", "some-thing where how what body one", "heart-break breaking breaks breakingly broken", "car-park parks", "brain-wave waves", "mind lip-reading reader readers read reads", "twenty thirty forty fifty sixty seventy eighty ninety-one two three four five six seven eight nine", "one two three four five six seven eight nine ten-hundred thousand million billion trillion"],
 	names:[],
+	splitInfinitiveIgnoreList:[],
+	numberIgnoreList:[],
 	headingIdentifier:"",
+	removeHeadingIdentifier:false,
 	headingMaxCharacters:100,
-	numTextBoxes:1,
-	allowNumbersWithThisManyDigits:4
+	numTextBoxes:1
 }
 
 var g_tweakableSettings = {}
@@ -33,20 +38,39 @@ Object.entries(kTweakableDefaults).forEach(CopyToSetting)
 
 const kSettingNames =
 {
-	language:"Language|language",
-	voiceDefault:"Voice (narrative)|voice",
-	voiceSpeech:"Voice (speech)|voice",
-	voiceHeading:"Voice (heading)|voice",
-	badWords:"Bad words|size=110",
-	replace:"Replace (regex)|cols=60",
-	allowedStartCharacters:"Valid characters for start of paragraph|size=110",
-	allowedCharacters:"Valid characters|size=110",
-	skip:"Skip lines starting with|cols=60",
-	headingIdentifier:"Line is a heading if it includes",
-	headingMaxCharacters:"Max characters in a heading",
-	hyphenCheckPairs:"Hyphen check text|cols=105",
-	names:"Character/place names|cols=60",
-	allowNumbersWithThisManyDigits:"Allow numbers with this many digits or more"
+	VOICE:
+	{
+		language:"Language|language",
+		voiceDefault:"Voice (narrative)|voice",
+		voiceSpeech:"Voice (speech)|voice",
+//		voiceHeading:"Voice (heading)|voice",
+	},
+	["INPUT PROCESSING"]:
+	{
+		replace:"Replace (regex)|cols=60",
+		skip:"Skip lines starting with|cols=60",
+		headingIdentifier:"Line is a heading if it includes",
+		removeHeadingIdentifier:"Remove heading identifier",
+		headingMaxCharacters:"Max characters in a heading",
+	},
+	NAMES:
+	{
+		names:"Character/place names|cols=60",
+//		hyphenCheckPairs:"Hyphen check text|cols=105",
+	},
+	["CHECKS"]:
+	{
+		allowedStartCharacters:"Valid characters for start of paragraph|size=110",
+		allowedCharacters:"Valid characters|size=110",
+		endOfSpeech:"Valid characters for end of speech",
+		endOfParagraphSpeech:"Valid characters for end of paragraph (speech)",
+		endOfParagraphNarrative:"Valid characters for end of paragraph (narrative)",
+		badWords:"Bad words|size=110",
+		splitInfinitiveIgnoreList:"Split infinitive check ignores these strings|cols=60",
+		numberIgnoreList:"Number check ignores these strings|cols=60",
+		["Enabled checks"]:() => BuildIssueDefaults(false),
+		["Additional settings"]:() => BuildIssueDefaults(true),
+	}
 }
 
 const kOptionCustomNames =
@@ -56,8 +80,29 @@ const kOptionCustomNames =
 
 const kHasNoEffect = ["voiceDefault", "voiceSpeech", "voiceHeading"]
 
+var g_nameLookup, g_permittedNameCapitalisations
+
+OnEvent("clear", () =>
+{
+	g_nameLookup = {}
+	g_permittedNameCapitalisations = {}
+
+	for (var nameList of SettingsGetNamesArrayArray())
+	{
+		for (var name of nameList)
+		{
+			g_nameLookup[name.toLowerCase()] = nameList[0]
+			g_permittedNameCapitalisations[name] = true
+			g_permittedNameCapitalisations[CapitaliseFirstLetter(name)] = true
+			g_permittedNameCapitalisations[name.toUpperCase()] = true
+		}
+	}
+})
+
 function UpdateSettingFromText(name, type, savedSetting, isLoading)
 {
+	GetDataType(savedSetting) == "string" || ShowError("Data '" + name + "' isn't a string")
+
 	if (type == 'array')
 	{
 		SettingUpdate(name, OnlyKeepValid(savedSetting.split(isLoading ? ',' : '\n')), isLoading)
@@ -69,6 +114,10 @@ function UpdateSettingFromText(name, type, savedSetting, isLoading)
 	else if (type == 'string')
 	{
 		SettingUpdate(name, savedSetting, isLoading)
+	}
+	else if (type == 'boolean')
+	{
+		SettingUpdate(name, savedSetting == "true", isLoading)
 	}
 	else
 	{
@@ -84,7 +133,7 @@ function SettingsLoad()
 		
 		if (savedSetting === null || savedSetting === undefined)
 		{
-			console.log("No '" + name + "' setting saved, using default " + GetDataType(val) + " '" + val + "'")
+//			console.log("No '" + name + "' setting saved, using default " + GetDataType(val) + " '" + val + "'")
 		}
 		else
 		{
@@ -112,7 +161,7 @@ function SettingUpdate(name, newValue, isLoading)
 	}
 	else
 	{
-		console.log("There's no setting called '" + name + "' in settings structure")
+		console.warn("There's no setting called '" + name + "' in settings structure")
 	}
 }
 
@@ -159,13 +208,17 @@ function FillInSetting(k)
 			elem.value = data.join('\n')
 			elem.rows = data.length + 1
 		}
+		else if (typeof data === "boolean")
+		{
+			elem.checked = data
+		}
 		else
 		{
 			elem.value = data
 			
 			if (data != elem.value)
 			{
-				console.warn("Mismatch! Wanted to set '" + k + "' to '" + data + "' but it's set to '" + elem.value + "'")
+				console.warn("Mismatch! Wanted to set '" + k + "' to " + GetDataType(data) + " '" + data + "' but it's set to " + GetDataType(elem.value) + " '" + elem.value + "'")
 			}
 		}
 	}
@@ -173,7 +226,7 @@ function FillInSetting(k)
 
 function FillInSettings()
 {
-	Object.keys(kSettingNames).forEach(FillInSetting)
+	Object.keys(kSettingNames[g_currentOptions.settings.page]).forEach(FillInSetting)
 }
 
 function UserChangedSetting(name)
@@ -181,7 +234,7 @@ function UserChangedSetting(name)
 	var elem = document.getElementById('setting_' + name)
 	const data = g_tweakableSettings[name]
 	
-	UpdateSettingFromText(name, GetDataType(data), elem.value)
+	UpdateSettingFromText(name, GetDataType(data), (elem.type == "checkbox") ? elem.checked + "" : elem.value)
 	
 	if (name == "language")
 	{
@@ -195,12 +248,12 @@ function UserChangedSetting(name)
 
 function SettingsAdd(reply, txt, formBits)
 {
-	reply.push("<tr><td width=10 valign=top><nobr>" + txt + "&nbsp;&nbsp;&nbsp;</nobr></td><td>" + formBits + "</td></tr>")
+	reply.push('<tr><td width="10" valign="top"><nobr>' + txt + "&nbsp;&nbsp;&nbsp;</nobr></td><td>" + formBits + "</td></tr>")
 }
 
 function SettingAskRevert(whichOne)
 {
-	if (confirm("Do you really want to revert '" + kSettingNames[whichOne].split('|', 1)[0] + "' to its default value?"))
+	if (confirm("Do you really want to revert '" + kSettingNames[g_currentOptions.settings.page][whichOne].split('|', 1)[0] + "' to its default value?"))
 	{
 		CopyToSetting([whichOne, kTweakableDefaults[whichOne]])
 		FillInSetting(whichOne)
@@ -233,71 +286,80 @@ function SettingTestSpeech(whichOne)
 	SpeakUsingVoice("Testing, one two three!", whichOne)
 }
 
-g_tabFunctions.settings = function(reply, thenCall)
+function BuildIssueDefaults(doSettings)
 {
-	reply.push("<table>")
-	for (var [k, display] of Object.entries(kSettingNames))
-	{
-		var [displayName, extra] = display.split('|')
-		var theType = 'input type=text'
-		var theMiddle = ""
-		var revert = ""
-
-		if (extra == 'voice')
-		{
-			theType = 'select'
-			for (var voice of Object.keys(g_voiceLookUp).sort())
-			{
-				theMiddle += "<option>" + voice + "</option>"
-			}
-			extra = ''
-			revert = "&nbsp;" + CreateClickableText(kIconSpeech, "SettingTestSpeech('" + k + "')")
-		}
-		else if (extra == 'language')
-		{
-			theType = 'select'
-			for (var voice of g_voiceLanguages)
-			{
-				theMiddle += "<option>" + voice + "</option>"
-			}
-			extra = ''
-		}
-		else
-		{
-			revert = "&nbsp;" + CreateClickableText(kIconRevert, "SettingAskRevert('" + k + "')")
-			if (Array.isArray(g_tweakableSettings[k]))
-			{
-				theType = 'textarea'
-				if (kTweakableDefaults[k].length)
-				{
-					revert += CreateClickableText(kIconFix, "SettingFixArray('" + k + "')")
-				}
-			}
-		}
-		
-		SettingsAdd(reply, displayName, '<' + theType + ' onChange="UserChangedSetting(\'' + k + '\')" ' + (extra ? extra + ' ' : '') + 'id="setting_' + k + '">' + theMiddle + '</' + theType.split(' ')[0] + '>' + revert)
-	}
-	
-	var issueChecks = []
-	var issueSettings = []
+	var reply = []
 
 	for (var warningID of Object.keys(g_warningNames))
 	{
-		if (warningID in kOptionCustomNames)
+		if ((warningID in kOptionCustomNames) == doSettings)
 		{
-			// Options default to false
-			OptionsMakeCheckbox(issueSettings, "ProcessInput()", warningID, kOptionCustomNames[warningID], false, true)
-		}
-		else
-		{
-			// Checks default to true
-			OptionsMakeCheckbox(issueChecks, "ProcessInput()", warningID, "Check for " + warningID.toLowerCase(), true, true)
+			OptionsMakeCheckbox(reply, "ProcessInput()", warningID, doSettings ? kOptionCustomNames[warningID] : ("Check for " + warningID.toLowerCase()), !doSettings, true)
 		}
 	}
 
-	SettingsAdd(reply, "Issue checks (default)", OptionsConcat(issueChecks))
-	SettingsAdd(reply, "Issue settings (default)", OptionsConcat(issueSettings))
+	return OptionsConcat(reply)
+}
+
+TabDefine("settings", function(reply, thenCall)
+{
+	TabBuildButtonsBar(reply, Object.keys(kSettingNames))
+
+	reply.push("<table>")
+	for (var [k, display] of Object.entries(kSettingNames[g_currentOptions.settings.page]))
+	{
+		if (typeof display == "string")
+		{
+			var [displayName, extra] = display.split('|', 2)
+			var theType = 'input type=text'
+			var theMiddle = ""
+			var revert = ""
+
+			if (extra == 'voice')
+			{
+				theType = 'select'
+				for (var voice of Object.keys(g_voiceLookUp).sort())
+				{
+					theMiddle += "<option>" + voice + "</option>"
+				}
+				extra = ''
+				revert = "&nbsp;" + CreateClickableText(kIconSpeech, "SettingTestSpeech('" + k + "')")
+			}
+			else if (extra == 'language')
+			{
+				theType = 'select'
+				for (var voice of g_voiceLanguages)
+				{
+					theMiddle += "<option>" + voice + "</option>"
+				}
+				extra = ''
+			}
+			else if (typeof g_tweakableSettings[k] === "boolean")
+			{
+				theType = "input type=checkbox"
+			}
+			else
+			{
+				revert = "&nbsp;" + CreateClickableText(kIconRevert, "SettingAskRevert('" + k + "')")
+				if (Array.isArray(g_tweakableSettings[k]))
+				{
+					theType = 'textarea'
+					if (kTweakableDefaults[k].length)
+					{
+						revert += CreateClickableText(kIconFix, "SettingFixArray('" + k + "')")
+					}
+				}
+			}
+		
+			SettingsAdd(reply, displayName, '<' + theType + ' onChange="UserChangedSetting(\'' + k + '\')" ' + (extra ? extra + ' ' : '') + 'id="setting_' + k + '">' + theMiddle + '</' + theType.split(' ', 1)[0] + '>' + revert)
+		}
+		else
+		{
+			SettingsAdd(reply, k, display())
+		}
+	}
+	
 	TableClose(reply)
 	
 	thenCall.push(FillInSettings)
-}
+})

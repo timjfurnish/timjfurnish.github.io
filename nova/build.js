@@ -65,7 +65,7 @@ function RenderBarFor(val, scale, dp, suffix)
 }
 
 //=======================
-// options
+// Options
 //=======================
 
 const g_currentOptions =
@@ -82,16 +82,7 @@ function UpdateOptions()
 			var elem = document.getElementById(g_selectedTabName + "." + key)
 			if (elem)
 			{
-				const myType = GetDataType(myTabOptions[key])
-
-				if (myType == "boolean")
-				{
-					myTabOptions[key] = elem.checked
-				}
-				else
-				{
-					myTabOptions[key] = elem.value
-				}
+				myTabOptions[key] = ((typeof myTabOptions[key]) == "boolean") ? elem.checked : elem.value
 			}
 		}
 	}
@@ -123,6 +114,17 @@ function OptionsMakeKey(tab, id, defVal, overwrite)
 {
 	if (tab in g_currentOptions)
 	{
+		// If overwrite is an array it means use default value should the current value not feature in the array
+		if (Array.isArray(overwrite))
+		{
+			const checkThisArray = overwrite
+			if (id in g_currentOptions[tab])
+			{
+				overwrite = !checkThisArray.includes(g_currentOptions[tab][id])
+				console.log("Should we reset " + tab + "." + id + ", currently '" + g_currentOptions[tab][id] + "', to '" + defVal + "'? " + (overwrite ? "Yes!" : "No!") + " Valid options=[" + checkThisArray + "]")
+			}
+		}
+		
 		if (overwrite || ! (id in g_currentOptions[tab]))
 		{
 			g_currentOptions[tab][id] = defVal
@@ -164,10 +166,10 @@ function OptionsConcat(arr)
 	return "<nobr>" + arr.join("&nbsp;</nobr> <nobr>") + "</nobr><br>"
 }
 
-function OptionsMakeSelect(toHere, funcName, heading, id, options, defaultVal)
+function OptionsMakeSelect(toHere, funcName, heading, id, options, defaultVal, callFuncLate)
 {
-	id = OptionsMakeKey(g_selectedTabName, id, defaultVal)
-	var reply = [heading + ': <select ' + OptionsCommon(id, funcName) + '>']
+	id = OptionsMakeKey(g_selectedTabName, id, defaultVal, Object.keys(options))
+	var reply = [heading + ': <select ' + OptionsCommon(id, funcName, callFuncLate) + '>']
 
 	for (var [key, val] of Object.entries(options))
 	{

@@ -32,12 +32,13 @@
 	font-size:92%;
 	font-weight:500;
 	padding-top: 6px;
-	padding-bottom: 4px;
+	padding-bottom: 6px;
 	padding-left: 6px;
 	padding-right: 6px;
 	white-space:nowrap;
 	cursor:pointer;
 	border:1px solid #000000;
+	text-shadow: 1px 1px #999999;
 }
 .tabSelected
 {
@@ -66,4 +67,12 @@
 {
 	transform:rotate(180deg);
 	writing-mode:vertical-rl;
+}
+.highlighterWithDots
+{
+	text-decoration: underline dotted red;
+}
+.highlighter, .highlighterWithDots
+{
+	background-color:#FFFF00;
 }

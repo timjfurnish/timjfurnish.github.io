@@ -3,39 +3,9 @@
 // (c) Tim Furnish, 2023-2024
 //==============================================
 
-var g_nameLookup, g_txtForMentions, g_currentlyBuildingChapter, g_permittedNameCapitalisations
-
-OnEvent("clear", () =>
-{
-	g_nameLookup = {}
-	g_permittedNameCapitalisations = {}
-
-	for (var nameList of SettingsGetNamesArrayArray())
-	{
-		for (var name of nameList)
-		{
-			g_nameLookup[name.toLowerCase()] = nameList[0]
-			g_permittedNameCapitalisations[name] = true
-			g_permittedNameCapitalisations[CapitaliseFirstLetter(name)] = true
-			g_permittedNameCapitalisations[name.toUpperCase()] = true
-		}
-	}
-
-	g_txtForMentions = []
-	MentionsStoreHeading("Global")
-})
-
-function MentionsStoreHeading(heading)
-{
-	g_issueHeading = heading
-	g_currentlyBuildingChapter = {paragraphs:[], heading:heading}
-	g_txtForMentions.push(g_currentlyBuildingChapter)
-}
-
-function MentionsStoreParagraph(para)
-{
-	g_currentlyBuildingChapter.paragraphs.push(para)
-}
+var g_threadSections = []
+var g_threadSectionSelected = 0
+var g_threadSectionFragment = 0
 
 function RedrawMentions()
 {
@@ -60,25 +30,26 @@ function RedrawMentions()
 			customTextBox.readOnly = false
 		}
 
-		if (g_txtForMentions && entityNames && g_txtForMentions.length)
+		if (g_metaDataInOrder && entityNames && g_metaDataInOrder.length)
 		{
 			var names = entityNames.split('+')
 			var aBreak = ""
 			const theString = "\\b(?:" + names.join('|') + ")\\b"
 			const exp = new RegExp(theString, "ig");
 
-			console.log("Searching through " + g_txtForMentions.length + " paragraphs for " + theString)
+			console.log("Searching for " + theString)
 
-			for (var chapter of g_txtForMentions)
+			for (var metadata of g_metaDataInOrder)
 			{
-				var showHeading = "<H3>" + chapter.heading + "</H3>"
+				var showHeading = "<H3>" + metadata.info.CHAPTER + " [" + metadata.info.LOC + "]</H3>"
 				var before = ""
 
-				for (var para of chapter.paragraphs)
+				for (var para of metadata.myParagraphs)
 				{
 					var nextBefore = aBreak
-					var s2 = para.replace(exp, Highlighter)
-					if (para != s2)
+					var s2 = para.allOfIt.replace(exp, Highlighter)
+
+					if (para.allOfIt != s2)
 					{
 						if (showHeading)
 						{
@@ -100,7 +71,7 @@ function RedrawMentions()
 	}
 }
 
-g_tabFunctions.mentions = function(reply, thenCall)
+TabDefine("mentions", function(reply, thenCall)
 {
 	const specificNames = SettingsGetNamesArrayArray()
 	var nameData = {[""]:"Custom"}
@@ -117,6 +88,138 @@ g_tabFunctions.mentions = function(reply, thenCall)
 	reply.push("<p id=mentionsGoHere></p>")
 	
 	thenCall.push(RedrawMentions)
+})
+
+function HighlightThreadSection(num)
+{
+	if (g_threadSectionSelected != num)
+	{
+		TrySetElementClass("threadSection" + g_threadSectionSelected, "highlighter", false)
+	}
+
+	g_threadSectionSelected = num
+	g_threadSectionFragment = 0
+	TrySetElementClass("threadSection" + num, "highlighter", true)
+}
+
+function RedrawThread()
+{
+	var threadsGoHere = document.getElementById("threadsGoHere")
+
+	var lastHeading = ""
+	
+	g_threadSections = []
+	g_threadSectionSelected = 0
+
+	if (threadsGoHere)
+	{
+		var output = []
+		var mustMatch = g_currentOptions.threads.showThis
+
+		for (var metadata of g_metaDataInOrder)
+		{
+			var showHeading = "<H3>" + metadata.info.CHAPTER + " [" + metadata.info.LOC + "]</H3>"
+			var before = ""
+			
+			if (metadata.info[g_currentOptions.threads.page] == mustMatch)
+			{
+				for (var para of metadata.myParagraphs)
+				{
+					if (showHeading)
+					{
+						before = showHeading
+						showHeading = false
+					}
+
+					output.push(before + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<SPAN ID="threadSection' + g_threadSections.length + '">' + para.allOfIt + '</SPAN>')
+					g_threadSections.push(para)
+					
+					before = ""
+				}
+			}
+		}
+
+		threadsGoHere.innerHTML = output.join('<BR>')
+	}
+	
+	HighlightThreadSection(g_threadSectionSelected)
+}
+
+function OnDoneThreadSpeakingFragment()
+{
+	++ g_threadSectionFragment
+	ThreadRead()
+}
+
+function ThreadRead()
+{
+	const thingToSay = g_threadSections[g_threadSectionSelected]
+	if (thingToSay)
+	{
+		const fragment = thingToSay.fragments[g_threadSectionFragment]
+		if (fragment)
+		{
+			SpeakUsingVoice(fragment.text, fragment.isSpeech ? "voiceSpeech" : "voiceDefault", OnDoneThreadSpeakingFragment)
+		}
+		else
+		{
+			HighlightThreadSection(g_threadSectionSelected + 1)
+			CallTheseFunctions(ThreadRead)
+		}
+	}
+}
+
+TabDefine("threads", function(reply, thenCall)
+{
+	const columns = Object.keys(g_metaDataAvailableColumns)
+	
+	if (columns.length)
+	{
+		TabBuildButtonsBar(reply, columns)
+		
+		var nameData = {[""]:""}
+
+		for (var metadata of g_metaDataInOrder)
+		{
+			const txt = metadata.info[g_currentOptions.threads.page]
+			nameData[txt] = txt
+		}
+		
+		var options = []
+		OptionsMakeSelect(options, "RedrawThread()", "Only show text from " + g_currentOptions.threads.page.toLowerCase(), "showThis", nameData, "", true)
+		options.push('<button onclick="HighlightThreadSection(g_threadSectionSelected - 1)">&lt;</button>')
+		options.push('<button onclick="HighlightThreadSection(g_threadSectionSelected + 1)">&gt;</button>')
+		options.push('<BUTTON ONCLICK="ThreadRead()">Read</BUTTON>')
+		options.push('<BUTTON ONCLICK="speechSynthesis.cancel()">Stop</BUTTON>')
+
+		reply.push(OptionsConcat(options))
+		reply.push("<p id=threadsGoHere></p>")
+		
+		thenCall.push(RedrawThread)
+	}
+})
+
+//---------------------------------------
+// Switch to here from another tab
+//---------------------------------------
+
+function SwitchToMentionsAndSearchEntity(txt)
+{
+	const specificNames = SettingsGetNamesArrayArray()
+
+	for (var name of specificNames)
+	{
+		if (txt == CapitaliseFirstLetter(name[0]))
+		{
+			const searchFor = name.join('+')
+			OptionsMakeKey("mentions", "entity", searchFor, true)
+			OptionsMakeKey("mentions", "custom", searchFor, true)
+			SetTab("mentions")
+			return
+		}
+	}
+
+	ShowError("Failed to find '" + txt + "'")
 }
 
 function SwitchToMentionsAndSearch(txt)
@@ -128,5 +231,5 @@ function SwitchToMentionsAndSearch(txt)
 
 function MakeMentionLink(showText, searchForText)
 {
-	return '<NOBR>' + showText + ' ' + CreateClickableText(kIconSearch, "SwitchToMentionsAndSearch('" + (searchForText ?? showText) + "')") + '</NOBR>'
+	return showText + '&nbsp;' + CreateClickableText(kIconSearch, "SwitchToMentionsAndSearch(" + MakeParamsString(searchForText ?? showText) + ")")
 }
