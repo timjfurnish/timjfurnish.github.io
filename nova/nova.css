@@ -7,10 +7,6 @@
 	background-color:rgba(0, 0, 0, 0.05);
 	border-radius:4px;
 }
-#clicky
-{
-	cursor:pointer;
-}
 #issueText
 {
 	font-size:85%;
@@ -25,6 +21,10 @@
 	border-left:1px solid #000000;
 	border-bottom:1px solid #000000;
 	border-right:1px solid #000000;
+}
+.clicky
+{
+	cursor:pointer;
 }
 .tabSelected, .tabDeselected
 {
@@ -75,4 +75,9 @@
 .highlighter, .highlighterWithDots
 {
 	background-color:#FFFF00;
+}
+.colourBar
+{
+	height:16px;
+	white-space:nowrap;
 }

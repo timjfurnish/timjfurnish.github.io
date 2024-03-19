@@ -53,7 +53,7 @@ function TableClose(reply)
 
 function CreateClickableText(theText, callThis)
 {
-	return '<B id=clicky onClick="' + callThis + '">' + theText + '</B>'
+	return '<B class="clicky" onClick="' + callThis + '">' + theText + '</B>'
 }
 
 function RenderBarFor(val, scale, dp, suffix)
@@ -61,7 +61,7 @@ function RenderBarFor(val, scale, dp, suffix)
 	const num = val * scale
 	const greenness = num * 2
 	const col = "rgb(" + Math.floor(300 - greenness) + ", " + Math.floor(greenness) + ", " + Math.floor(255 - greenness) + ")"
-	return '<DIV STYLE="width:' + Math.floor(num) + 'px;height:16px;background:' + col + '"><B><SMALL>' + ((dp === undefined) ? val : val.toFixed(dp)) + (suffix ?? '') + '</S<ALL></B></DIV>'
+	return '<DIV STYLE="width:' + Math.floor(num) + 'px;background:' + col + '" CLASS="colourBar"><B><SMALL>' + ((dp === undefined) ? val : val.toFixed(dp)) + (suffix ?? '') + '</SMALL></B></DIV>'
 }
 
 //=======================
@@ -121,7 +121,7 @@ function OptionsMakeKey(tab, id, defVal, overwrite)
 			if (id in g_currentOptions[tab])
 			{
 				overwrite = !checkThisArray.includes(g_currentOptions[tab][id])
-				console.log("Should we reset " + tab + "." + id + ", currently '" + g_currentOptions[tab][id] + "', to '" + defVal + "'? " + (overwrite ? "Yes!" : "No!") + " Valid options=[" + checkThisArray + "]")
+//				console.log("Should we reset " + tab + "." + id + ", currently '" + g_currentOptions[tab][id] + "', to '" + defVal + "'? " + (overwrite ? "Yes!" : "No!") + " Valid options=[" + checkThisArray + "]")
 			}
 		}
 		

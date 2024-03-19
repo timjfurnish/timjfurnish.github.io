@@ -16,6 +16,7 @@ function TabDefine(tabName, myFunction, displayNameOverride)
 
 function SetTabTitle(tabName, text)
 {
+	console.log("Setting extra text for tab " + tabName + " to " + text)
 	var tabby = document.getElementById("tab_" + tabName)
 	tabby.innerHTML = BuildTabDisplayText(tabName, text)
 }
@@ -24,7 +25,7 @@ function BuildTabDisplayText(tabName, extra)
 {
 	var main = g_tabFunctions[tabName].displayName
 
-	if (extra)
+	if (extra != undefined)
 	{
 		main = '<FONT COLOR="red">' + main + ' (' + extra + ')</FONT>'
 	}

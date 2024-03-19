@@ -5,8 +5,6 @@
 
 const kIllegalSubstrings =
 [
-	["leading white space", /^[\s]+/],
-	["trailing white space", /[\s]+$/],
 	["tab character", "\t"],
 	["numbers", /#?[A-Z\/\-\.]*[0-9]+[A-Z\/\-0-9]*/gi, txt => g_tweakableSettings.numberIgnoreList.includes(txt)],
 	["double apostrophe", "''"],
@@ -23,16 +21,16 @@ function SetUp()
 	CallTheseFunctions(BuildTabs, SetUp_FixTitle, SettingsLoad, AddAllInputBoxes, ShowContentForSelectedTab, ProcessInput)
 }
 
-function CheckParagraphForIssues(txtIn, txtInProcessed)
+function CheckParagraphForIssues(txtIn)
 {
-	if (! g_tweakableSettings.allowedStartCharacters.includes(txtInProcessed[0].toUpperCase()))
+	if (! g_tweakableSettings.allowedStartCharacters.includes(txtIn[0].toUpperCase()))
 	{
-		IssueAdd("First character of " + FixStringHTML(txtInProcessed) + " is not an allowed start character " + FixStringHTML(g_tweakableSettings.allowedStartCharacters), "ILLEGAL START CHARACTER")
+		IssueAdd("First character of " + FixStringHTML(txtIn) + " is not an allowed start character " + FixStringHTML(g_tweakableSettings.allowedStartCharacters), "ILLEGAL START CHARACTER")
 	}		
 
 	txtIn = txtIn.replace(/[\(\)]/g, '')
 
-	const splittyFun = txtInProcessed.split(/[\.,!\?]+["\)]?/)
+	const splittyFun = txtIn.split(/[\.,!\?]+["\)]?/)
 	splittyFun.shift()
 	for (var each of splittyFun)
 	{
@@ -53,10 +51,7 @@ function CheckEachWord(word, s, workspace)
 	}
 	else if (wordLower == "todo")
 	{
-		if (g_metaDataCurrentCompleteness >= 100)
-		{
-			IssueAdd("Completeness is " + g_metaDataCurrentCompleteness + " but there's a TODO in " + FixStringHTML(s), "TODO")
-		}
+		MetaDataInformFoundToDo(s)
 	}
 
 	const name = g_nameLookup[wordLower]
@@ -90,12 +85,15 @@ function ShouldIgnorePara(txtInProcessed)
 
 	if (txtInProcessed[0] == '#')
 	{
-		MetaDataSet(...txtInProcessed.substring(1).split(':', 2))
+		for (var setter of txtInProcessed.substring(1).split(';'))
+		{
+			MetaDataSet(...setter.split(':', 2))
+		}
 		return true
 	}
 	else if (txtInProcessed[0] == '%')
 	{
-		g_metaDataCurrentCompleteness = parseInt(txtInProcessed.substring(1))
+		MetaDataSetCompletenessPercent(parseInt(txtInProcessed.substring(1)))
 		return true
 	}
 	else if (txtInProcessed[0] == '@')
@@ -117,7 +115,7 @@ function CheckStartsWithCapital(w, reason, s)
 	}
 }
 
-function HandleNewHeading(workspace, txtInRaw)
+function HandleNewHeading(workspace, txtInRaw, displayThis)
 {
 	for (var [k,v,allowFunc] of kIllegalSubstrings)
 	{
@@ -130,20 +128,19 @@ function HandleNewHeading(workspace, txtInRaw)
 
 	if (g_tweakableSettings.headingIdentifier)
 	{
-		if (txtInRaw.length <= g_tweakableSettings.headingMaxCharacters)
+		if (displayThis.length <= g_tweakableSettings.headingMaxCharacters)
 		{
-			if (txtInRaw.includes(g_tweakableSettings.headingIdentifier))
+			if (displayThis.includes(g_tweakableSettings.headingIdentifier))
 			{
 				if (g_tweakableSettings.removeHeadingIdentifier)
 				{
-					txtInRaw = txtInRaw.replace(g_tweakableSettings.headingIdentifier, '')
+					displayThis = displayThis.replace(g_tweakableSettings.headingIdentifier, '')
 				}
 				
 				DoEndOfChapterChecks(workspace)
-				g_issueHeading = txtInRaw
 
-				workspace.stillLookingForChapterNameInChapter = txtInRaw.split(/ *\(/, 1)[0].toLowerCase()
-				MetaDataSet("CHAPTER", txtInRaw)
+				workspace.stillLookingForChapterNameInChapter = displayThis.split(/ *\(/, 1)[0].toLowerCase()
+				MetaDataSet("CHAPTER", displayThis)
 
 				delete workspace.foundTextBetweenHeadings
 				return true
@@ -203,19 +200,28 @@ function ProcessInput()
 	{
 		try
 		{
+			var txtInVeryRaw = txtInRaw.trim()
+			
+			if (txtInRaw != txtInVeryRaw)
+			{
+				IssueAdd("Paragraph starts and/or ends with space: " + FixStringHTML(txtInVeryRaw), "LEADING OR TRAILING SPACE")
+			}
+
+			txtInVeryRaw = txtInRaw
+
 			for (var rule of workspace.replaceRules)
 			{
 				txtInRaw = txtInRaw.replace(rule.regex, rule.replaceWith)
 			}
 
-			if (! ShouldIgnorePara(txtInRaw) && ! HandleNewHeading(workspace, txtInRaw))
+			if (! ShouldIgnorePara(txtInRaw) && ! HandleNewHeading(workspace, txtInRaw, txtInVeryRaw))
 			{
 				var txtInProcessed = txtInRaw.trim()
 				var storeAsFragments = []
 				
 				workspace.foundTextBetweenHeadings = true
 
-				CheckParagraphForIssues(txtInRaw, txtInProcessed)
+				CheckParagraphForIssues(txtInProcessed)
 
 				const talkyNonTalky = txtInProcessed.split('"')
 
@@ -370,7 +376,7 @@ function ProcessInput()
 					}
 				}
 				
-				g_metaDataGatherParagraphs.push({allOfIt:txtInRaw, fragments:storeAsFragments})
+				g_metaDataGatherParagraphs.push({allOfIt:txtInVeryRaw, fragments:storeAsFragments})
 
 				if (g_disabledWarnings.SCRIPT)
 				{

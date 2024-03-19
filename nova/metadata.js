@@ -10,13 +10,23 @@ var g_metaDataTally
 var g_metaDataTotals
 var g_metaDataCurrentCompleteness
 var g_metaDataGatherParagraphs
+var g_metaDataCurrentContainsToDo
 
 const kMetaDataDefaultDisplay = MakeSet("Words", "Estimated final words", "Percent done")
 const kMetaDataDefaultGroup = MakeSet("PART", "CHAPTER")
 
 function MakeClearTally(createMentions)
 {
-	var reply = {Sentences:0, Paragraphs:0, Words:0, ["Estimated final words"]:0, ["Words in quotes"]:0}
+	var reply =
+	{
+		Sentences:0,
+		Paragraphs:0,
+		Words:0,
+		["Estimated final words"]:0,
+		["Words in quotes"]:0,
+		["Percent speech"]:0,
+		["Percent done"]:0
+	}
 	
 	if (createMentions)
 	{
@@ -58,10 +68,20 @@ function MetaDataCombine(container, name, addThisValue)
 	}
 }
 
+function MetaDataMakeFragmentDescription(fromThis)
+{
+	return Object.values(fromThis ?? g_metaDataCurrent).join(" | ")
+}
+
 function MetaDataEndProcess()
 {
 	if (g_metaDataTally.Sentences)
 	{
+		if (g_metaDataCurrentCompleteness < 100 && ! g_metaDataCurrentContainsToDo)
+		{
+			IssueAdd("Completeness is " + g_metaDataCurrentCompleteness + " but there's no TODO in this section", "TODO")
+		}
+
 		var info = {}
 		for (var [key, val] of Object.entries(g_metaDataCurrent))
 		{
@@ -71,8 +91,7 @@ function MetaDataEndProcess()
 		
 		var storeThis = {info:info, myParagraphs:g_metaDataGatherParagraphs}
 
-		const completenessPercentage = g_metaDataCurrentCompleteness
-		g_metaDataTally["Estimated final words"] = (g_metaDataTally.Words * 100) / completenessPercentage
+		g_metaDataTally["Estimated final words"] = (g_metaDataTally.Words * 100) / g_metaDataCurrentCompleteness
 	
 		for (var [key, val] of Object.entries(g_metaDataTally))
 		{
@@ -123,6 +142,33 @@ function MetaDataSet(key, val)
 	}
 
 	g_metaDataCurrent[key] = val
+	g_metaDataCurrentContainsToDo = false
+}
+
+function MetaDataInformFoundToDo(foundInText)
+{
+	if (g_metaDataCurrentCompleteness >= 100)
+	{
+		IssueAdd("Completeness is " + g_metaDataCurrentCompleteness + " but there's a TODO in " + FixStringHTML(foundInText), "TODO")
+	}
+
+	g_metaDataCurrentContainsToDo = true
+}
+
+function MetaDataSetCompletenessPercent(value)
+{
+	if (value < 1 || value > 100)
+	{
+		IssueAdd("Ignoring bad completeness value " + value + ", should be between 1 and 100 inclusive", "IGNORED COMPLETENESS")
+	}
+	else if (g_metaDataTally.Sentences)
+	{
+		IssueAdd("Ignoring badly placed completeness value " + value + " after already reading " + g_metaDataTally.Sentences + " sentences", "IGNORED COMPLETENESS")
+	}
+	else
+	{
+		g_metaDataCurrentCompleteness = value
+	}
 }
 
 OnEvent("processingDone", MetaDataEndProcess)
@@ -136,6 +182,7 @@ OnEvent("clear", () =>
 	g_metaDataTotals = MakeClearTally()
 	g_metaDataCurrentCompleteness = 100
 	g_metaDataGatherParagraphs = []
+	g_metaDataCurrentContainsToDo = false
 })
 
 function MetaDataProcessParagraph(numSentences)
@@ -312,14 +359,8 @@ function MetaDataDrawTable()
 	const colourLookUp = colourBasedOn ? MakeColourLookUpTable(Object.keys(seenThings[colourBasedOn])) : null
 
 	var maximums = MakeClearTally(false)
-	maximums["Percent speech"] = 0
-	maximums["Percent done"] = 0
-	
-	if (sort in maximums)
-	{
-		dataToDisplay.sort((a,b) => b.tally[sort] - a.tally[sort])
-	}
 
+	// Calculate derived values (e.g. percentages) and max values
 	for (var data of dataToDisplay)
 	{
 		data.tally["Percent speech"] = 100 * (data.tally["Words in quotes"] / data.tally.Words)
@@ -332,6 +373,12 @@ function MetaDataDrawTable()
 				maximums[name] = val
 			}
 		}
+	}
+
+	// Sort
+	if (sort in maximums)
+	{
+		dataToDisplay.sort((a,b) => b.tally[sort] - a.tally[sort])
 	}
 
 	for (var name of Object.keys(lastTally))
@@ -369,7 +416,7 @@ function MetaDataDrawTable()
 			}
 			else
 			{
-				contents = RenderBarFor(value, 200.0 / maximums[name], 0)
+				contents = RenderBarFor(value, 200.0 / maximums[name], 0, ' (' + (100 * value / g_metaDataTotals[name]).toFixed(2) + '%)')
 			}
 
 			reply.push("<TD CLASS=cell>" + contents + "</TD>")
@@ -386,7 +433,7 @@ function MetaDataDrawTable()
 
 		for (var name of selectedDisplay)
 		{
-			if (name in g_metaDataTotals)
+			if (g_metaDataTotals[name])
 			{
 				reply.push('<TD CLASS="cell">' + Math.round(g_metaDataTotals[name]) + '</TD>')				
 			}
@@ -416,19 +463,19 @@ function TabFunctionStats(reply, thenCall)
 
 	var sortData = {"":"Do not consolidate", none:"Chronological"}
 	var emptyTally = MakeClearTally(true)
-	emptyTally["Percent speech"] = undefined
-	emptyTally["Percent done"] = undefined
 
 	for (var name of Object.keys(emptyTally))
 	{
 		if (typeof emptyTally[name] == "number")
 		{
-			sortData[name] = name.charAt(0).toUpperCase() + name.slice(1)
+			sortData[name] = name
 		}
 
 		OptionsMakeCheckbox(optionsDisplay, "MetaDataDrawTable()", "display_" + name, name, kMetaDataDefaultDisplay[name], true)
 	}
 	
+//	console.log(sortData)
+
 	OptionsMakeSelect(options, "MetaDataDrawTable()", "Sort", "sort", sortData, "none")
 
 	reply.push(OptionsConcat(options))

@@ -7,6 +7,10 @@ TabDefine("entities", function(reply, thenCall)
 {
 	TabBuildButtonsBar(reply, Object.keys(g_metaDataAvailableColumns))
 
+	var options = []
+	OptionsMakeCheckbox(options, "ShowContentForSelectedTab()", "showWithNoMentions", "Show columns with no mentions", true, true)
+	reply.push(OptionsConcat(options) + "<BR>")
+
 	TableOpen(reply)
 	reply.push("<TD BGCOLOR=lightGray>")
 
@@ -20,7 +24,16 @@ TabDefine("entities", function(reply, thenCall)
 		if ("name" in consolidateToHere)
 		{
 			Tally(addNumbers, consolidateToHere.rawName)
-			segments.push(consolidateToHere)
+
+			if (g_currentOptions.entities.showWithNoMentions || Object.keys(consolidateToHere.entityMentions).length > 0)
+			{
+				reply.push('<TD CLASS="cellNoWrap" ALIGN=center VALIGN=bottom>')
+				reply.push((consolidateToHere.name.length > 1) ? '<DIV CLASS="rotate90">' + consolidateToHere.name + "</DIV></TD>" : (consolidateToHere.name + "</TD>"))
+				
+				// console.log(consolidateToHere)
+				
+				segments.push(consolidateToHere)
+			}
 		}
 	}
 
@@ -33,8 +46,6 @@ TabDefine("entities", function(reply, thenCall)
 		{
 			FinishSegment()
 			consolidateToHere = {name:elementName, rawName:rawElementName, entityMentions:{}}
-			reply.push('<TD CLASS="cellNoWrap" ALIGN=center VALIGN=bottom>')
-			reply.push((elementName.length > 1) ? '<DIV CLASS="rotate90">' + elementName + "</DIV></TD>" : elementName + "</TD>")
 		}
 
 		MetaDataCombine(consolidateToHere, "entityMentions", metaData.Mentions)

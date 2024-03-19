@@ -92,14 +92,23 @@ TabDefine("mentions", function(reply, thenCall)
 
 function HighlightThreadSection(num)
 {
-	if (g_threadSectionSelected != num)
+	speechSynthesis.cancel()
+	
+	if (num >= 0 && num < g_threadSections.length)
 	{
-		TrySetElementClass("threadSection" + g_threadSectionSelected, "highlighter", false)
-	}
+		if (g_threadSectionSelected != num)
+		{
+			TrySetElementClass("threadSection" + g_threadSectionSelected, "highlighter", false)
+		}
 
-	g_threadSectionSelected = num
-	g_threadSectionFragment = 0
-	TrySetElementClass("threadSection" + num, "highlighter", true)
+		g_threadSectionSelected = num
+		g_threadSectionFragment = 0
+		TrySetElementClass("threadSection" + num, "highlighter", true)
+	}
+	
+//	SetTabTitle('threads', g_threadSectionSelected)
+	
+	return num == g_threadSectionSelected
 }
 
 function RedrawThread()
@@ -118,7 +127,7 @@ function RedrawThread()
 
 		for (var metadata of g_metaDataInOrder)
 		{
-			var showHeading = "<H3>" + metadata.info.CHAPTER + " [" + metadata.info.LOC + "]</H3>"
+			var showHeading = "<H3>" + MetaDataMakeFragmentDescription(metadata.info) + "</H3>"
 			var before = ""
 			
 			if (metadata.info[g_currentOptions.threads.page] == mustMatch)
@@ -131,7 +140,7 @@ function RedrawThread()
 						showHeading = false
 					}
 
-					output.push(before + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<SPAN ID="threadSection' + g_threadSections.length + '">' + para.allOfIt + '</SPAN>')
+					output.push(before + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<SPAN CLASS="clicky" ONCLICK="HighlightThreadSection(' + g_threadSections.length + ')" ID="threadSection' + g_threadSections.length + '">' + para.allOfIt + '</SPAN>')
 					g_threadSections.push(para)
 					
 					before = ""
@@ -161,9 +170,8 @@ function ThreadRead()
 		{
 			SpeakUsingVoice(fragment.text, fragment.isSpeech ? "voiceSpeech" : "voiceDefault", OnDoneThreadSpeakingFragment)
 		}
-		else
+		else if (HighlightThreadSection(g_threadSectionSelected + 1))
 		{
-			HighlightThreadSection(g_threadSectionSelected + 1)
 			CallTheseFunctions(ThreadRead)
 		}
 	}

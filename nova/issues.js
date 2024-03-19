@@ -5,7 +5,6 @@
 
 var g_issues = {}
 var g_disabledWarnings = {}
-var g_issueHeading
 var g_issueCount = 0
 var g_issueStats = {}
 
@@ -14,8 +13,8 @@ function BuildWarningNamesList()
 	const list =
 	[
 		'SCRIPT', 'NUMBERS', 'TODO', 'DISALLOWED WORD', 'ILLEGAL CHARACTERS',
-		'INVALID FINAL NARRATIVE CHARACTER',
-		'INVALID FINAL SPEECH CHARACTER',
+		'INVALID FINAL NARRATIVE CHARACTER', 'LEADING OR TRAILING SPACE',
+		'INVALID FINAL SPEECH CHARACTER', 'IGNORED COMPLETENESS',
 		'SPLIT INFINITIVE', 'CHAPTER NAME IN CHAPTER', 'ILLEGAL MOVE BETWEEN LOCATIONS',
 		'UNFINISHED QUOTE', 'CAPITALS', 'SPACE BEFORE PUNCTUATION',
 		'MARKUP ERROR', 'SPACE IN SPEECH', 'EMPTY SPEECH', 'EMPTY PARAGRAPH', 'EMPTY SENTENCE',
@@ -53,7 +52,6 @@ OnEvent("clear", () =>
 	g_issues = {}
 	g_disabledWarnings = {}
 	g_issueStats = {}
-	g_issueHeading = "Global"
 
 	Object.keys(g_warningNames).forEach(theName => g_issueStats[theName] = 0)
 
@@ -96,19 +94,21 @@ function IssueAdd(addThis, theType)
 
 	++ g_issueCount
 
-	if (g_issueHeading in g_issues)
+	const issueHeading = MetaDataMakeFragmentDescription()
+
+	if (issueHeading in g_issues)
 	{
-		g_issues[g_issueHeading].push(addThis)
+		g_issues[issueHeading].push(addThis)
 	}
 	else
 	{
-		g_issues[g_issueHeading] = [addThis]
+		g_issues[issueHeading] = [addThis]
 	}
 }
 
 OnEvent("processingDone", () =>
 {
-	SetTabTitle('issues', g_issueCount)
+	SetTabTitle('issues', g_issueCount || undefined)
 })
 
 function WarningEnableDisable(strIn)
