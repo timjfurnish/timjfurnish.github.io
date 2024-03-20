@@ -37,6 +37,11 @@ function CapitaliseFirstLetter(name)
 	return name.charAt(0).toUpperCase() + name.slice(1)
 }
 
+function EscapeRegExSpecialChars(txtIn)
+{
+	return txtIn.replace(/[.*+?^${}()|[\]\\\-]/g, "\\$&")
+}
+
 function MakeParamsString(...theParams)
 {
 	var out = []

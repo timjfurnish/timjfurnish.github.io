@@ -8,15 +8,15 @@ const kTweakableDefaults =
 	language:"EN",
 	voiceDefault:"",
 	voiceSpeech:"",
-//	voiceHeading:"",
 	badWords:"tge tgey",
 	allowedStartCharacters:'ABCDEFGHIJKLMNOPQRSTUVWXYZ"',
 	allowedCharacters:'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ()"\'?.,!',
+	startOfSpeech:kCharacterElipsis + "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'",
 	endOfSpeech:kCharacterElipsis + ".!?\u2014,",
 	endOfParagraphSpeech:kCharacterElipsis + ".!?\u2014",
 	endOfParagraphNarrative:kCharacterElipsis + ".!?:",
 	skip:["Contents"],
-	replace:['\\bDr\\./Dr^', '\\bMr\\./Mr^', '\\bMrs\\./Mrs^', '\\bO\\.S\\./O^S^', '\\bi\\.e\\./i^e^', '\\be\\.g\\./e^g^', '([0-9]+)\\.([0-9]+)/$1^$2', '^== (.*) ==$/$1.'],
+	replace:['\\betc\\./etc^', '\\bDr\\./Dr^', '\\bMr\\./Mr^', '\\bMrs\\./Mrs^', '\\bO\\.S\\./O^S^', '\\bi\\.e\\./i^e^', '\\be\\.g\\./e^g^', '([0-9]+)\\.([0-9]+)/$1^$2', '^== (.*) ==$/$1.'],
 	hyphenCheckPairs:["sat-nav", "set-up", "under-cover", "self-reliance reliant control esteem respect awareness aware", "short-term", "left right-hand", "sand-timer", "back-stage", "stage-left right", "dance-floor", "slow-motion", "some-thing where how what body one", "heart-break breaking breaks breakingly broken", "car-park parks", "brain-wave waves", "mind lip-reading reader readers read reads", "twenty thirty forty fifty sixty seventy eighty ninety-one two three four five six seven eight nine", "one two three four five six seven eight nine ten-hundred thousand million billion trillion"],
 	names:[],
 	splitInfinitiveIgnoreList:[],
@@ -43,7 +43,6 @@ const kSettingNames =
 		language:"Language|language",
 		voiceDefault:"Voice (narrative)|voice",
 		voiceSpeech:"Voice (speech)|voice",
-//		voiceHeading:"Voice (heading)|voice",
 	},
 	["INPUT PROCESSING"]:
 	{
@@ -62,9 +61,10 @@ const kSettingNames =
 	{
 		allowedStartCharacters:"Valid characters for start of paragraph|size=110",
 		allowedCharacters:"Valid characters|size=110",
-		endOfSpeech:"Valid characters for end of speech",
-		endOfParagraphSpeech:"Valid characters for end of paragraph (speech)",
-		endOfParagraphNarrative:"Valid characters for end of paragraph (narrative)",
+		startOfSpeech:"Valid characters for start of speech|size=110",
+		endOfSpeech:"Valid characters for end of speech|size=110",
+		endOfParagraphSpeech:"Valid characters for end of paragraph (speech)|size=110",
+		endOfParagraphNarrative:"Valid characters for end of paragraph (narrative)|size=110",
 		badWords:"Bad words|size=110",
 		splitInfinitiveIgnoreList:"Split infinitive check ignores these strings|cols=60",
 		numberIgnoreList:"Number check ignores these strings|cols=60",
@@ -75,7 +75,8 @@ const kSettingNames =
 
 const kOptionCustomNames =
 {
-	SCRIPT:"Use script format checking rules"
+	SCRIPT:"Use script format checking rules",
+	["ISSUE SUMMARY"]:"Display issue summary",
 }
 
 const kHasNoEffect = ["voiceDefault", "voiceSpeech", "voiceHeading"]
@@ -179,6 +180,36 @@ function SettingsGetNamesArrayArray()
 		reply.push(inner)
 	}
 	
+	return reply
+}
+
+function SettingsGetReplacementRegularExpressionsArray()
+{
+	var reply = []
+
+	for (var ruleText of g_tweakableSettings.replace)
+	{
+		const bits = ruleText.split('/', 3)
+		if (bits[0])
+		{
+			if (bits.length >= 2)
+			{
+				try
+				{
+					reply.push({regex:new RegExp(bits[0], 'g' + (bits[2] ?? '')), replaceWith:bits[1] ?? ''})
+				}
+				catch
+				{
+					IssueAdd("Replace rule " + FixStringHTML(ruleText) + " is invalid")
+				}					
+			}
+			else
+			{
+				IssueAdd("Replace rule " + FixStringHTML(ruleText) + " doesn't specify what to turn " + FixStringHTML(bits[0]) + " into")
+			}
+		}
+	}
+
 	return reply
 }
 
@@ -299,6 +330,22 @@ function BuildIssueDefaults(doSettings)
 	}
 
 	return OptionsConcat(reply)
+}
+
+// Go through kSettingNames, calling all custom functions and throwing away HTML output
+function InitSettings()
+{
+	for (var page of Object.values(kSettingNames))
+	{
+		for (var callThis of Object.values(page))
+		{
+			if (typeof callThis == "function")
+			{
+				console.log("Init '" + callThis.name + "'")
+				callThis()
+			}
+		}
+	}
 }
 
 TabDefine("settings", function(reply, thenCall)

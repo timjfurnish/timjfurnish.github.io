@@ -128,11 +128,17 @@ function OptionsMakeKey(tab, id, defVal, overwrite)
 		if (overwrite || ! (id in g_currentOptions[tab]))
 		{
 			g_currentOptions[tab][id] = defVal
+
+//			console.log ("[OPTIONS] Updated '" + tab + "' set:")
+//			console.log (g_currentOptions[tab])
 		}
 	}
 	else
 	{
 		g_currentOptions[tab] = {[id]:defVal}
+
+//		console.log ("[OPTIONS] Created '" + tab + "' set:")
+//		console.log (g_currentOptions[tab])
 	}
 	return tab + "." + id
 }

@@ -155,9 +155,23 @@ function MetaDataInformFoundToDo(foundInText)
 	g_metaDataCurrentContainsToDo = true
 }
 
-function MetaDataSetCompletenessPercent(value)
+SetMarkupFunction('#', txt =>
 {
-	if (value < 1 || value > 100)
+	for (var setter of txt.split(';'))
+	{
+		MetaDataSet(...setter.split(':', 2))
+	}
+})
+
+SetMarkupFunction('%', valueTxt =>
+{
+	const value = parseInt(valueTxt)
+
+	if (value + "" != valueTxt)
+	{
+		IssueAdd("Ignoring bad completeness value " + valueTxt + ", should be an integer", "IGNORED COMPLETENESS")
+	}
+	else if (value < 1 || value > 100)
 	{
 		IssueAdd("Ignoring bad completeness value " + value + ", should be between 1 and 100 inclusive", "IGNORED COMPLETENESS")
 	}
@@ -169,7 +183,7 @@ function MetaDataSetCompletenessPercent(value)
 	{
 		g_metaDataCurrentCompleteness = value
 	}
-}
+})
 
 OnEvent("processingDone", MetaDataEndProcess)
 

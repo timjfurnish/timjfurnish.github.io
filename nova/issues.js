@@ -12,12 +12,16 @@ function BuildWarningNamesList()
 {
 	const list =
 	[
-		'SCRIPT', 'NUMBERS', 'TODO', 'DISALLOWED WORD', 'ILLEGAL CHARACTERS',
-		'INVALID FINAL NARRATIVE CHARACTER', 'LEADING OR TRAILING SPACE',
-		'INVALID FINAL SPEECH CHARACTER', 'IGNORED COMPLETENESS',
+		// Start off
+		'SCRIPT', 'ISSUE SUMMARY',
+		
+		// Start on
+		'NUMBERS', 'TODO', 'DISALLOWED WORD', 'ILLEGAL CHARACTERS',
+		'LEADING OR TRAILING SPACE', 'PUNCTUATION COMBO',
+		'INVALID SPEECH CHARACTER', 'INVALID FINAL CHARACTER', 'IGNORED COMPLETENESS',
 		'SPLIT INFINITIVE', 'CHAPTER NAME IN CHAPTER', 'ILLEGAL MOVE BETWEEN LOCATIONS',
 		'UNFINISHED QUOTE', 'CAPITALS', 'SPACE BEFORE PUNCTUATION',
-		'MARKUP ERROR', 'SPACE IN SPEECH', 'EMPTY SPEECH', 'EMPTY PARAGRAPH', 'EMPTY SENTENCE',
+		'MARKUP ERROR', 'SPACE IN SPEECH', 'EMPTY SPEECH', 'EMPTY PARAGRAPH',
 		'PUNCTUATION WITHOUT SPACE', 'ILLEGAL START CHARACTER', 'EMPTY WORD'
 	]
 
@@ -44,6 +48,21 @@ TabDefine("issues", function(reply, thenCall)
 	{
 		reply.push("No issues found")
 	}
+	
+	if (! g_disabledWarnings["ISSUE SUMMARY"])
+	{
+		TableOpen(reply)
+		TableAddHeading(reply, "Issue type")
+		TableAddHeading(reply, "Count")
+		
+		for (var [k, v] of Object.entries(g_issueStats))
+		{
+			TableNewRow(reply)
+			reply.push("<TD CLASS=cell>" + k + "</TD><TD CLASS=cell>" + v + "</TD>")
+		}
+		
+		TableClose(reply)
+	}
 })
 
 OnEvent("clear", () =>
@@ -53,7 +72,15 @@ OnEvent("clear", () =>
 	g_disabledWarnings = {}
 	g_issueStats = {}
 
-	Object.keys(g_warningNames).forEach(theName => g_issueStats[theName] = 0)
+	function InitOneStat(theName)
+	{
+		if (! (theName in kOptionCustomNames))
+		{
+			g_issueStats[theName] = 0
+		}
+	}
+
+	Object.keys(g_warningNames).forEach(InitOneStat)
 
 	if (g_currentOptions.settings)
 	{
@@ -65,6 +92,8 @@ OnEvent("clear", () =>
 			}
 		}
 	}
+
+	console.log("Reset disabled warnings to defaults: " + Object.keys(g_disabledWarnings))
 })
 
 function IssueGetTotal()
@@ -111,7 +140,7 @@ OnEvent("processingDone", () =>
 	SetTabTitle('issues', g_issueCount || undefined)
 })
 
-function WarningEnableDisable(strIn)
+SetMarkupFunction('@', strIn =>
 {
 	var [key, val] = strIn.split(':', 2)
 	key = key.toUpperCase()
@@ -136,4 +165,4 @@ function WarningEnableDisable(strIn)
 	{
 		IssueAdd("Parsing instruction " + FixStringHTML(strIn) + " - " + FixStringHTML(key) + " is not a known issue type", "MARKUP ERROR")
 	}
-}
+})

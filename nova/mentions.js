@@ -7,6 +7,13 @@ var g_threadSections = []
 var g_threadSectionSelected = 0
 var g_threadSectionFragment = 0
 
+const kIndent = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+
+function TurnRedIf(input, condition)
+{
+	return condition ? "<FONT COLOR=Red>" + input + "</FONT>" : input
+}
+
 function RedrawMentions()
 {
 	var mentionsGoHere = document.getElementById("mentionsGoHere")
@@ -41,7 +48,7 @@ function RedrawMentions()
 
 			for (var metadata of g_metaDataInOrder)
 			{
-				var showHeading = "<H3>" + metadata.info.CHAPTER + " [" + metadata.info.LOC + "]</H3>"
+				var showHeading = "<H3>" + MetaDataMakeFragmentDescription(metadata.info) + "</H3>"
 				var before = ""
 
 				for (var para of metadata.myParagraphs)
@@ -57,7 +64,7 @@ function RedrawMentions()
 							showHeading = false
 						}
 
-						output.push(before + "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" + s2)
+						output.push(before + kIndent + TurnRedIf(s2, para.issues))
 						nextBefore = ""
 						aBreak = "<br>"
 					}
@@ -140,7 +147,7 @@ function RedrawThread()
 						showHeading = false
 					}
 
-					output.push(before + '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<SPAN CLASS="clicky" ONCLICK="HighlightThreadSection(' + g_threadSections.length + ')" ID="threadSection' + g_threadSections.length + '">' + para.allOfIt + '</SPAN>')
+					output.push(before + kIndent + '<SPAN CLASS="clicky" ONCLICK="HighlightThreadSection(' + g_threadSections.length + ')" ID="threadSection' + g_threadSections.length + '">' + TurnRedIf(para.allOfIt, para.issues) + '</SPAN>')
 					g_threadSections.push(para)
 					
 					before = ""
@@ -168,7 +175,7 @@ function ThreadRead()
 		const fragment = thingToSay.fragments[g_threadSectionFragment]
 		if (fragment)
 		{
-			SpeakUsingVoice(fragment.text, fragment.isSpeech ? "voiceSpeech" : "voiceDefault", OnDoneThreadSpeakingFragment)
+			SpeakUsingVoice(fragment.text + fragment.followedBy, fragment.isSpeech ? "voiceSpeech" : "voiceDefault", OnDoneThreadSpeakingFragment)
 		}
 		else if (HighlightThreadSection(g_threadSectionSelected + 1))
 		{
