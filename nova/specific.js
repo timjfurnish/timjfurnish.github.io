@@ -279,7 +279,7 @@ function UserChangedSetting(name)
 
 function SettingsAdd(reply, txt, formBits)
 {
-	reply.push('<tr><td width="10" valign="top"><nobr>' + txt + "&nbsp;&nbsp;&nbsp;</nobr></td><td>" + formBits + "</td></tr>")
+	reply.push('<tr><td width="10" valign="top" class="cellNoWrap">' + txt + "&nbsp;&nbsp;&nbsp;</td><td>" + formBits + "</td></tr>")
 }
 
 function SettingAskRevert(whichOne)
@@ -332,20 +332,9 @@ function BuildIssueDefaults(doSettings)
 	return OptionsConcat(reply)
 }
 
-// Go through kSettingNames, calling all custom functions and throwing away HTML output
 function InitSettings()
 {
-	for (var page of Object.values(kSettingNames))
-	{
-		for (var callThis of Object.values(page))
-		{
-			if (typeof callThis == "function")
-			{
-				console.log("Init '" + callThis.name + "'")
-				callThis()
-			}
-		}
-	}
+	Object.keys(g_warningNames).forEach(id => OptionsMakeKey("settings", id, ! (id in kOptionCustomNames)))
 }
 
 TabDefine("settings", function(reply, thenCall)

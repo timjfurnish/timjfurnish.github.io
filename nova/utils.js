@@ -23,8 +23,16 @@ function ShowError(message)
 {
 	if (g_canShowError)
 	{
-		console.warn(message)
+		console.error(message)
 		g_canShowError = confirm(message + "\n\n" + new Error().stack + "\n\nKeep showing errors?")
+	}
+}
+
+function Assert(condition, err)
+{
+	if (! condition)
+	{
+		ShowError("Assert failed!")
 	}
 }
 
@@ -175,7 +183,7 @@ function CallNextQueuedFunction()
 {
 	const func = g_functionsStillToCall.shift()
 
-	console.log("Calling queued " + DescribeFunction(func))
+//	console.log("Calling queued " + DescribeFunction(func))
 
 	if (g_functionsStillToCall.length > 0)
 	{
@@ -200,11 +208,11 @@ function QueueFunction(func)
 	}
 	else if (g_functionsStillToCall.includes(func))
 	{
-		console.log("Not queueing " + DescribeFunction(func) + " at it's already in the queue")
+//		console.log("Not queueing " + DescribeFunction(func) + " at it's already in the queue")
 		return
 	}
 
-	console.log("Queued " + DescribeFunction(func))
+//	console.log("Queued " + DescribeFunction(func))
 	g_functionsStillToCall.push(func)
 }
 

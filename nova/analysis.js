@@ -10,8 +10,6 @@ function SetMarkupFunction(character, func)
 	g_markupFunctions[character] = func
 }
 
-var g_foundJoiners = {}
-
 // Value is whether the punctuation in question ends a sentence - TODO fix, currently only errors on ["Hello." he said]
 const kValidJoiners =
 {
@@ -39,7 +37,7 @@ const kIllegalSubstrings =
 
 function SetUp()
 {
-	CallTheseFunctions(BuildTabs, SetUp_FixTitle, SettingsLoad, AddAllInputBoxes, InitSettings, ShowContentForSelectedTab, ProcessInput)
+	CallTheseFunctions(InitTabs, InitSettings, BuildTabs, SetUp_FixTitle, SettingsLoad, AddAllInputBoxes, ShowContentForSelectedTab, ProcessInput)
 }
 
 function CheckParagraphForIssues(txtIn)
@@ -149,6 +147,8 @@ function HandleNewHeading(workspace, txtInRaw, displayThis)
 				
 				DoEndOfChapterChecks(workspace)
 
+				// TODO: Log an issue if this is true?
+				workspace.treatNextParagraphAsSpeech = false
 				workspace.stillLookingForChapterNameInChapter = displayThis.split(/ *\(/, 1)[0].toLowerCase()
 				MetaDataSet("CHAPTER", displayThis)
 
@@ -183,7 +183,6 @@ function SplitIntoFragments(thisBunch)
 			{
 				oneJoiner = oneJoiner.replace(/\|/g, '.')
 				joiners.push(oneJoiner)
-				Tally(g_foundJoiners, oneJoiner)
 			}
 			else
 			{
@@ -201,15 +200,15 @@ function ProcessInput()
 {
 	DoEvent("clear")
 
+	// TODO: move more local variables into here
 	var workspace =
 	{
 		stillLookingForChapterNameInChapter:null,
 		badWords:MakeSet(...OnlyKeepValid(g_tweakableSettings.badWords.toLowerCase().split(" "))),
 		replaceRules:SettingsGetReplacementRegularExpressionsArray(),
-		regexForRemovingValidChars:new RegExp('[' + EscapeRegExSpecialChars(g_tweakableSettings.allowedCharacters) + ']', 'g')
+		regexForRemovingValidChars:new RegExp('[' + EscapeRegExSpecialChars(g_tweakableSettings.allowedCharacters) + ']', 'g'),
+		treatNextParagraphAsSpeech:false
 	}
-
-	g_foundJoiners = {}
 
 	for (var txtInRaw of GetInputText())
 	{
@@ -240,7 +239,8 @@ function ProcessInput()
 
 				CheckParagraphForIssues(txtInProcessed)
 
-				const talkyNonTalky = txtInProcessed.split('"')
+				const bScriptMode = ! g_disabledWarnings.SCRIPT
+				const talkyNonTalky = bScriptMode ? [txtInProcessed] : txtInProcessed.split('"')
 
 				if ((talkyNonTalky.length & 1) == 0)
 				{
@@ -250,7 +250,8 @@ function ProcessInput()
 				var isSpeech = true
 				var shouldStartWithCapital = "at the start of"
 				var nextSpeechShouldStartWithCapital = true
-
+				var bCanCheckFinalCharacter = true
+				
 				for (var eachIn of talkyNonTalky)
 				{
 					// Use | instead of . so that we can put back things like "Mr. Smith".
@@ -258,6 +259,45 @@ function ProcessInput()
 
 					var thisBunchOfFragments = each.trim()
 					isSpeech = !isSpeech
+
+					if (bScriptMode)
+					{
+						Assert(isSpeech == false)
+
+						// If we're in SCRIPT mode then allow paragraphs like "(whispered)"
+						if (eachIn[0] == '(')
+						{
+							workspace.treatNextParagraphAsSpeech = true
+							shouldStartWithCapital = false
+							bCanCheckFinalCharacter = false
+						}
+						else if (workspace.treatNextParagraphAsSpeech)
+						{
+							isSpeech = true
+							workspace.treatNextParagraphAsSpeech = false
+						}
+						else
+						{
+							const withValidCharsRemoved = thisBunchOfFragments.replace(/[A-Z0-9# \(\)'\.]+/, '')
+
+//							console.log ("  [SCRIPT] '" + thisBunchOfFragments + " with valid chars removed leaves '" + withValidCharsRemoved + "'")
+
+							if (withValidCharsRemoved == '')
+							{
+								workspace.treatNextParagraphAsSpeech = true
+								bCanCheckFinalCharacter = false
+							}
+							else if (thisBunchOfFragments == thisBunchOfFragments.toUpperCase())
+							{
+								workspace.treatNextParagraphAsSpeech = false
+								bCanCheckFinalCharacter = false
+							}
+							else
+							{
+								workspace.treatNextParagraphAsSpeech = false
+							}
+						}
+					}
 
 					if (isSpeech)
 					{
@@ -297,12 +337,6 @@ function ProcessInput()
 					if (!thisBunchOfFragments)
 					{
 						continue
-					}
-
-					// If we're in SCRIPT mode then allow paragraphs like "(whispered)"
-					if (! g_disabledWarnings.SCRIPT && !isSpeech && eachIn[0] == '(')
-					{
-						shouldStartWithCapital = false
 					}
 
 					const [sentences, joiners] = SplitIntoFragments(thisBunchOfFragments)
@@ -405,7 +439,7 @@ function ProcessInput()
 					}
 				}
 				
-				if (g_disabledWarnings.SCRIPT)
+				if (bCanCheckFinalCharacter)
 				{
 					CheckFinalCharacter(txtInProcessed)
 				}
@@ -464,8 +498,7 @@ function CheckFinalCharacter(txtIn)
 
 	if (! (checkHere.includes(finalCharacter)))
 	{
-		const issueType = "INVALID FINAL CHARACTER"
-		IssueAdd("Final important character of " + FixStringHTML(txtFull) + " is " + FixStringHTML(finalCharacter) + " (valid characters are " + FixStringHTML(checkHere.split('').join(" ")) + ")", issueType)
+		IssueAdd("Final important character of " + FixStringHTML(txtFull) + " is " + FixStringHTML(finalCharacter) + " (valid characters are " + FixStringHTML(checkHere.split('').join(" ")) + ")", "INVALID FINAL CHARACTER")
 	}
 }
 

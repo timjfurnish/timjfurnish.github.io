@@ -43,26 +43,30 @@ TabDefine("issues", function(reply, thenCall)
 		{
 			reply.push("<B>" + heading + "</B><UL><LI>" + issueList.join("<LI>") + "</UL>")
 		}
+
+		console.log(g_disabledWarnings)
+		
+		if (! g_disabledWarnings["ISSUE SUMMARY"])
+		{
+			TableOpen(reply)
+			TableAddHeading(reply, "Issue type")
+			TableAddHeading(reply, "Count")
+			
+			for (var [k, v] of Object.entries(g_issueStats))
+			{
+				TableNewRow(reply)
+				reply.push("<TD CLASS=cell>" + k + "</TD><TD CLASS=cell>" + v + "</TD>")
+			}
+			
+			TableClose(reply)
+		}
 	}
 	else
 	{
 		reply.push("No issues found")
 	}
 	
-	if (! g_disabledWarnings["ISSUE SUMMARY"])
-	{
-		TableOpen(reply)
-		TableAddHeading(reply, "Issue type")
-		TableAddHeading(reply, "Count")
-		
-		for (var [k, v] of Object.entries(g_issueStats))
-		{
-			TableNewRow(reply)
-			reply.push("<TD CLASS=cell>" + k + "</TD><TD CLASS=cell>" + v + "</TD>")
-		}
-		
-		TableClose(reply)
-	}
+
 })
 
 OnEvent("clear", () =>
@@ -116,7 +120,7 @@ function IssueAdd(addThis, theType)
 			return
 		}
 		
-		addThis = '<NOBR id="issueType">' + theType + '</NOBR> ' + addThis
+		addThis = '<NOBR class="issueType">' + theType + '</NOBR> ' + addThis
 	}
 
 	Tally(g_issueStats, theType ?? "NO TYPE")

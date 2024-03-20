@@ -5,9 +5,15 @@
 
 var g_tabFunctions = {}
 var g_selectedTabName = null
+var g_hoverControls
 
 const kTabLine = "1px solid #000000"
 const kTabSelected = "#F5F5F5"
+
+function InitTabs()
+{
+	g_hoverControls = document.getElementById('hoverControls')
+}
 
 function TabDefine(tabName, myFunction, displayNameOverride)
 {
@@ -55,15 +61,24 @@ function BuildTabs()
 		output.push('<TD WIDTH="10" ID="tab_' + tabName + '" TABINDEX=0 ONCLICK="SetTab(\'' + tabName + '\')" CLASS="tabDeselected">' + BuildTabDisplayText(tabName) + "</TD>")
 	}
 	
-	output.push('<TD STYLE="border-bottom:' + kTabLine + '"></TD>')
+	output.push('<TD STYLE="border-bottom:' + kTabLine + '">&nbsp;&nbsp;&nbsp;&nbsp;</TD>')
 	output.push('<TR><TD COLSPAN="' + spanCols + '" ID="tabContents" STYLE="padding-right: 20px"></TABLE>')
 	infoPanel.innerHTML = output.join('')
 	
 	SetTab(g_selectedTabName)
 }
 
+function ShowHoverControls(arr)
+{
+	g_hoverControls.innerHTML = arr.join("&nbsp;")
+	g_hoverControls.style.display = "block"
+}
+
 function ShowContentForSelectedTab()
 {
+	g_hoverControls.innerHTML = ""
+	g_hoverControls.style.display = "none"
+
 	var displayThis = []
 	var thenCall = []
 	

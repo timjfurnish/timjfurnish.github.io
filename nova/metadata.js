@@ -23,7 +23,7 @@ function MakeClearTally(createMentions)
 		Paragraphs:0,
 		Words:0,
 		["Estimated final words"]:0,
-		["Words in quotes"]:0,
+		["Speech"]:0,
 		["Percent speech"]:0,
 		["Percent done"]:0
 	}
@@ -211,7 +211,7 @@ function MetaDataAddWordCount(words, isSpeech)
 	
 	if (isSpeech)
 	{
-		g_metaDataTally["Words in quotes"] += words
+		g_metaDataTally.Speech += words
 	}
 }
 
@@ -377,7 +377,7 @@ function MetaDataDrawTable()
 	// Calculate derived values (e.g. percentages) and max values
 	for (var data of dataToDisplay)
 	{
-		data.tally["Percent speech"] = 100 * (data.tally["Words in quotes"] / data.tally.Words)
+		data.tally["Percent speech"] = 100 * (data.tally.Speech / data.tally.Words)
 		data.tally["Percent done"] = 100 * (data.tally.Words / data.tally["Estimated final words"])
 		
 		for (var [name, val] of Object.entries(data.tally))

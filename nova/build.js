@@ -112,6 +112,11 @@ function SetOptions()
 
 function OptionsMakeKey(tab, id, defVal, overwrite)
 {
+	if (! tab)
+	{
+		console.warn("Current tab is " + tab)
+	}
+
 	if (tab in g_currentOptions)
 	{
 		// If overwrite is an array it means use default value should the current value not feature in the array

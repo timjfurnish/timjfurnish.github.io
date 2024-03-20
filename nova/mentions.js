@@ -201,14 +201,17 @@ TabDefine("threads", function(reply, thenCall)
 		}
 		
 		var options = []
+		var hoverOptions = []
 		OptionsMakeSelect(options, "RedrawThread()", "Only show text from " + g_currentOptions.threads.page.toLowerCase(), "showThis", nameData, "", true)
-		options.push('<button onclick="HighlightThreadSection(g_threadSectionSelected - 1)">&lt;</button>')
-		options.push('<button onclick="HighlightThreadSection(g_threadSectionSelected + 1)">&gt;</button>')
-		options.push('<BUTTON ONCLICK="ThreadRead()">Read</BUTTON>')
-		options.push('<BUTTON ONCLICK="speechSynthesis.cancel()">Stop</BUTTON>')
+		hoverOptions.push('<button onclick="HighlightThreadSection(g_threadSectionSelected - 1)">&lt;</button>')
+		hoverOptions.push('<button onclick="HighlightThreadSection(g_threadSectionSelected + 1)">&gt;</button>')
+		hoverOptions.push('<BUTTON ONCLICK="ThreadRead()">Read</BUTTON>')
+		hoverOptions.push('<BUTTON ONCLICK="speechSynthesis.cancel()">Stop</BUTTON>')
 
 		reply.push(OptionsConcat(options))
 		reply.push("<p id=threadsGoHere></p>")
+		
+		ShowHoverControls(hoverOptions)
 		
 		thenCall.push(RedrawThread)
 	}
