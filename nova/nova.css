@@ -1,5 +1,6 @@
 body
 {
+	font-size: 15px;
 	margin:10px 10px 50px 10px
 }
 input, label, select, .clicky, button
@@ -107,4 +108,35 @@ button
 {
 	height:16px;
 	white-space:nowrap;
+}
+.longTextBox
+{
+	width:400px;
+}
+.shortTextBox
+{
+	width:250px;
+}
+@media screen and (max-width: 1000px)
+{
+	body
+	{
+		font-size: 25px;
+	}
+	input[type=checkbox]
+	{
+		transform: scale(1.5);
+	}
+	input, select, .clicky, button
+	{
+		font-size: 25px;
+	}
+	.longTextBox, .shortTextBox
+	{
+		width: 400px;
+	}
+	label
+	{
+		font-size: 20px;
+	}
 }

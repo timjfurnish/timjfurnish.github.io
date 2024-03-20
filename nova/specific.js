@@ -46,28 +46,28 @@ const kSettingNames =
 	},
 	["INPUT PROCESSING"]:
 	{
-		replace:"Replace (regex)|cols=60",
-		skip:"Skip lines starting with|cols=60",
-		headingIdentifier:"Line is a heading if it includes",
+		replace:"Replace (regex)|class=longTextBox",
+		skip:"Skip lines starting with|class=longTextBox",
+		headingIdentifier:"Line is a heading if it includes|class=shortTextBox",
 		removeHeadingIdentifier:"Remove heading identifier",
-		headingMaxCharacters:"Max characters in a heading",
+		headingMaxCharacters:"Max characters in a heading|class=shortTextBox",
 	},
 	NAMES:
 	{
-		names:"Character/place names|cols=60",
-//		hyphenCheckPairs:"Hyphen check text|cols=105",
+		names:"Character/place names|class=longTextBox",
+//		hyphenCheckPairs:"Hyphen check text|class=longTextBox",
 	},
 	["CHECKS"]:
 	{
-		allowedStartCharacters:"Valid characters for start of paragraph|size=110",
-		allowedCharacters:"Valid characters|size=110",
-		startOfSpeech:"Valid characters for start of speech|size=110",
-		endOfSpeech:"Valid characters for end of speech|size=110",
-		endOfParagraphSpeech:"Valid characters for end of paragraph (speech)|size=110",
-		endOfParagraphNarrative:"Valid characters for end of paragraph (narrative)|size=110",
-		badWords:"Bad words|size=110",
-		splitInfinitiveIgnoreList:"Split infinitive check ignores these strings|cols=60",
-		numberIgnoreList:"Number check ignores these strings|cols=60",
+		allowedCharacters:"Valid characters|class=longTextBox",
+		allowedStartCharacters:"Start of paragraph|class=longTextBox",
+		startOfSpeech:"Start of speech|class=longTextBox",
+		endOfSpeech:"End of speech|class=longTextBox",
+		endOfParagraphSpeech:"End of paragraph speech|class=longTextBox",
+		endOfParagraphNarrative:"End of paragraph narrative|class=longTextBox",
+		badWords:"Bad words|class=longTextBox",
+		splitInfinitiveIgnoreList:"Split infinitive check ignores|class=longTextBox",
+		numberIgnoreList:"Number check ignores|class=longTextBox",
 		["Enabled checks"]:() => BuildIssueDefaults(false),
 		["Additional settings"]:() => BuildIssueDefaults(true),
 	}
@@ -277,9 +277,9 @@ function UserChangedSetting(name)
 	}
 }
 
-function SettingsAdd(reply, txt, formBits)
+function SettingsAdd(reply, txt, formBits, className)
 {
-	reply.push('<tr><td width="10" valign="top" class="cellNoWrap">' + txt + "&nbsp;&nbsp;&nbsp;</td><td>" + formBits + "</td></tr>")
+	reply.push('<tr><td width="10" valign="top" class="cellNoWrap">' + txt + '&nbsp;&nbsp;&nbsp;</td><td class="' + className + '">' + formBits + "</td></tr>")
 }
 
 function SettingAskRevert(whichOne)
@@ -372,7 +372,7 @@ TabDefine("settings", function(reply, thenCall)
 			}
 			else if (typeof g_tweakableSettings[k] === "boolean")
 			{
-				theType = "input type=checkbox"
+				theType = 'input type="checkbox"'
 			}
 			else
 			{
@@ -387,11 +387,11 @@ TabDefine("settings", function(reply, thenCall)
 				}
 			}
 		
-			SettingsAdd(reply, displayName, '<' + theType + ' onChange="UserChangedSetting(\'' + k + '\')" ' + (extra ? extra + ' ' : '') + 'id="setting_' + k + '">' + theMiddle + '</' + theType.split(' ', 1)[0] + '>' + revert)
+			SettingsAdd(reply, displayName, '<' + theType + ' onChange="UserChangedSetting(\'' + k + '\')" ' + (extra ? extra + ' ' : '') + 'id="setting_' + k + '">' + theMiddle + '</' + theType.split(' ', 1)[0] + '>' + revert, "cellNoWrap")
 		}
 		else
 		{
-			SettingsAdd(reply, k, display())
+			SettingsAdd(reply, k, display(), "cell")
 		}
 	}
 	
