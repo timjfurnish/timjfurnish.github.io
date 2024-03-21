@@ -90,6 +90,8 @@ function TrySetElementClass(elemName, className, add)
 	{
 		add ? elem.classList.add(className) : elem.classList.remove(className)
 	}
+	
+	return elem
 }
 
 //---------------------------

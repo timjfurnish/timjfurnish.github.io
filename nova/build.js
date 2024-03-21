@@ -11,6 +11,7 @@ const kIconSearch = "&#128269;"
 const kIconPaste = "&#128203;"
 const kIconFix = "&#128736;"
 const kIconSpeech = "&#128172;"
+const kIconToTop = "&#8679;"
 const kIconRevert = "&hookleftarrow;"
 
 const kCharacterElipsis = "\u2026"

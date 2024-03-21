@@ -97,7 +97,7 @@ TabDefine("mentions", function(reply, thenCall)
 	thenCall.push(RedrawMentions)
 })
 
-function HighlightThreadSection(num)
+function HighlightThreadSection(num, bCanScroll)
 {
 	speechSynthesis.cancel()
 	
@@ -110,7 +110,21 @@ function HighlightThreadSection(num)
 
 		g_threadSectionSelected = num
 		g_threadSectionFragment = 0
-		TrySetElementClass("threadSection" + num, "highlighter", true)
+		const theElement = TrySetElementClass("threadSection" + num, "highlighter", true)
+		
+		if (theElement && bCanScroll)
+		{
+			const rect = theElement.getBoundingClientRect()
+			
+			if (rect.bottom > window.innerHeight * 0.8)
+			{
+				window.scrollTo(0, rect.top + window.scrollY - window.innerHeight * 0.2)
+			}
+			else if (rect.top < window.innerHeight * 0.2)
+			{
+				window.scrollTo(0, rect.bottom + window.scrollY - window.innerHeight * 0.8)
+			}
+		}
 	}
 	
 //	SetTabTitle('threads', g_threadSectionSelected)
@@ -177,7 +191,7 @@ function ThreadRead()
 		{
 			SpeakUsingVoice(fragment.text + fragment.followedBy, fragment.isSpeech ? "voiceSpeech" : "voiceDefault", OnDoneThreadSpeakingFragment)
 		}
-		else if (HighlightThreadSection(g_threadSectionSelected + 1))
+		else if (HighlightThreadSection(g_threadSectionSelected + 1, true))
 		{
 			CallTheseFunctions(ThreadRead)
 		}
@@ -203,10 +217,11 @@ TabDefine("threads", function(reply, thenCall)
 		var options = []
 		var hoverOptions = []
 		OptionsMakeSelect(options, "RedrawThread()", "Only show text from " + g_currentOptions.threads.page.toLowerCase(), "showThis", nameData, "", true)
-		hoverOptions.push('<button onclick="HighlightThreadSection(g_threadSectionSelected - 1)">&lt;</button>')
-		hoverOptions.push('<button onclick="HighlightThreadSection(g_threadSectionSelected + 1)">&gt;</button>')
+		hoverOptions.push('<button onclick="HighlightThreadSection(g_threadSectionSelected - 1, true)">&lt;</button>')
+		hoverOptions.push('<button onclick="HighlightThreadSection(g_threadSectionSelected + 1, true)">&gt;</button>')
 		hoverOptions.push('<BUTTON ONCLICK="ThreadRead()">Read</BUTTON>')
 		hoverOptions.push('<BUTTON ONCLICK="speechSynthesis.cancel()">Stop</BUTTON>')
+		hoverOptions.push('<BUTTON ONCLICK="window.scrollTo(0,0)">' + kIconToTop + '</BUTTON>')
 
 		reply.push(OptionsConcat(options))
 		reply.push("<p id=threadsGoHere></p>")
