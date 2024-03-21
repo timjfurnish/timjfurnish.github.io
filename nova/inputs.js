@@ -15,7 +15,7 @@ function AddAllInputBoxes()
 
 function addInputBox(saveIt)
 {
-	document.getElementById('inputs').innerHTML += '<textarea id="txtIn' + ++ g_numInputBoxes + '" cols=80 rows=10 onChange="ProcessInput()"></textarea><BR>'
+	document.getElementById('inputs').innerHTML += '<textarea class="docIn" id="txtIn' + ++ g_numInputBoxes + '" onChange="ProcessInput()"></textarea><BR>'
 	
 	if (saveIt)
 	{

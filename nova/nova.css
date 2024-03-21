@@ -1,11 +1,17 @@
-html {
+html
+{
+	margin:0px;
     overflow-y:scroll;
 }
 body
 {
-	font-size: 15px;
-	margin:10px 10px 65px 10px;
-	text-align:center
+	font-size:15px;
+	margin:10px 25px 50px 25px;
+	text-align:center;
+	background-image:linear-gradient(rgba(200,200,255,1), white);
+	background-repeat: no-repeat;
+    background-attachment: fixed;
+	-webkit-text-size-adjust:none;
 }
 input, label, select, .clicky, button
 {
@@ -23,7 +29,7 @@ button
 	padding:5px 10px 4px 10px;
 	border:1px solid rgba(0, 0, 0, 0.6);
 	background-image:linear-gradient(white, rgba(200,200,200,1));
-	text-shadow: 1px 1px #999999;
+	text-shadow:1px 1px #999999;
 }
 #issueText
 {
@@ -44,19 +50,24 @@ button
 {
 	padding:10px;
 	bottom:20px;
-	left: 50%;
-	transform: translateX(-50%);
+	left:50%;
+	transform:translateX(-50%);
 	position:fixed;
 	display:none;
 	border-radius:9px;
 	border:1px solid rgba(0, 0, 0, 0.3);
 	background-image:linear-gradient(rgba(180,180,180,0.6), rgba(90,90,90,0.6));
-	backdrop-filter: blur(2px);
+	backdrop-filter:blur(2px);
 	white-space:nowrap;
 }
 #hoverControls button
 {
 	font-size:200%;
+}
+.docIn
+{
+	width:75%;
+	height:100px;
 }
 .issueType
 {
@@ -73,14 +84,14 @@ button
 	font-family:Arial, Helvetica, sans-serif;
 	font-size:92%;
 	font-weight:500;
-	padding-top: 6px;
-	padding-bottom: 6px;
-	padding-left: 6px;
-	padding-right: 6px;
+	padding-top:6px;
+	padding-bottom:6px;
+	padding-left:6px;
+	padding-right:6px;
 	white-space:nowrap;
 	cursor:pointer;
 	border:1px solid #000000;
-	text-shadow: 1px 1px #999999;
+	text-shadow:1px 1px #999999;
 }
 .tabSelected
 {
@@ -97,10 +108,10 @@ button
 	font-family:Arial, Helvetica, sans-serif;
 	font-size:85%;
 	font-weight:500;
-	padding-top: 3px;
-	padding-bottom: 3px;
-	padding-left: 3px;
-	padding-right: 3px;
+	padding-top:3px;
+	padding-bottom:3px;
+	padding-left:3px;
+	padding-right:3px;
 }
 .cellNoWrap
 {
@@ -113,7 +124,7 @@ button
 }
 .highlighterWithDots
 {
-	text-decoration: underline dotted red;
+	text-decoration:underline dotted red;
 }
 .highlighter, .highlighterWithDots
 {
@@ -132,26 +143,36 @@ button
 {
 	width:250px;
 }
-@media screen and (max-width: 1000px)
+@media screen and (max-width:1000px)
 {
 	body
 	{
-		font-size: 25px;
+		font-size:25px;
+		margin:10px 25px 70px 25px;
 	}
 	input[type=checkbox]
 	{
-		transform: scale(1.5);
+		transform:scale(1.5);
 	}
 	input, select, .clicky, button
 	{
-		font-size: 25px;
+		font-size:25px;
 	}
 	.longTextBox, .shortTextBox
 	{
-		width: 400px;
+		width:400px;
 	}
 	label
 	{
-		font-size: 20px;
+		font-size:20px;
+	}
+	textArea
+	{
+		font-size:25px;
+	}
+	.docIn
+	{
+		width:95%;
+		height:125px;
 	}
 }
