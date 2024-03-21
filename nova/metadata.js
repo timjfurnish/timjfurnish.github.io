@@ -187,7 +187,7 @@ SetMarkupFunction('%', valueTxt =>
 
 OnEvent("processingDone", MetaDataEndProcess)
 
-OnEvent("clear", () =>
+OnEvent("clearEarly", () =>
 {
 	g_metaDataCurrent = {CHAPTER:"None"}
 	g_metaDataInOrder = []

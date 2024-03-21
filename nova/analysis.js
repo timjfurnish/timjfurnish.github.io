@@ -37,7 +37,7 @@ const kIllegalSubstrings =
 
 function SetUp()
 {
-	CallTheseFunctions(InitTabs, InitSettings, BuildTabs, SetUp_FixTitle, SettingsLoad, AddAllInputBoxes, ShowContentForSelectedTab, ProcessInput)
+	CallTheseFunctions(InitTabs, InitSettings, AddAllInputBoxes, BuildTabs, SetUp_FixTitle, SettingsLoad, ShowContentForSelectedTab, ProcessInput)
 }
 
 function CheckParagraphForIssues(txtIn)
@@ -198,6 +198,7 @@ function SplitIntoFragments(thisBunch)
 
 function ProcessInput()
 {
+	DoEvent("clearEarly")
 	DoEvent("clear")
 
 	// TODO: move more local variables into here
@@ -251,7 +252,8 @@ function ProcessInput()
 				var shouldStartWithCapital = "at the start of"
 				var nextSpeechShouldStartWithCapital = true
 				var bCanCheckFinalCharacter = true
-				
+				var bIgnoreFragments = false
+
 				for (var eachIn of talkyNonTalky)
 				{
 					// Use | instead of . so that we can put back things like "Mr. Smith".
@@ -264,15 +266,17 @@ function ProcessInput()
 					{
 						Assert(isSpeech == false)
 
-						// If we're in SCRIPT mode then allow paragraphs like "(whispered)"
 						if (eachIn[0] == '(')
 						{
+							// Allow paragraphs like "(whispered)"
 							workspace.treatNextParagraphAsSpeech = true
 							shouldStartWithCapital = false
 							bCanCheckFinalCharacter = false
+							bIgnoreFragments = true
 						}
 						else if (workspace.treatNextParagraphAsSpeech)
 						{
+							// This is speech because last line said so...
 							isSpeech = true
 							workspace.treatNextParagraphAsSpeech = false
 						}
@@ -286,6 +290,7 @@ function ProcessInput()
 							{
 								workspace.treatNextParagraphAsSpeech = true
 								bCanCheckFinalCharacter = false
+								bIgnoreFragments = true
 							}
 							else if (thisBunchOfFragments == thisBunchOfFragments.toUpperCase())
 							{
@@ -444,12 +449,14 @@ function ProcessInput()
 					CheckFinalCharacter(txtInProcessed)
 				}
 				
-				if (storeAsFragments.length == 0)
+				const pushThis = {allOfIt:txtInVeryRaw, fragments:storeAsFragments, issues:IssueGetTotal() - oldNumIssues}
+				
+				if (bIgnoreFragments)
 				{
-					IssueAdd("Paragraph " + FixStringHTML(txtInRaw) + " contains no sentences", "EMPTY PARAGRAPH")
+					pushThis.ignoreFragments = true
 				}
 
-				g_metaDataGatherParagraphs.push({allOfIt:txtInVeryRaw, fragments:storeAsFragments, issues:IssueGetTotal() - oldNumIssues})
+				g_metaDataGatherParagraphs.push(pushThis)
 			}
 		}
 		catch(error)

@@ -54,19 +54,23 @@ function RedrawMentions()
 				for (var para of metadata.myParagraphs)
 				{
 					var nextBefore = aBreak
-					var s2 = para.allOfIt.replace(exp, Highlighter)
 
-					if (para.allOfIt != s2)
+					if (! para.ignoreFragments)
 					{
-						if (showHeading)
-						{
-							before = showHeading
-							showHeading = false
-						}
+						var s2 = para.allOfIt.replace(exp, Highlighter)
 
-						output.push(before + kIndent + TurnRedIf(s2, para.issues))
-						nextBefore = ""
-						aBreak = "<br>"
+						if (para.allOfIt != s2)
+						{
+							if (showHeading)
+							{
+								before = showHeading
+								showHeading = false
+							}
+
+							output.push(before + kIndent + TurnRedIf(s2, para.issues))
+							nextBefore = ""
+							aBreak = "<br>"
+						}
 					}
 					
 					before = nextBefore
@@ -92,7 +96,7 @@ TabDefine("mentions", function(reply, thenCall)
 	OptionsMakeSelect(options, "RedrawMentions()", "Entity", "entity", nameData, "")
 	OptionsMakeTextBox(options, "RedrawMentions()", "Search for", "custom")
 	reply.push(OptionsConcat(options))
-	reply.push("<p id=mentionsGoHere></p>")
+	reply.push("<p id=mentionsGoHere align=left></p>")
 	
 	thenCall.push(RedrawMentions)
 })
@@ -224,7 +228,7 @@ TabDefine("threads", function(reply, thenCall)
 		hoverOptions.push('<BUTTON ONCLICK="window.scrollTo(0,0)">' + kIconToTop + '</BUTTON>')
 
 		reply.push(OptionsConcat(options))
-		reply.push("<p id=threadsGoHere></p>")
+		reply.push("<p id=threadsGoHere align=left></p>")
 		
 		ShowHoverControls(hoverOptions)
 		
@@ -242,7 +246,7 @@ function SwitchToMentionsAndSearchEntity(txt)
 
 	for (var name of specificNames)
 	{
-		if (txt == CapitaliseFirstLetter(name[0]))
+		if (txt == name[0])
 		{
 			const searchFor = name.join('+')
 			OptionsMakeKey("mentions", "entity", searchFor, true)
@@ -250,9 +254,13 @@ function SwitchToMentionsAndSearchEntity(txt)
 			SetTab("mentions")
 			return
 		}
+		else if (txt.toUpperCase() == name[0].toUpperCase())
+		{
+			console.log("Suspicious! Text in '" + txt + "' NEARLY matches '" + name[0] + "'")
+		}
 	}
 
-	ShowError("Failed to find '" + txt + "'")
+	ShowError("SwitchToMentionsAndSearchEntity failed to find '" + txt + "'")
 }
 
 function SwitchToMentionsAndSearch(txt)

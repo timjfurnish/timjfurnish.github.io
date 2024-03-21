@@ -15,13 +15,16 @@ function PhrasesDisplay()
 		{			
 			for (var para of metadata.myParagraphs)
 			{
-				for (var fragment of para.fragments)
+				if (! para.ignoreFragments)
 				{
-					if (! fragment.heading && fragment.text.includes(" "))
+					for (var fragment of para.fragments)
 					{
-						if (fragment.isSpeech ? g_currentOptions.phrases.speech : g_currentOptions.phrases.narr)
+						if (! fragment.heading && fragment.text.includes(" "))
 						{
-							Tally(count, fragment.text)
+							if (fragment.isSpeech ? g_currentOptions.phrases.speech : g_currentOptions.phrases.narr)
+							{
+								Tally(count, fragment.text)
+							}
 						}
 					}
 				}

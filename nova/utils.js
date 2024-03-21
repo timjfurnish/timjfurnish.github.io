@@ -21,9 +21,10 @@ function SetUp_FixTitle()
 
 function ShowError(message)
 {
+	console.error(message)
+
 	if (g_canShowError)
 	{
-		console.error(message)
 		g_canShowError = confirm(message + "\n\n" + new Error().stack + "\n\nKeep showing errors?")
 	}
 }

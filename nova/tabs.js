@@ -47,7 +47,8 @@ function BuildTabs()
 	output.push('<TABLE BORDER="0" CELLPADDING="3" CELLSPACING="0"><TR>')
 	
 	var spanCols = 1
-	const joiner = '<TD WIDTH="1" STYLE="border-bottom:' + kTabLine + '"></TD>'
+	var endCell = '<TD STYLE="border-bottom:' + kTabLine + '">&nbsp;&nbsp;&nbsp;&nbsp;</TD>'
+	var joiner = endCell
 	
 	for (var tabName of Object.keys(g_tabFunctions))
 	{
@@ -59,10 +60,11 @@ function BuildTabs()
 		spanCols += 2
 		output.push(joiner)
 		output.push('<TD WIDTH="10" ID="tab_' + tabName + '" TABINDEX=0 ONCLICK="SetTab(\'' + tabName + '\')" CLASS="tabDeselected">' + BuildTabDisplayText(tabName) + "</TD>")
+		joiner = '<TD WIDTH="1" STYLE="border-bottom:' + kTabLine + '"></TD>'
 	}
 	
-	output.push('<TD STYLE="border-bottom:' + kTabLine + '">&nbsp;&nbsp;&nbsp;&nbsp;</TD>')
-	output.push('<TR><TD COLSPAN="' + spanCols + '" ID="tabContents" STYLE="padding-right: 20px"></TABLE>')
+	output.push(endCell)
+	output.push('<TR><TD COLSPAN="' + spanCols + '" ALIGN=center ID="tabContents"></TABLE>')
 	infoPanel.innerHTML = output.join('')
 	
 	SetTab(g_selectedTabName)
@@ -133,6 +135,7 @@ function TabBuildButtonsBar(toHere, array)
 {
 	if (array.length)
 	{
+//		toHere.push("<center>")
 		OptionsMakeKey(g_selectedTabName, "page", array[0], array)
 		array.forEach(pageName => TabBuildButtonBarAdd(toHere, pageName, "ButtonsBarSet('" + pageName + "')", g_currentOptions[g_selectedTabName].page != pageName))
 
@@ -144,6 +147,7 @@ function TabBuildButtonsBar(toHere, array)
 			}
 		}
 
+//		toHere.push("</center><br>")
 		toHere.push("<br><br>")
 	}
 }

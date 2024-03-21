@@ -21,7 +21,7 @@ function BuildWarningNamesList()
 		'INVALID SPEECH CHARACTER', 'INVALID FINAL CHARACTER', 'IGNORED COMPLETENESS',
 		'SPLIT INFINITIVE', 'CHAPTER NAME IN CHAPTER', 'ILLEGAL MOVE BETWEEN LOCATIONS',
 		'UNFINISHED QUOTE', 'CAPITALS', 'SPACE BEFORE PUNCTUATION',
-		'MARKUP ERROR', 'SPACE IN SPEECH', 'EMPTY SPEECH', 'EMPTY PARAGRAPH',
+		'MARKUP ERROR', 'SPACE IN SPEECH', 'EMPTY SPEECH', 'SETTINGS',
 		'PUNCTUATION WITHOUT SPACE', 'ILLEGAL START CHARACTER', 'EMPTY WORD'
 	]
 
@@ -41,11 +41,9 @@ TabDefine("issues", function(reply, thenCall)
 	{
 		for (var [heading, issueList] of Object.entries(g_issues))
 		{
-			reply.push("<B>" + heading + "</B><UL><LI>" + issueList.join("<LI>") + "</UL>")
+			reply.push("<H3 align=left>" + heading + "</H3><UL align=left><LI>" + issueList.join("</LI><LI>") + "</LI></UL>")
 		}
 
-		console.log(g_disabledWarnings)
-		
 		if (! g_disabledWarnings["ISSUE SUMMARY"])
 		{
 			TableOpen(reply)
@@ -65,11 +63,9 @@ TabDefine("issues", function(reply, thenCall)
 	{
 		reply.push("No issues found")
 	}
-	
-
 })
 
-OnEvent("clear", () =>
+OnEvent("clearEarly", () =>
 {
 	g_issueCount = 0
 	g_issues = {}
@@ -107,6 +103,8 @@ function IssueGetTotal()
 
 function IssueAdd(addThis, theType)
 {
+	//	console.warn(issueHeading + " - " + addThis)
+
 	if (theType)
 	{
 		if (!g_warningNames[theType])

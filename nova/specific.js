@@ -10,7 +10,7 @@ const kTweakableDefaults =
 	voiceSpeech:"",
 	badWords:"tge tgey",
 	allowedStartCharacters:'ABCDEFGHIJKLMNOPQRSTUVWXYZ"',
-	allowedCharacters:'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ()"\'?.,!',
+	allowedCharacters:kCharacterElipsis + 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ()"\'?.,!',
 	startOfSpeech:kCharacterElipsis + "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'",
 	endOfSpeech:kCharacterElipsis + ".!?\u2014,",
 	endOfParagraphSpeech:kCharacterElipsis + ".!?\u2014",
@@ -92,7 +92,14 @@ OnEvent("clear", () =>
 	{
 		for (var name of nameList)
 		{
-			g_nameLookup[name.toLowerCase()] = nameList[0]
+			const lowerName = name.toLowerCase()
+
+			if (lowerName in g_nameLookup)
+			{
+				IssueAdd("Name " + FixStringHTML(name) + " features multiple times in name list", "SETTINGS")
+			}
+
+			g_nameLookup[lowerName] = nameList[0]
 			g_permittedNameCapitalisations[name] = true
 			g_permittedNameCapitalisations[CapitaliseFirstLetter(name)] = true
 			g_permittedNameCapitalisations[name.toUpperCase()] = true
@@ -200,12 +207,12 @@ function SettingsGetReplacementRegularExpressionsArray()
 				}
 				catch
 				{
-					IssueAdd("Replace rule " + FixStringHTML(ruleText) + " is invalid")
+					IssueAdd("Replace rule " + FixStringHTML(ruleText) + " is invalid", "SETTINGS")
 				}					
 			}
 			else
 			{
-				IssueAdd("Replace rule " + FixStringHTML(ruleText) + " doesn't specify what to turn " + FixStringHTML(bits[0]) + " into")
+				IssueAdd("Replace rule " + FixStringHTML(ruleText) + " doesn't specify what to turn " + FixStringHTML(bits[0]) + " into", "SETTINGS")
 			}
 		}
 	}
@@ -279,7 +286,7 @@ function UserChangedSetting(name)
 
 function SettingsAdd(reply, txt, formBits, className)
 {
-	reply.push('<tr><td width="10" valign="top" class="cellNoWrap">' + txt + '&nbsp;&nbsp;&nbsp;</td><td class="' + className + '">' + formBits + "</td></tr>")
+	reply.push('<tr><td width="10" valign="top" align="right" class="cellNoWrap">' + txt + '&nbsp;&nbsp;&nbsp;</td><td class="' + className + '">' + formBits + "</td></tr>")
 }
 
 function SettingAskRevert(whichOne)
