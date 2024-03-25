@@ -119,4 +119,4 @@ TabDefine("entities", function(reply, thenCall)
 	}
 	
 	TableClose(reply)
-})
+}, kIconEntities)

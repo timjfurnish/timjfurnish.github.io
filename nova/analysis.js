@@ -198,7 +198,6 @@ function SplitIntoFragments(thisBunch)
 
 function ProcessInput()
 {
-	DoEvent("clearEarly")
 	DoEvent("clear")
 
 	// TODO: move more local variables into here

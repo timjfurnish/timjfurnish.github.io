@@ -38,7 +38,13 @@ function ReadVoices()
 			languages[lang] = true
 			if (lang == wantLang)
 			{
-				const storeAs = region ? region + " - " + voice.name : voice.name
+				var storeAs = voice.name.replace("(United Kingdom)", "(UK)")
+
+				if (region)
+				{
+					storeAs = region + " - " + storeAs
+				}
+
 				g_voiceLookUp[storeAs] = voice
 			}
 		}

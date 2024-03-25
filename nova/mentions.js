@@ -37,7 +37,7 @@ function RedrawMentions()
 			customTextBox.readOnly = false
 		}
 
-		if (g_metaDataInOrder && entityNames && g_metaDataInOrder.length)
+		if (entityNames && g_metaDataInOrder.length)
 		{
 			var names = entityNames.split('+')
 			var aBreak = ""
@@ -99,7 +99,7 @@ TabDefine("mentions", function(reply, thenCall)
 	reply.push("<p id=mentionsGoHere align=left></p>")
 	
 	thenCall.push(RedrawMentions)
-})
+}, kIconSearch)
 
 function HighlightThreadSection(num, bCanScroll)
 {
@@ -234,7 +234,7 @@ TabDefine("threads", function(reply, thenCall)
 		
 		thenCall.push(RedrawThread)
 	}
-})
+}, kIconSpeech)
 
 //---------------------------------------
 // Switch to here from another tab

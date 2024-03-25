@@ -179,7 +179,7 @@ var g_functionsStillToCall = []
 
 function DescribeFunction(func)
 {
-	return GetDataType(func) + " " + (func?.name ?? '(no name)')
+	return GetDataType(func) + " '" + (func?.name ?? '(no name)') + "'"
 }
 
 function CallNextQueuedFunction()
@@ -245,9 +245,11 @@ function CallTheseFunctionsNow(...list)
 
 var g_eventFuncs = {}
 
-function OnEvent(eventName, call)
+function OnEvent(eventName, late, call)
 {
-	(eventName in g_eventFuncs) ? g_eventFuncs[eventName].push(call) : (g_eventFuncs[eventName] = [call])
+	(eventName in g_eventFuncs) ? late ? g_eventFuncs[eventName].push(call) : g_eventFuncs[eventName].unshift(call) : (g_eventFuncs[eventName] = [call])
+	
+	console.log("On " + eventName + " (late=" + late + ") call " + DescribeFunction(call))
 }
 
 function DoEvent(eventName)

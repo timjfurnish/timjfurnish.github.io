@@ -6,6 +6,8 @@
 var g_tabFunctions = {}
 var g_selectedTabName = null
 var g_hoverControls
+var g_canSelectTabs = true
+var g_tabIconsToDisableWhenNoText = []
 
 const kTabLine = "1px solid #000000"
 const kTabSelected = "#F5F5F5"
@@ -30,10 +32,15 @@ function SetTabTitle(tabName, text)
 function BuildTabDisplayText(tabName, extra)
 {
 	var main = g_tabFunctions[tabName].displayName
+	const name = "id=tabText_" + tabName
 
 	if (extra != undefined)
 	{
-		main = '<FONT COLOR="red">' + main + ' (' + extra + ')</FONT>'
+		main = '<FONT COLOR="red" ' + name + '>' + main + ' (' + extra + ')</FONT>'
+	}
+	else
+	{
+		main = '<FONT ' + name + '>' + main + '</FONT>'
 	}
 	
 	return main
@@ -55,6 +62,11 @@ function BuildTabs()
 		if (! g_selectedTabName)
 		{
 			g_selectedTabName = tabName
+		}
+
+		if (tabName != 'settings')
+		{
+			g_tabIconsToDisableWhenNoText.push(tabName)
 		}
 		
 		spanCols += 2
@@ -98,20 +110,23 @@ function ShowContentForSelectedTab()
 
 function SetTab(name)
 {
-	console.log("Selecting '" + name + "' tab...")
-
-	if (g_selectedTabName != name)
+	if (g_canSelectTabs || !g_tabIconsToDisableWhenNoText.includes(name))
 	{
-		var oldTab = document.getElementById("tab_" + g_selectedTabName)
-		oldTab.className = "tabDeselected"
+		console.log("Selecting '" + name + "' tab...")
+
+		if (g_selectedTabName != name)
+		{
+			var oldTab = document.getElementById("tab_" + g_selectedTabName)
+			oldTab.className = "tabDeselected"
+		}
+
+		g_selectedTabName = name
+
+		var newTab = document.getElementById("tab_" + g_selectedTabName)
+		newTab.className = "tabSelected"
+		
+		ShowContentForSelectedTab()
 	}
-
-	g_selectedTabName = name
-
-	var newTab = document.getElementById("tab_" + g_selectedTabName)
-	newTab.className = "tabSelected"
-	
-	ShowContentForSelectedTab()
 }
 
 //==============================================
@@ -151,3 +166,29 @@ function TabBuildButtonsBar(toHere, array)
 		toHere.push("<br><br>")
 	}
 }
+
+function RethinkEnabledTabs()
+{
+	const hasAnyDataNow = g_metaDataInOrder.length > 0
+	console.log("Data=" + g_metaDataInOrder.length + " so hasAnyDataNow=" + hasAnyDataNow)
+
+	if (g_canSelectTabs != hasAnyDataNow)
+	{
+		g_canSelectTabs = hasAnyDataNow
+		const newOpacity = hasAnyDataNow ? 1 : 0.25
+
+		for (var name of g_tabIconsToDisableWhenNoText)
+		{
+			document.getElementById("tabText_" + name).style.opacity = newOpacity
+			
+			console.log((hasAnyDataNow ? "   Enabling " : "   Disabling ") + name)
+		}
+		
+		if (! hasAnyDataNow)
+		{
+			SetTab("settings")
+		}
+	}
+}
+
+OnEvent("processingDone", true, RethinkEnabledTabs)

@@ -67,4 +67,4 @@ TabDefine("phrases", function(reply, thenCall)
 	reply.push("<p id=phrasesGoHere></p>")
 
 	thenCall.push(PhrasesDisplay)
-})
+}, kIconPhrase)

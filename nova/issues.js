@@ -63,11 +63,11 @@ TabDefine("issues", function(reply, thenCall)
 	{
 		reply.push("No issues found")
 	}
-})
+}, kIconIssues)
 
-OnEvent("clearEarly", () =>
+function ClearEarlyIssues()
 {
-	g_issueCount = 0
+		g_issueCount = 0
 	g_issues = {}
 	g_disabledWarnings = {}
 	g_issueStats = {}
@@ -94,7 +94,9 @@ OnEvent("clearEarly", () =>
 	}
 
 	console.log("Reset disabled warnings to defaults: " + Object.keys(g_disabledWarnings))
-})
+}
+
+OnEvent("clear", false, ClearEarlyIssues)
 
 function IssueGetTotal()
 {
@@ -137,7 +139,7 @@ function IssueAdd(addThis, theType)
 	}
 }
 
-OnEvent("processingDone", () =>
+OnEvent("processingDone", false, () =>
 {
 	SetTabTitle('issues', g_issueCount || undefined)
 })

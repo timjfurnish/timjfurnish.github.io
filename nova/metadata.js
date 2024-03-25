@@ -185,9 +185,7 @@ SetMarkupFunction('%', valueTxt =>
 	}
 })
 
-OnEvent("processingDone", MetaDataEndProcess)
-
-OnEvent("clearEarly", () =>
+function MetaDataClear()
 {
 	g_metaDataCurrent = {CHAPTER:"None"}
 	g_metaDataInOrder = []
@@ -197,7 +195,10 @@ OnEvent("clearEarly", () =>
 	g_metaDataCurrentCompleteness = 100
 	g_metaDataGatherParagraphs = []
 	g_metaDataCurrentContainsToDo = false
-})
+}
+
+OnEvent("processingDone", false, MetaDataEndProcess)
+OnEvent("clear", false, MetaDataClear)
 
 function MetaDataProcessParagraph(numSentences)
 {
@@ -462,7 +463,7 @@ function MetaDataDrawTable()
 	document.getElementById("metaDataOutput").innerHTML = reply.join("")
 }
 
-TabDefine("metadata", TabFunctionStats, "Stats")
+TabDefine("metadata", TabFunctionStats, "&#128202;")
 
 function TabFunctionStats(reply, thenCall)
 {

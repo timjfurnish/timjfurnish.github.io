@@ -83,7 +83,7 @@ const kHasNoEffect = ["voiceDefault", "voiceSpeech", "voiceHeading"]
 
 var g_nameLookup, g_permittedNameCapitalisations
 
-OnEvent("clear", () =>
+OnEvent("clear", true, () =>
 {
 	g_nameLookup = {}
 	g_permittedNameCapitalisations = {}
@@ -405,4 +405,4 @@ TabDefine("settings", function(reply, thenCall)
 	TableClose(reply)
 	
 	thenCall.push(FillInSettings)
-})
+}, kIconSettings)
