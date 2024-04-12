@@ -10,7 +10,7 @@ function SetMarkupFunction(character, func)
 	g_markupFunctions[character] = func
 }
 
-// Value is whether the punctuation in question ends a sentence - TODO fix, currently only errors on ["Hello." he said]
+// Value is whether the punctuation in question ends a sentence
 const kValidJoiners =
 {
 	[""]:false,
@@ -30,7 +30,7 @@ const kIllegalSubstrings =
 	["misused hyphen", /( \-)|(\- )/g],
 	["double quote", "\"\""],
 	["double space", "  "],
-	["dubious punctuation combo", /[;:,\.\!\?][;:,\.\!\?]/g, txt => txt == "!?"],
+	["dubious punctuation combo", /[;:\-,\.\!\?][;:\-,\.\!\?]/g, txt => txt == "!?"],
 	["space before punctuation", / [;:,\.\!\?]/g],
 	["split infinitive", /\bto [a-z]+ly [a-z]+/gi, txt => g_tweakableSettings.splitInfinitiveIgnoreList.includes(txt)]
 ]
@@ -40,6 +40,48 @@ function SetUp()
 	CallTheseFunctions(InitTabs, InitSettings, AddAllInputBoxes, BuildTabs, SetUp_FixTitle, SettingsLoad, ShowContentForSelectedTab, ProcessInput)
 }
 
+function CheckStringForEvenBraces(txtIn)
+{
+	const justBraces = txtIn.replace(/[^\[\]\{\}\(\)]/g, '')
+	
+	if (justBraces)
+	{
+		var closeThese = []
+		
+		for (var b of justBraces)
+		{
+			if (b == '(')
+			{
+				closeThese.push(')')
+			}
+			else if (b == '[')
+			{
+				closeThese.push(']')
+			}
+			else if (b == '{')
+			{
+				closeThese.push('}')
+			}
+			else
+			{
+				const shouldBe = closeThese.pop()
+
+				if (b != shouldBe)
+				{
+					return "found " + FixStringHTML(b) + " while expecting " + (shouldBe ? FixStringHTML(shouldBe) : "nothing")
+				}
+			}			
+		}
+		
+		if (closeThese.length)
+		{
+			return "reached end of text without closing " + FixStringHTML(closeThese.join(' '))
+		}
+	}
+	
+	return null
+}
+
 function CheckParagraphForIssues(txtIn)
 {
 	if (! g_tweakableSettings.allowedStartCharacters.includes(txtIn[0].toUpperCase()))
@@ -47,6 +89,13 @@ function CheckParagraphForIssues(txtIn)
 		IssueAdd("First character of " + FixStringHTML(txtIn) + " is not an allowed start character " + FixStringHTML(g_tweakableSettings.allowedStartCharacters), "ILLEGAL START CHARACTER")
 	}		
 
+	const braceError = CheckStringForEvenBraces(txtIn)
+	
+	if (braceError)
+	{
+		IssueAdd("Mismatched brackets in " + FixStringHTML(txtIn) + ": " + braceError, "BRACKETS")
+	}
+	
 	txtIn = txtIn.replace(/[\(\)]/g, '')
 
 	const splittyFun = txtIn.split(/[\.,!\?]+["\)]?/)
@@ -252,6 +301,7 @@ function ProcessInput()
 				var nextSpeechShouldStartWithCapital = true
 				var bCanCheckFinalCharacter = true
 				var bIgnoreFragments = false
+				var isTreatingAsSpeech = false
 
 				for (var eachIn of talkyNonTalky)
 				{
@@ -278,6 +328,7 @@ function ProcessInput()
 							// This is speech because last line said so...
 							isSpeech = true
 							workspace.treatNextParagraphAsSpeech = false
+							isTreatingAsSpeech = true
 						}
 						else
 						{
@@ -301,6 +352,10 @@ function ProcessInput()
 								workspace.treatNextParagraphAsSpeech = false
 							}
 						}
+					}
+					else
+					{
+						workspace.treatNextParagraphAsSpeech = false
 					}
 
 					if (isSpeech)
@@ -445,7 +500,7 @@ function ProcessInput()
 				
 				if (bCanCheckFinalCharacter)
 				{
-					CheckFinalCharacter(txtInProcessed)
+					CheckFinalCharacter(txtInProcessed, isTreatingAsSpeech)
 				}
 				
 				const pushThis = {allOfIt:txtInVeryRaw, fragments:storeAsFragments, issues:IssueGetTotal() - oldNumIssues}
@@ -478,26 +533,28 @@ function AfterProcessInput()
 	}
 }
 
-function CheckFinalCharacter(txtIn)
+function CheckFinalCharacter(txtIn, endsWithSpeech)
 {
 	const txtFull = txtIn
 	var finalCharacter = txtIn.slice(-1)
-	var endsWithSpeech = false
 
-	while (finalCharacter == '"' || finalCharacter == ')')
+	if (! endsWithSpeech)
 	{
-		if (finalCharacter == '"')
+		while (finalCharacter == '"' || finalCharacter == ')')
 		{
-			if (endsWithSpeech)
+			if (finalCharacter == '"')
 			{
-				break
-			}
+				if (endsWithSpeech)
+				{
+					break
+				}
 
-			endsWithSpeech = true
+				endsWithSpeech = true
+			}
+			
+			txtIn = txtIn.slice(0, -1)
+			finalCharacter = txtIn.slice(-1)
 		}
-		
-		txtIn = txtIn.slice(0, -1)
-		finalCharacter = txtIn.slice(-1)
 	}
 
 	const checkHere = endsWithSpeech ? g_tweakableSettings.endOfParagraphSpeech : g_tweakableSettings.endOfParagraphNarrative

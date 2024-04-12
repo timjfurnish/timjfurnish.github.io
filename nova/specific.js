@@ -16,7 +16,8 @@ const kTweakableDefaults =
 	endOfParagraphSpeech:kCharacterElipsis + ".!?\u2014",
 	endOfParagraphNarrative:kCharacterElipsis + ".!?:",
 	skip:["Contents"],
-	replace:['\\betc\\./etc^', '\\bDr\\./Dr^', '\\bMr\\./Mr^', '\\bMrs\\./Mrs^', '\\bO\\.S\\./O^S^', '\\bi\\.e\\./i^e^', '\\be\\.g\\./e^g^', '([0-9]+)\\.([0-9]+)/$1^$2', '^== (.*) ==$/$1.'],
+	wordsContainingFullStops:['etc.', 'Dr.', 'Mr.', 'Mrs.', 'i.e.', 'e.g.'],
+	replace:['\\bO\\.S\\./OFFSCREEN', '([0-9]+)\\.([0-9]+)/$1^$2', '^== (.*) ==$/$1.'],
 	hyphenCheckPairs:["sat-nav", "set-up", "under-cover", "self-reliance reliant control esteem respect awareness aware", "short-term", "left right-hand", "sand-timer", "back-stage", "stage-left right", "dance-floor", "slow-motion", "some-thing where how what body one", "heart-break breaking breaks breakingly broken", "car-park parks", "brain-wave waves", "mind lip-reading reader readers read reads", "twenty thirty forty fifty sixty seventy eighty ninety-one two three four five six seven eight nine", "one two three four five six seven eight nine ten-hundred thousand million billion trillion"],
 	names:[],
 	splitInfinitiveIgnoreList:[],
@@ -38,36 +39,40 @@ Object.entries(kTweakableDefaults).forEach(CopyToSetting)
 
 const kSettingNames =
 {
+	["INPUT PROCESSING"]:
+	{
+		replace:"Replace (regex)|class=mediumTextBox",
+		wordsContainingFullStops:"Valid words containing full stops|class=shortTextBox",
+		skip:"Skip lines starting with|class=shortTextBox",
+		headingIdentifier:"Line is a heading if it includes|class=shortTextBox",
+		removeHeadingIdentifier:"Remove heading identifier",
+		headingMaxCharacters:"Max characters in a heading|class=shortTextBox",
+	},
 	VOICE:
 	{
 		language:"Language|language",
 		voiceDefault:"Voice (narrative)|voice",
 		voiceSpeech:"Voice (speech)|voice",
 	},
-	["INPUT PROCESSING"]:
-	{
-		replace:"Replace (regex)|class=longTextBox",
-		skip:"Skip lines starting with|class=longTextBox",
-		headingIdentifier:"Line is a heading if it includes|class=shortTextBox",
-		removeHeadingIdentifier:"Remove heading identifier",
-		headingMaxCharacters:"Max characters in a heading|class=shortTextBox",
-	},
 	NAMES:
 	{
-		names:"Character/place names|class=longTextBox",
-//		hyphenCheckPairs:"Hyphen check text|class=longTextBox",
+		names:"Entity names|class=mediumTextBox",
+	},
+	["HYPHENS"]:
+	{
+		hyphenCheckPairs:"Hyphen check text|class=longTextBox",
 	},
 	["CHECKS"]:
 	{
+		badWords:"Bad words|class=longTextBox",
 		allowedCharacters:"Valid characters|class=longTextBox",
 		allowedStartCharacters:"Start of paragraph|class=longTextBox",
 		startOfSpeech:"Start of speech|class=longTextBox",
-		endOfSpeech:"End of speech|class=longTextBox",
-		endOfParagraphSpeech:"End of paragraph speech|class=longTextBox",
-		endOfParagraphNarrative:"End of paragraph narrative|class=longTextBox",
-		badWords:"Bad words|class=longTextBox",
-		splitInfinitiveIgnoreList:"Split infinitive check ignores|class=longTextBox",
-		numberIgnoreList:"Number check ignores|class=longTextBox",
+		endOfSpeech:"End of speech|class=shortTextBox",
+		endOfParagraphSpeech:"End of paragraph speech|class=shortTextBox",
+		endOfParagraphNarrative:"End of paragraph narrative|class=shortTextBox",
+		splitInfinitiveIgnoreList:"Split infinitive check ignores|class=shortTextBox",
+		numberIgnoreList:"Number check ignores|class=shortTextBox",
 		["Enabled checks"]:() => BuildIssueDefaults(false),
 		["Additional settings"]:() => BuildIssueDefaults(true),
 	}
@@ -109,7 +114,7 @@ OnEvent("clear", true, () =>
 
 function UpdateSettingFromText(name, type, savedSetting, isLoading)
 {
-	GetDataType(savedSetting) == "string" || ShowError("Data '" + name + "' isn't a string")
+	typeof(savedSetting) == "string" || ShowError("Data '" + name + "' isn't a string")
 
 	if (type == 'array')
 	{
@@ -217,6 +222,31 @@ function SettingsGetReplacementRegularExpressionsArray()
 		}
 	}
 
+	for (var wordTxt of g_tweakableSettings.wordsContainingFullStops)
+	{
+		var becomes = wordTxt.replaceAll('.', '^')
+		
+		if (becomes == wordTxt)
+		{
+			IssueAdd("String " + FixStringHTML(wordTxt) + " doesn't contain a full stop", "SETTINGS")
+		}
+		else
+		{
+			var findThis = wordTxt
+			if (! findThis.startsWith('.'))
+			{
+				findThis = "\\b" + findThis
+			}
+			if (! findThis.endsWith('.'))
+			{
+				findThis += "\\b"
+			}
+			reply.push({regex:new RegExp(findThis.replaceAll('.', '\\.'), 'g'), replaceWith:becomes})
+		}
+	}
+
+//	console.log(reply)
+
 	return reply
 }
 
@@ -256,7 +286,7 @@ function FillInSetting(k)
 			
 			if (data != elem.value)
 			{
-				console.warn("Mismatch! Wanted to set '" + k + "' to " + GetDataType(data) + " '" + data + "' but it's set to " + GetDataType(elem.value) + " '" + elem.value + "'")
+				console.warn("Mismatch! Wanted to set '" + k + "' to " + GetDataTypeVerbose(data) + " '" + data + "' but it's set to " + GetDataTypeVerbose(elem.value) + " '" + elem.value + "'")
 			}
 		}
 	}

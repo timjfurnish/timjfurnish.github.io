@@ -17,30 +17,26 @@ function InitTabs()
 	g_hoverControls = document.getElementById('hoverControls')
 }
 
-function TabDefine(tabName, myFunction, displayNameOverride)
+function TabDefine(tabName, myFunction, displayNameOverride, tooltip)
 {
-	g_tabFunctions[tabName] = {func:myFunction, displayName:displayNameOverride ?? CapitaliseFirstLetter(tabName).replace(/_/g, " ")}
+	const readableName = CapitaliseFirstLetter(tabName).replace(/_/g, " ")
+	g_tabFunctions[tabName] = {func:myFunction, tooltipText:tooltip ?? readableName, displayName:displayNameOverride ?? readableName}
 }
 
 function SetTabTitle(tabName, text)
 {
 	console.log("Setting extra text for tab " + tabName + " to " + text)
-	var tabby = document.getElementById("tab_" + tabName)
+	var tabby = document.getElementById("tabText_" + tabName)
 	tabby.innerHTML = BuildTabDisplayText(tabName, text)
 }
 
 function BuildTabDisplayText(tabName, extra)
 {
-	var main = g_tabFunctions[tabName].displayName
-	const name = "id=tabText_" + tabName
+	var main = '&nbsp;' + g_tabFunctions[tabName].displayName + '&nbsp;'
 
 	if (extra != undefined)
 	{
-		main = '<FONT COLOR="red" ' + name + '>' + main + ' (' + extra + ')</FONT>'
-	}
-	else
-	{
-		main = '<FONT ' + name + '>' + main + '</FONT>'
+		main += ('<span class="alertBubble">&nbsp;' + extra + '&nbsp;</span>')
 	}
 	
 	return main
@@ -56,6 +52,7 @@ function BuildTabs()
 	var spanCols = 1
 	var endCell = '<TD STYLE="border-bottom:' + kTabLine + '">&nbsp;&nbsp;&nbsp;&nbsp;</TD>'
 	var joiner = endCell
+	var tilty = -1
 	
 	for (var tabName of Object.keys(g_tabFunctions))
 	{
@@ -71,8 +68,14 @@ function BuildTabs()
 		
 		spanCols += 2
 		output.push(joiner)
-		output.push('<TD WIDTH="10" ID="tab_' + tabName + '" TABINDEX=0 ONCLICK="SetTab(\'' + tabName + '\')" CLASS="tabDeselected">' + BuildTabDisplayText(tabName) + "</TD>")
+		output.push('<TD WIDTH="10" ID="tab_' + tabName + '" TABINDEX=0 ONCLICK="SetTab(\'' + tabName + '\')" CLASS="tabDeselected">')
+		output.push('<DIV CLASS="iconWithTooltip">')
+		output.push('<span id="tabText_' + tabName + '">' + BuildTabDisplayText(tabName) + '</span>')
+		output.push('<span class="tooltipBubble" STYLE="transform:rotate(' + Math.round(Math.sin(tilty) * 10) + 'deg)">' + g_tabFunctions[tabName].tooltipText + '</span>')
+		output.push("</DIV>")
+		output.push("</TD>")
 		joiner = '<TD WIDTH="1" STYLE="border-bottom:' + kTabLine + '"></TD>'
+		tilty += 3
 	}
 	
 	output.push(endCell)

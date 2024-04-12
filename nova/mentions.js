@@ -17,14 +17,14 @@ function TurnRedIf(input, condition)
 function RedrawMentions()
 {
 	var mentionsGoHere = document.getElementById("mentionsGoHere")
-	var customTextBox = document.getElementById("mentions.custom")
+	var customTextBox = document.getElementById("search.custom")
 
 	var lastHeading = ""
 
 	if (mentionsGoHere && customTextBox)
 	{
 		var output = []
-		var entityNames = document.getElementById("mentions.entity")?.value
+		var entityNames = document.getElementById("search.entity")?.value
 
 		if (entityNames)
 		{
@@ -41,7 +41,7 @@ function RedrawMentions()
 		{
 			var names = entityNames.split('+')
 			var aBreak = ""
-			const theString = "\\b(?:" + names.join('|') + ")\\b"
+			const theString = "\\b(?:" + names.join('|').replaceAll('*', '\\w*') + ")\\b"
 			const exp = new RegExp(theString, "ig");
 
 			console.log("Searching for " + theString)
@@ -82,7 +82,7 @@ function RedrawMentions()
 	}
 }
 
-TabDefine("mentions", function(reply, thenCall)
+TabDefine("search", function(reply, thenCall)
 {
 	const specificNames = SettingsGetNamesArrayArray()
 	var nameData = {[""]:"Custom"}
@@ -96,7 +96,7 @@ TabDefine("mentions", function(reply, thenCall)
 	OptionsMakeSelect(options, "RedrawMentions()", "Entity", "entity", nameData, "")
 	OptionsMakeTextBox(options, "RedrawMentions()", "Search for", "custom")
 	reply.push(OptionsConcat(options))
-	reply.push("<p id=mentionsGoHere align=left></p>")
+	MakeUpdatingArea(reply, "mentionsGoHere", 'align="left"')
 	
 	thenCall.push(RedrawMentions)
 }, kIconSearch)
@@ -131,7 +131,7 @@ function HighlightThreadSection(num, bCanScroll)
 		}
 	}
 	
-//	SetTabTitle('threads', g_threadSectionSelected)
+//	SetTabTitle('voice', g_threadSectionSelected)
 	
 	return num == g_threadSectionSelected
 }
@@ -148,14 +148,14 @@ function RedrawThread()
 	if (threadsGoHere)
 	{
 		var output = []
-		var mustMatch = g_currentOptions.threads.showThis
+		var mustMatch = g_currentOptions.voice.showThis
 
 		for (var metadata of g_metaDataInOrder)
 		{
 			var showHeading = "<H3>" + MetaDataMakeFragmentDescription(metadata.info) + "</H3>"
 			var before = ""
 			
-			if (metadata.info[g_currentOptions.threads.page] == mustMatch)
+			if (metadata.info[g_currentOptions.voice.page] == mustMatch)
 			{
 				for (var para of metadata.myParagraphs)
 				{
@@ -202,7 +202,7 @@ function ThreadRead()
 	}
 }
 
-TabDefine("threads", function(reply, thenCall)
+TabDefine("voice", function(reply, thenCall)
 {
 	const columns = Object.keys(g_metaDataAvailableColumns)
 	
@@ -214,13 +214,13 @@ TabDefine("threads", function(reply, thenCall)
 
 		for (var metadata of g_metaDataInOrder)
 		{
-			const txt = metadata.info[g_currentOptions.threads.page]
+			const txt = metadata.info[g_currentOptions.voice.page]
 			nameData[txt] = txt
 		}
 		
 		var options = []
 		var hoverOptions = []
-		OptionsMakeSelect(options, "RedrawThread()", "Only show text from " + g_currentOptions.threads.page.toLowerCase(), "showThis", nameData, "", true)
+		OptionsMakeSelect(options, "RedrawThread()", "Only show text from " + g_currentOptions.voice.page.toLowerCase(), "showThis", nameData, "", true)
 		hoverOptions.push('<button onclick="HighlightThreadSection(g_threadSectionSelected - 1, true)">&lt;</button>')
 		hoverOptions.push('<button onclick="HighlightThreadSection(g_threadSectionSelected + 1, true)">&gt;</button>')
 		hoverOptions.push('<BUTTON ONCLICK="ThreadRead()">Read</BUTTON>')
@@ -228,7 +228,7 @@ TabDefine("threads", function(reply, thenCall)
 		hoverOptions.push('<BUTTON ONCLICK="window.scrollTo(0,0)">' + kIconToTop + '</BUTTON>')
 
 		reply.push(OptionsConcat(options))
-		reply.push("<p id=threadsGoHere align=left></p>")
+		MakeUpdatingArea(reply, "threadsGoHere", 'align="left"')
 		
 		ShowHoverControls(hoverOptions)
 		
@@ -249,9 +249,9 @@ function SwitchToMentionsAndSearchEntity(txt)
 		if (txt == name[0])
 		{
 			const searchFor = name.join('+')
-			OptionsMakeKey("mentions", "entity", searchFor, true)
-			OptionsMakeKey("mentions", "custom", searchFor, true)
-			SetTab("mentions")
+			OptionsMakeKey("search", "entity", searchFor, true)
+			OptionsMakeKey("search", "custom", searchFor, true)
+			SetTab("search")
 			return
 		}
 		else if (txt.toUpperCase() == name[0].toUpperCase())
@@ -265,9 +265,9 @@ function SwitchToMentionsAndSearchEntity(txt)
 
 function SwitchToMentionsAndSearch(txt)
 {
-	OptionsMakeKey("mentions", "entity", "", true)
-	OptionsMakeKey("mentions", "custom", txt, true)
-	SetTab("mentions")
+	OptionsMakeKey("search", "entity", "", true)
+	OptionsMakeKey("search", "custom", txt, true)
+	SetTab("search")
 }
 
 function MakeMentionLink(showText, searchForText)

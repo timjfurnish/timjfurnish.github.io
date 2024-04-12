@@ -88,11 +88,29 @@ TabDefine("entities", function(reply, thenCall)
 		reply.push('&nbsp;' + CreateClickableText(kIconSearch, "SwitchToMentionsAndSearchEntity(" + MakeParamsString(m) + ")"))
 		var empty = true
 		var totaliser = 0
+		var colCount = 0
+
+		function DrawEmptyCells()
+		{
+			if (colCount)
+			{
+				if (empty)
+				{
+					reply.push("<TD COLSPAN=" + colCount + ">")
+				}
+				else
+				{
+					reply.push('<TD COLSPAN=' + colCount + ' CLASS="cell" BGCOLOR="lightGray">-')
+				}
+				colCount = 0
+			}
+		}
 
 		for (var eachSegment of segments)
 		{
 			if (m in eachSegment.entityMentions)
 			{
+				DrawEmptyCells()
 				var num = eachSegment.entityMentions[m]
 				totaliser += num
 				const last = (eachSegment.name === lastFoundInChapter)
@@ -106,15 +124,12 @@ TabDefine("entities", function(reply, thenCall)
 				}
 				empty = last
 			}
-			else if (empty)
-			{
-				reply.push("<TD>")
-			}
 			else
 			{
-				reply.push('<TD CLASS="cell" BGCOLOR="lightGray">-')
+				++ colCount
 			}
 		}
+		DrawEmptyCells()
 		reply.push('<TD CLASS="cell"><B>' + totaliser + '</B>')
 	}
 	

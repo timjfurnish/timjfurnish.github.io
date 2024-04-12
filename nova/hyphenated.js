@@ -3,107 +3,197 @@
 // (c) Tim Furnish, 2023-2024
 //==============================================
 
-/* TODO: hyphen check 2.0
+var g_hyphenCheckWIP = null
+var g_hyphenFoundWords = null
+var g_hyphenCheckDataIsValid = false
 
-function SetUpHyphenCheck(w)
+function HuntFor(pattern, callback)
 {
-	const [w1, w2] = w.split('-', 2)
-	document.getElementById("hyphenCheckFirst").value = w1
-	document.getElementById("hyphenCheckSecond").value = w2
-	HyphenCheck()
+	for (var metadata of g_metaDataInOrder)
+	{			
+		for (var para of metadata.myParagraphs)
+		{
+			if (! para.ignoreFragments)
+			{
+				para.allOfIt.matchAll(pattern).forEach(elem => elem.forEach(callback))
+			}
+		}
+	}
 }
 
-function HyphenCheck()
+function ClearHyphenCheck()
 {
-	const firstWord = OnlyKeepValid(document.getElementById("hyphenCheckFirst").value.split(/[^'a-z\-0-9\&]+/))
-	const secondWord = OnlyKeepValid(document.getElementById("hyphenCheckSecond").value.split(/[^'a-z\-0-9\&]+/))
+	g_hyphenCheckWIP = null
+	g_hyphenFoundWords = null
+	g_hyphenCheckDataIsValid = false
+}
 
-	var scores = {}
-	
-	if (firstWord.length && secondWord.length)
+OnEvent("clear", false, ClearHyphenCheck)
+
+function HyphenCheckDrawTable()
+{
+	var reply = []
+
+	TableOpen(reply)
+	TableAddHeading(reply, "Text")
+	TableAddHeading(reply, "Total")
+	TableAddHeading(reply, "With hyphens<br>(ice-cream)")
+	TableAddHeading(reply, "With spaces<br>(ice cream)")
+	TableAddHeading(reply, "With neither<br>(icecream)")
+	TableAddHeading(reply, "Highest")
+
+	for (var phrase of Object.keys(g_hyphenCheckWIP).sort((p1, p2) => (g_hyphenCheckWIP[p2].total - g_hyphenCheckWIP[p1].total)))
 	{
-		var singleWords = []
-
-		for (var w1 of firstWord)
+		const data = g_hyphenCheckWIP[phrase]
+		const bDisc = (data.total != data.highest)
+		
+		if (g_currentOptions.hyphen_check.disc && !bDisc)
 		{
-			for (var w2 of secondWord)
-			{
-				singleWords.push(w1 + "-" + w2)
-				singleWords.push(w1 + w2)
-			}
+			continue
 		}
 
-		for (s of g_sentences)
+		TableNewRow(reply, bDisc ? 'BGCOLOR="#FFDDDD"' : undefined)
+		const searchFor = phrase + "+" + phrase.replaceAll('-', '') + "+" + phrase.replaceAll('-', ' ')
+		reply.push('<TD CLASS="cell">' + phrase + '&nbsp;' + CreateClickableText(kIconSearch, "SwitchToMentionsAndSearch(" + MakeParamsString(searchFor) + ")") + '</TD>')
+		reply.push('<TD CLASS="cell">' + data.total + '</TD>')
+		reply.push('<TD CLASS="cell">' + (data.countWithHyphens ?? "") + '</TD>')
+		reply.push('<TD CLASS="cell">' + (data.countWithSpaces ?? "") + '</TD>')
+		reply.push('<TD CLASS="cell">' + (data.countWithNeither ?? "") + '</TD>')
+		reply.push('<TD CLASS="cell">' + (data.highest ?? "") + '</TD>')
+	}
+
+	TableClose(reply)
+	g_hyphenCheckDataIsValid = true
+	UpdateArea('hyphenCheckOutput', reply)
+}
+
+function HyphenCheckCalcTotals()
+{
+	for (var [phrase, data] of Object.entries(g_hyphenCheckWIP))
+	{
+		const total = Object.values(data).reduce((soFar, a) => soFar + a, 0)
+
+		if (total > 1)
 		{
-			var justSawFirstWord = null
-
-			for (var w of s.listOfWords)
+			var highest = 0
+			for (var each of Object.values(data))
 			{
-				if (singleWords.includes(w))
-				{
-					scores[w] = (scores[w] ?? 0) + 1
-				}
-				else if (justSawFirstWord && secondWord.includes(w))
-				{
-					const both = justSawFirstWord + " " + w
-					scores[both] = (scores[both] ?? 0) + 1
-				}
+				(each > highest) && (highest = each)
+			}
+			data.total = total
+			data.highest = highest
+		}
+		else
+		{
+			delete g_hyphenCheckWIP[phrase]
+		}
+	}
 
-				justSawFirstWord = firstWord.includes(w) ? w : null
+	QueueFunction(HyphenCheckDrawTable)
+}
+
+function HyphenCheckFindWithNeither()
+{
+	for (var [key, value] of Object.entries(g_hyphenCheckWIP))
+	{
+		HuntFor(new RegExp('\\b' + key.replaceAll('-', '').replaceAll('*', '\\w*') + '\\b', 'gi'), matched => (Tally(g_hyphenCheckWIP[key], "countWithNeither"), SetMemberOfMember(g_hyphenFoundWords, key, matched, true)))
+	}
+
+	QueueFunction(HyphenCheckCalcTotals)
+}
+
+function HyphenCheckFindWithSpaces()
+{
+	for (var [key, value] of Object.entries(g_hyphenCheckWIP))
+	{
+		HuntFor(new RegExp('\\b' + key.replaceAll('-', ' ').replaceAll('*', '\\w*') + '\\b', 'gi'), matched => (Tally(g_hyphenCheckWIP[key], "countWithSpaces"), SetMemberOfMember(g_hyphenFoundWords, key, matched, true)))
+	}
+
+	UpdateArea('hyphenCheckOutput', "Nearly ready...")
+	QueueFunction(HyphenCheckFindWithNeither)
+}
+
+function HyphenCheckAddCustom(beforeHyphen, afterHyphen, wildcardCollection)
+{
+	if (beforeHyphen && afterHyphen)
+	{
+		const beforeHyphenSplit = beforeHyphen.split(' ')
+		const afterHyphenSplit = afterHyphen.split(' ')
+		for (var splitBefore of beforeHyphenSplit)
+		{
+			for (var splitAfter of afterHyphenSplit)
+			{
+				const key = splitBefore + "-" + splitAfter
+				console.log("Adding '" + key + "'")
+				g_hyphenCheckWIP[key] = {}
+				if (key.includes("*"))
+				{
+					wildcardCollection[key] = true
+				}
 			}
 		}
+	}
+}
+
+function SetMemberOfMember(container, outerName, innerName, value)
+{
+	if (outerName in container)
+	{
+		container[outerName][innerName] = value
 	}
 	else
 	{
-		for (s of g_sentences)
-		{
-			for (var w of s.listOfWords)
-			{
-				if (w.includes('-'))
-				{
-					scores[w] = (scores[w] ?? 0) + 1
-				}
-			}
-		}
+		container[outerName] = {[innerName]: value}
 	}
-
-	var output = []
-	TableOpen(output)
-	TableAddHeading(output, "Text")
-	TableAddHeading(output, "Count")
-	for (var txt of Object.keys(scores).sort((p1, p2) => (scores[p2] - scores[p1])))
-	{
-		const score = scores[txt]
-		const showText = (txt.split('-', 3).length == 2) ? '<B ONCLICK="SetUpHyphenCheck(\'' + txt + '\')">' + txt + '</B>' : txt
-		TableNewRow(output)
-		output.push("<TD>" + MakeMentionLink(showText, txt) + "<TD align=center>" + score)
-	}
-	output.push("</TABLE>")
-	document.getElementById("hyphenCheckOutput").innerHTML = output.join("")
 }
 
-function HyphenClear()
+function HyphenCheckFirstPass()
 {
-	document.getElementById("hyphenCheckFirst").value = ""
-	document.getElementById("hyphenCheckSecond").value = ""
-	HyphenCheck()
+	UpdateArea('hyphenCheckOutput', "Searching...")
+
+	// Find things with hyphens in document
+	var countEm = {}
+	HuntFor(/\b\w+[\w'\-]*-[\w']\w+\b/g, matched => Tally(countEm, matched.toLowerCase()))
+
+	// Build full data structure
+	g_hyphenCheckWIP = {}
+	g_hyphenFoundWords = {}
+	var checksWithWildcard = {}
+	
+	for (var custom of g_tweakableSettings.hyphenCheckPairs)
+	{
+		HyphenCheckAddCustom(...custom.split('-', 2), checksWithWildcard)
+	}
+	
+	console.log(checksWithWildcard)
+	
+	for (var [key, value] of Object.entries(countEm))
+	{
+		// TODO: see if it matches a wildcard, if so, use that as the key
+		g_hyphenCheckWIP[key] = {countWithHyphens:value}
+		SetMemberOfMember(g_hyphenFoundWords, key, key, true)
+	}
+	
+	QueueFunction(HyphenCheckFindWithSpaces)
+}
+
+function HyphenCheckShowGoButton()
+{
+	if (g_hyphenCheckDataIsValid)
+	{
+		HyphenCheckDrawTable()
+	}
+	else if (g_hyphenCheckWIP == null)
+	{
+		UpdateArea('hyphenCheckOutput', '<button onClick="HyphenCheckFirstPass()">GO</button>')
+	}
 }
 
 TabDefine("hyphen_check", function(reply, thenCall)
 {
-	reply.push("<TABLE CELLPADDING=0 CELLSPACING=0>")
-	var after = '<TD ROWSPAN=2>&nbsp;<BUTTON tabindex="-1" ONCLICK="HyphenClear()">Clear</BUTTON>'
-	for (var example of g_tweakableSettings.hyphenCheckPairs ?? [])
-	{
-		var [w1, w2] = example.split('-', 2)
-		after += ' <A tabindex="-1" HREF="javascript:SetUpHyphenCheck(\'' + example + '\')">' + w1.split(' ', 1)[0] + w2.split(' ', 1)[0] + '</A>'
-	}
-	for (var a of ["First", "Second"])
-	{
-		reply.push("<TR><TD>" + a + " word(s):&nbsp;<TD><INPUT TYPE=text ID=hyphenCheck" + a + ' onChange="HyphenCheck()">' + after)
-		after = ''
-	}
-	reply.push('</TABLE><P ID="hyphenCheckOutput"></P>')
-	thenCall.push(HyphenCheck)
-})
-*/
+	var options = []
+	OptionsMakeCheckbox(options, "HyphenCheckShowGoButton()", "disc", "Only show discrepancies", false, true)
+	reply.push(OptionsConcat(options))
+	MakeUpdatingArea(reply, "hyphenCheckOutput")
+	thenCall.push(HyphenCheckShowGoButton)
+}, kIconHyphen)
