@@ -164,7 +164,7 @@ function HyphenCheckAddCustom(beforeHyphen, afterHyphen, wildcardCollection)
 			for (var splitAfter of afterHyphenSplit)
 			{
 				const key = splitBefore + "-" + splitAfter
-				console.log("Adding '" + key + "'")
+//				console.log("Adding '" + key + "'")
 				g_hyphenCheckWIP[key] = {}
 				if (key.includes("*"))
 				{
@@ -205,7 +205,7 @@ function HyphenCheckFirstPass()
 		HyphenCheckAddCustom(...custom.split('-', 2), checksWithWildcard)
 	}
 	
-	console.log(checksWithWildcard)
+//	console.log(checksWithWildcard)
 	
 	for (var [key, value] of Object.entries(countEm))
 	{
