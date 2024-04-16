@@ -12,7 +12,7 @@ function PhrasesDisplay()
 		var count = {}
 		
 		for (var metadata of g_metaDataInOrder)
-		{			
+		{
 			for (var para of metadata.myParagraphs)
 			{
 				if (! para.ignoreFragments)
@@ -58,13 +58,13 @@ function PhrasesDisplay()
 }
 
 TabDefine("phrases", function(reply, thenCall)
-{	
+{
 	var options = []
 	OptionsMakeCheckbox(options, "PhrasesDisplay()", "speech", "Speech", true, true)
 	OptionsMakeCheckbox(options, "PhrasesDisplay()", "narr", "Narrative", true, true)
-
 	reply.push(OptionsConcat(options))
-	reply.push("<p id=phrasesGoHere></p>")
+
+	MakeUpdatingArea(reply, "phrasesGoHere")
 
 	thenCall.push(PhrasesDisplay)
 }, kIconPhrase)

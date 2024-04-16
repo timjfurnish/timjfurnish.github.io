@@ -104,6 +104,13 @@ function GetDataType(data)
 	return (data === null) ? "null" : (data === undefined) ? "undefined" : Array.isArray(data) ? "array" : data.tagName ? data.tagName + " (" + data.type + ")" : typeof(data)
 }
 
+// This should only be used for display purposes, not comparing result - for that use GetDataType
+// Could well revisit this periodically and change the output!
+function GetDataTypeVerbose(data)
+{
+	return (data === null) ? "null" : (data === undefined) ? "undefined" : Array.isArray(data) ? "array of length " + data.length : data.tagName ? data.tagName + " (" + data.type + ")" : typeof(data)
+}
+
 //---------------------------
 // Colours
 //---------------------------
@@ -168,6 +175,7 @@ function Tally(toHere, key, num)
 		num = 1
 	}
 
+
 	(key in toHere) ? toHere[key] += num : (toHere[key] = num)
 }
 
@@ -179,7 +187,7 @@ var g_functionsStillToCall = []
 
 function DescribeFunction(func)
 {
-	return GetDataType(func) + " '" + (func?.name ?? '(no name)') + "'"
+	return GetDataTypeVerbose(func) + " '" + (func?.name ?? '(no name)') + "'"
 }
 
 function CallNextQueuedFunction()

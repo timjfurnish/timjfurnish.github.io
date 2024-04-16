@@ -16,7 +16,7 @@ TabDefine("words", function(reply, thenCall)
 	OptionsMakeSelect(options, "RedrawWordTable()", "Show one-offs", "displayUnique", g_displayUnique, "Unique")
 	OptionsMakeCheckbox(options, "RedrawWordTable()", "stopAtApostrophe", "Trim words at apostrophes/hyphens")
 	reply.push(options.join('&nbsp;&nbsp;'))
-	reply.push('<P ID="wordTableHere"></P>')
+	MakeUpdatingArea(reply, "wordTableHere")
 
 	thenCall.push(RedrawWordTable)
 })

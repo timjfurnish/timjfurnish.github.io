@@ -10,13 +10,14 @@
 const kIconSearch = "&#128269;"
 const kIconPaste = "&#128203;"
 const kIconFix = "&#128736;"
-const kIconSpeech = "&#128266;" //"&#128172;"
+const kIconSpeech = "&#128172;" // "&#128266;" 
 const kIconPhrase = "&#128209;"
 const kIconToTop = "&#8679;"
 const kIconRevert = "&hookleftarrow;"
 const kIconSettings = "&#128736;&#65039;"
 const kIconIssues = "&#9888;&#65039;"
 const kIconEntities = "&#129333;"
+const kIconHyphen = "&#127848;"
 
 const kCharacterElipsis = "\u2026"
 const kCharacterEmDash = "\u2014"
@@ -67,6 +68,21 @@ function RenderBarFor(val, scale, dp, suffix)
 	const greenness = num * 2
 	const col = "rgb(" + Math.floor(300 - greenness) + ", " + Math.floor(greenness) + ", " + Math.floor(255 - greenness) + ")"
 	return '<DIV STYLE="width:' + Math.floor(num) + 'px;background:' + col + '" CLASS="colourBar"><B><SMALL>' + ((dp === undefined) ? val : val.toFixed(dp)) + (suffix ?? '') + '</SMALL></B></DIV>'
+}
+
+function MakeUpdatingArea(toHere, name, extra)
+{
+	toHere.push('<P ID="' + name + '"' + (extra ? " " + extra : "") + '></P>')
+}
+
+function UpdateArea(name, contents)
+{
+	const elem = document.getElementById(name)
+	
+	if (elem)
+	{
+		elem.innerHTML = Array.isArray(contents) ? contents.join('') : contents
+	}
 }
 
 //=======================

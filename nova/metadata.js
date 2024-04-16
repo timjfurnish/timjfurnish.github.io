@@ -223,7 +223,7 @@ function MetaDataIncreaseCount(counterName)
 
 function MetaDataDrawTable()
 {
-	var sort = document.getElementById("metadata.sort").value
+	var sort = document.getElementById("stats.sort").value
 	var consolidate = sort ? {} : undefined
 	var selectedColumns = []
 	var selectedDisplay = []
@@ -240,7 +240,7 @@ function MetaDataDrawTable()
 
 	for (var colName of Object.keys(g_metaDataAvailableColumns))
 	{
-		if (g_currentOptions.metadata["process_" + colName])
+		if (g_currentOptions.stats["process_" + colName])
 		{
 			TableAddHeading(reply, colName)
 			selectedColumns.push(colName)
@@ -398,7 +398,7 @@ function MetaDataDrawTable()
 
 	for (var name of Object.keys(lastTally))
 	{
-		if (g_currentOptions.metadata["display_" + name])
+		if (g_currentOptions.stats["display_" + name])
 		{
 			TableAddHeading(reply, name)
 			selectedDisplay.push(name)
@@ -463,7 +463,7 @@ function MetaDataDrawTable()
 	document.getElementById("metaDataOutput").innerHTML = reply.join("")
 }
 
-TabDefine("metadata", TabFunctionStats, "&#128202;")
+TabDefine("stats", TabFunctionStats, "&#128202;")
 
 function TabFunctionStats(reply, thenCall)
 {
@@ -495,6 +495,7 @@ function TabFunctionStats(reply, thenCall)
 
 	reply.push(OptionsConcat(options))
 	reply.push(OptionsConcat(optionsDisplay))
-	reply.push("<P ID=metaDataOutput></P>")
+	
+	MakeUpdatingArea(reply, "metaDataOutput")
 	thenCall.push(MetaDataDrawTable)
 }
