@@ -40,7 +40,7 @@ function HyphenCheckDrawTable()
 	TableAddHeading(reply, "With hyphens<br>(ice-cream)")
 	TableAddHeading(reply, "With spaces<br>(ice cream)")
 	TableAddHeading(reply, "With neither<br>(icecream)")
-	TableAddHeading(reply, "Highest")
+//	TableAddHeading(reply, "Highest")
 
 	for (var phrase of Object.keys(g_hyphenCheckWIP).sort((p1, p2) => (g_hyphenCheckWIP[p2].total - g_hyphenCheckWIP[p1].total)))
 	{
@@ -59,7 +59,7 @@ function HyphenCheckDrawTable()
 		reply.push('<TD CLASS="cell">' + (data.countWithHyphens ?? "") + '</TD>')
 		reply.push('<TD CLASS="cell">' + (data.countWithSpaces ?? "") + '</TD>')
 		reply.push('<TD CLASS="cell">' + (data.countWithNeither ?? "") + '</TD>')
-		reply.push('<TD CLASS="cell">' + (data.highest ?? "") + '</TD>')
+//		reply.push('<TD CLASS="cell">' + (data.highest ?? "") + '</TD>')
 	}
 
 	TableClose(reply)
@@ -71,7 +71,15 @@ function HyphenCheckCalcTotals()
 {
 	for (var [phrase, data] of Object.entries(g_hyphenCheckWIP))
 	{
-		const total = Object.values(data).reduce((soFar, a) => soFar + a, 0)
+		var total = 0
+		
+		for (var each of Object.values(data))
+		{
+			if (typeof each == "number")
+			{
+				total += each
+			}
+		}
 
 		if (total > 1)
 		{
@@ -94,22 +102,54 @@ function HyphenCheckCalcTotals()
 
 function HyphenCheckFindWithNeither()
 {
-	for (var [key, value] of Object.entries(g_hyphenCheckWIP))
+	var done = 0
+	var entries = Object.entries(g_hyphenCheckWIP)
+
+	for (var [key, value] of entries)
 	{
-		HuntFor(new RegExp('\\b' + key.replaceAll('-', '').replaceAll('*', '\\w*') + '\\b', 'gi'), matched => (Tally(g_hyphenCheckWIP[key], "countWithNeither"), SetMemberOfMember(g_hyphenFoundWords, key, matched, true)))
+		if (value.doneNeither)
+		{
+			++ done
+			continue
+		}
+		else
+		{
+			UpdateArea('hyphenCheckOutput', (done + entries.length) + "/" + (entries.length + entries.length))
+
+			HuntFor(new RegExp('\\b' + key.replaceAll('-', '').replaceAll('*', '\\w*') + '\\b', 'gi'), matched => (Tally(g_hyphenCheckWIP[key], "countWithNeither"), SetMemberOfMember(g_hyphenFoundWords, key, matched, true)))
+			QueueFunction(HyphenCheckFindWithNeither)
+			value.doneNeither = true
+			return
+		}
 	}
 
+	UpdateArea('hyphenCheckOutput', (entries.length + entries.length) + "/" + (entries.length + entries.length))
 	QueueFunction(HyphenCheckCalcTotals)
 }
 
 function HyphenCheckFindWithSpaces()
 {
-	for (var [key, value] of Object.entries(g_hyphenCheckWIP))
+	var done = 0
+	var entries = Object.entries(g_hyphenCheckWIP)
+
+	for (var [key, value] of entries)
 	{
-		HuntFor(new RegExp('\\b' + key.replaceAll('-', ' ').replaceAll('*', '\\w*') + '\\b', 'gi'), matched => (Tally(g_hyphenCheckWIP[key], "countWithSpaces"), SetMemberOfMember(g_hyphenFoundWords, key, matched, true)))
+		if (value.doneSpaces)
+		{
+			++ done
+			continue
+		}
+		else
+		{
+			UpdateArea('hyphenCheckOutput', done + "/" + (entries.length + entries.length))
+
+			HuntFor(new RegExp('\\b' + key.replaceAll('-', ' ').replaceAll('*', '\\w*') + '\\b', 'gi'), matched => (Tally(g_hyphenCheckWIP[key], "countWithSpaces"), SetMemberOfMember(g_hyphenFoundWords, key, matched, true)))
+			QueueFunction(HyphenCheckFindWithSpaces)
+			value.doneSpaces = true
+			return
+		}
 	}
 
-	UpdateArea('hyphenCheckOutput', "Nearly ready...")
 	QueueFunction(HyphenCheckFindWithNeither)
 }
 
