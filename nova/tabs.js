@@ -82,7 +82,7 @@ function BuildTabs()
 	output.push('<TR><TD COLSPAN="' + spanCols + '" ALIGN=center ID="tabContents"></TABLE>')
 	infoPanel.innerHTML = output.join('')
 	
-	SetTab(g_selectedTabName)
+	ShowTab(g_selectedTabName)
 }
 
 function ShowHoverControls(arr)
@@ -111,24 +111,31 @@ function ShowContentForSelectedTab()
 	CallTheseFunctions(...thenCall)
 }
 
+function ShowTab(name)
+{
+	if (g_selectedTabName != name)
+	{
+		var oldTab = document.getElementById("tab_" + g_selectedTabName)
+		oldTab.className = "tabDeselected"
+	}
+
+	g_selectedTabName = name
+
+	var newTab = document.getElementById("tab_" + g_selectedTabName)
+	newTab.className = "tabSelected"
+	
+	ShowContentForSelectedTab()
+}
+
 function SetTab(name)
 {
 	if (g_canSelectTabs || !g_tabIconsToDisableWhenNoText.includes(name))
 	{
-		console.log("Selecting '" + name + "' tab...")
-
 		if (g_selectedTabName != name)
 		{
-			var oldTab = document.getElementById("tab_" + g_selectedTabName)
-			oldTab.className = "tabDeselected"
+			console.log("Changing from '" + g_selectedTabName + "' tab to '" + name + "' tab...")
+			ShowTab(name)
 		}
-
-		g_selectedTabName = name
-
-		var newTab = document.getElementById("tab_" + g_selectedTabName)
-		newTab.className = "tabSelected"
-		
-		ShowContentForSelectedTab()
 	}
 }
 

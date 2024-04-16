@@ -251,7 +251,7 @@ function SwitchToMentionsAndSearchEntity(txt)
 			const searchFor = name.join('+')
 			OptionsMakeKey("search", "entity", searchFor, true)
 			OptionsMakeKey("search", "custom", searchFor, true)
-			SetTab("search")
+			ShowTab("search")
 			return
 		}
 		else if (txt.toUpperCase() == name[0].toUpperCase())
@@ -267,7 +267,7 @@ function SwitchToMentionsAndSearch(txt)
 {
 	OptionsMakeKey("search", "entity", "", true)
 	OptionsMakeKey("search", "custom", txt, true)
-	SetTab("search")
+	ShowTab("search")
 }
 
 function MakeMentionLink(showText, searchForText)

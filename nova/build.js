@@ -17,7 +17,7 @@ const kIconRevert = "&hookleftarrow;"
 const kIconSettings = "&#128736;&#65039;"
 const kIconIssues = "&#9888;&#65039;"
 const kIconEntities = "&#129333;"
-const kIconHyphen = "&#127848;"
+const kIconHyphen = "&#127846;"
 
 const kCharacterElipsis = "\u2026"
 const kCharacterEmDash = "\u2014"
