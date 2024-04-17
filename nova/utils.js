@@ -217,7 +217,7 @@ function CallNextQueuedFunction()
 
 	if (g_functionsStillToCall.length > 0)
 	{
-		setTimeout(CallNextQueuedFunction, 0)
+		setTimeout(CallNextQueuedFunction, 1)
 	}
 
 	try
@@ -234,7 +234,7 @@ function QueueFunction(func)
 {
 	if (g_functionsStillToCall.length == 0)
 	{
-		setTimeout(CallNextQueuedFunction, 0)
+		setTimeout(CallNextQueuedFunction, 1)
 	}
 	else if (g_functionsStillToCall.includes(func))
 	{
