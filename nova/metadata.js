@@ -11,9 +11,10 @@ var g_metaDataTotals
 var g_metaDataCurrentCompleteness
 var g_metaDataGatherParagraphs
 var g_metaDataCurrentContainsToDo
+var g_metaDataSeenValues
 
 const kMetaDataDefaultDisplay = MakeSet("Words", "Estimated final words", "Percent done")
-const kMetaDataDefaultGroup = MakeSet("PART", "CHAPTER")
+const kMetaDataDefaultGroup = MakeSet("PART")
 
 function MakeClearTally(createMentions)
 {
@@ -87,6 +88,15 @@ function MetaDataEndProcess()
 		{
 			g_metaDataAvailableColumns[key] = true
 			info[key] = val
+			
+			if (key in g_metaDataSeenValues)
+			{
+				g_metaDataSeenValues[key][val] = true
+			}
+			else
+			{
+				g_metaDataSeenValues[key] = {[val]: true}
+			}
 		}
 		
 		var storeThis = {info:info, myParagraphs:g_metaDataGatherParagraphs}
@@ -195,6 +205,7 @@ function MetaDataClear()
 	g_metaDataCurrentCompleteness = 100
 	g_metaDataGatherParagraphs = []
 	g_metaDataCurrentContainsToDo = false
+	g_metaDataSeenValues = {}
 }
 
 OnEvent("processingDone", false, MetaDataEndProcess)
@@ -473,7 +484,7 @@ function TabFunctionStats(reply, thenCall)
 
 	for (var colName of selectedColumns)
 	{
-		OptionsMakeCheckbox(options, "MetaDataDrawTable()", "process_" + colName, colName, kMetaDataDefaultGroup[colName], true)
+		OptionsMakeCheckbox(options, "MetaDataDrawTable()", "process_" + colName, colName + " (" + Object.keys(g_metaDataSeenValues[colName]).length + ")", kMetaDataDefaultGroup[colName], true)
 	}
 
 	var sortData = {"":"Do not consolidate", none:"Chronological"}

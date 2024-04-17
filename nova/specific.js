@@ -25,7 +25,8 @@ const kTweakableDefaults =
 	headingIdentifier:"",
 	removeHeadingIdentifier:false,
 	headingMaxCharacters:100,
-	numTextBoxes:1
+	numTextBoxes:1,
+	debugListQueuedFunctions:false,
 }
 
 var g_tweakableSettings = {}
@@ -39,7 +40,7 @@ Object.entries(kTweakableDefaults).forEach(CopyToSetting)
 
 const kSettingNames =
 {
-	["INPUT PROCESSING"]:
+	INPUT:
 	{
 		replace:"Replace (regex)|class=mediumTextBox",
 		wordsContainingFullStops:"Valid words containing full stops|class=shortTextBox",
@@ -58,11 +59,11 @@ const kSettingNames =
 	{
 		names:"Entity names|class=mediumTextBox",
 	},
-	["HYPHENS"]:
+	HYPHENS:
 	{
 		hyphenCheckPairs:"Hyphen check text|class=longTextBox",
 	},
-	["CHECKS"]:
+	CHECKS:
 	{
 		badWords:"Bad words|class=longTextBox",
 		allowedCharacters:"Valid characters|class=longTextBox",
@@ -75,6 +76,10 @@ const kSettingNames =
 		numberIgnoreList:"Number check ignores|class=shortTextBox",
 		["Enabled checks"]:() => BuildIssueDefaults(false),
 		["Additional settings"]:() => BuildIssueDefaults(true),
+	},
+	DEBUG:
+	{
+		debugListQueuedFunctions:"List queued functions",
 	}
 }
 
@@ -84,7 +89,7 @@ const kOptionCustomNames =
 	["ISSUE SUMMARY"]:"Display issue summary",
 }
 
-const kHasNoEffect = ["voiceDefault", "voiceSpeech", "voiceHeading"]
+const kHasNoEffect = ["voiceDefault", "voiceSpeech", "voiceHeading", "debugListQueuedFunctions"]
 
 var g_nameLookup, g_permittedNameCapitalisations
 

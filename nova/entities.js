@@ -5,7 +5,23 @@
 
 TabDefine("entities", function(reply, thenCall)
 {
-	TabBuildButtonsBar(reply, Object.keys(g_metaDataAvailableColumns))
+	var theDefault = undefined
+	var beatThis = 0
+	const keys = Object.keys(g_metaDataAvailableColumns)
+
+	for (var eachOne of keys)
+	{
+		countOfMe = Object.keys(g_metaDataSeenValues[eachOne]).length
+		console.log(eachOne + " = " + countOfMe)
+		
+		if (theDefault === undefined || beatThis > countOfMe)
+		{
+			beatThis = countOfMe
+			theDefault = eachOne
+		}
+	}
+	
+	TabBuildButtonsBar(reply, keys, theDefault)
 
 	var options = []
 	OptionsMakeCheckbox(options, "ShowContentForSelectedTab()", "showWithNoMentions", "Show columns with no mentions", true, true)

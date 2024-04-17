@@ -10,7 +10,7 @@
 const kIconSearch = "&#128269;"
 const kIconPaste = "&#128203;"
 const kIconFix = "&#128736;"
-const kIconSpeech = "&#128172;" // "&#128266;" 
+const kIconSpeech = "&#128172;" // "&#128266;"
 const kIconPhrase = "&#128209;"
 const kIconToTop = "&#8679;"
 const kIconRevert = "&hookleftarrow;"
@@ -83,6 +83,11 @@ function UpdateArea(name, contents)
 	{
 		elem.innerHTML = Array.isArray(contents) ? contents.join('') : contents
 	}
+}
+
+function UpdateAreaWithProgressBar(name, fraction)
+{
+	UpdateArea(name, "<TABLE CELLSPACING=0 BORDER=1><TR><TD WIDTH=200>" + RenderBarFor(fraction * 100, 2, 0, '%') + "</TD></TR></TABLE>")
 }
 
 //=======================

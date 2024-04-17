@@ -190,11 +190,30 @@ function DescribeFunction(func)
 	return GetDataTypeVerbose(func) + " '" + (func?.name ?? '(no name)') + "'"
 }
 
+function UpdateDebugListOfRunningFunctions()
+{
+	if (g_functionsStillToCall.length == 0)
+	{
+		document.getElementById("debugOut").style.display = "none"
+	}
+	else
+	{
+		var info = []
+		for (var f of g_functionsStillToCall)
+		{
+			info.push(DescribeFunction(f))
+		}
+		document.getElementById("debugOut").innerHTML = info.join("<BR>")
+	}
+}
+
 function CallNextQueuedFunction()
 {
 	const func = g_functionsStillToCall.shift()
 
 //	console.log("Calling queued " + DescribeFunction(func))
+
+	UpdateDebugListOfRunningFunctions()
 
 	if (g_functionsStillToCall.length > 0)
 	{
@@ -216,15 +235,21 @@ function QueueFunction(func)
 	if (g_functionsStillToCall.length == 0)
 	{
 		setTimeout(CallNextQueuedFunction, 0)
+		
+		if (g_tweakableSettings.debugListQueuedFunctions)
+		{
+			document.getElementById("debugOut").style.display = "block"
+		}
 	}
 	else if (g_functionsStillToCall.includes(func))
 	{
 //		console.log("Not queueing " + DescribeFunction(func) + " at it's already in the queue")
 		return
 	}
-
-//	console.log("Queued " + DescribeFunction(func))
+	
 	g_functionsStillToCall.push(func)
+
+	UpdateDebugListOfRunningFunctions()
 }
 
 function CallTheseFunctions(...list)

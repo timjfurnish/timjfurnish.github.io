@@ -32,12 +32,12 @@ const kIllegalSubstrings =
 	["double space", "  "],
 	["dubious punctuation combo", /[;:\-,\.\!\?][;:\-,\.\!\?]/g, txt => txt == "!?"],
 	["space before punctuation", / [;:,\.\!\?]/g],
-	["split infinitive", /\bto [a-z]+ly [a-z]+/gi, txt => g_tweakableSettings.splitInfinitiveIgnoreList.includes(txt)]
+	["split infinitive", /\bto [a-z][a-z]+ly [a-z]+/gi, txt => g_tweakableSettings.splitInfinitiveIgnoreList.includes(txt)]
 ]
 
 function SetUp()
 {
-	CallTheseFunctions(InitTabs, InitSettings, AddAllInputBoxes, BuildTabs, SetUp_FixTitle, SettingsLoad, ShowContentForSelectedTab, ProcessInput)
+	CallTheseFunctions(InitTabs, InitSettings, AddAllInputBoxes, BuildTabs, SetUp_FixTitle, SettingsLoad, ProcessInput)
 }
 
 function CheckStringForEvenBraces(txtIn)

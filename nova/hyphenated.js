@@ -100,57 +100,55 @@ function HyphenCheckCalcTotals()
 	QueueFunction(HyphenCheckDrawTable)
 }
 
-function HyphenCheckFindWithNeither()
+// Return true when done
+function TimeSlicedCallFuncForAllKeys(container, markerName, thisFunction, numPerTick, startFrac, scaleFrac)
 {
-	var done = 0
-	var entries = Object.entries(g_hyphenCheckWIP)
+	var countDone = 0
+	var entries = Object.entries(container)
 
 	for (var [key, value] of entries)
 	{
-		if (value.doneNeither)
+		++ countDone
+
+		if (value[markerName])
 		{
-			++ done
 			continue
 		}
-		else
-		{
-			UpdateArea('hyphenCheckOutput', (done + entries.length) + "/" + (entries.length + entries.length))
 
-			HuntFor(new RegExp('\\b' + key.replaceAll('-', '').replaceAll('*', '\\w*') + '\\b', 'gi'), matched => (Tally(g_hyphenCheckWIP[key], "countWithNeither"), SetMemberOfMember(g_hyphenFoundWords, key, matched, true)))
-			QueueFunction(HyphenCheckFindWithNeither)
-			value.doneNeither = true
-			return
+		thisFunction(key, value)
+		value[markerName] = true
+
+		if (-- numPerTick <= 0)
+		{
+			break
 		}
 	}
 
-	UpdateArea('hyphenCheckOutput', (entries.length + entries.length) + "/" + (entries.length + entries.length))
-	QueueFunction(HyphenCheckCalcTotals)
+	UpdateAreaWithProgressBar('hyphenCheckOutput', startFrac + (countDone / entries.length) * scaleFrac)
+
+	return countDone >= entries.length
+}
+
+function HyphenCheckFindWithNeither()
+{
+	function MyCallback(key, value)
+	{
+		HuntFor(new RegExp('\\b' + key.replaceAll('-', '').replaceAll('*', '\\w*') + '\\b', 'gi'), matched => (Tally(value, "countWithNeither"), SetMemberOfMember(g_hyphenFoundWords, key, matched, true)))
+	}
+	
+	const isDone = TimeSlicedCallFuncForAllKeys(g_hyphenCheckWIP, "doneHyphen", MyCallback, 12, 0.5, 0.5)
+	QueueFunction(isDone ? HyphenCheckCalcTotals : HyphenCheckFindWithNeither)
 }
 
 function HyphenCheckFindWithSpaces()
 {
-	var done = 0
-	var entries = Object.entries(g_hyphenCheckWIP)
-
-	for (var [key, value] of entries)
+	function MyCallback(key, value)
 	{
-		if (value.doneSpaces)
-		{
-			++ done
-			continue
-		}
-		else
-		{
-			UpdateArea('hyphenCheckOutput', done + "/" + (entries.length + entries.length))
-
-			HuntFor(new RegExp('\\b' + key.replaceAll('-', ' ').replaceAll('*', '\\w*') + '\\b', 'gi'), matched => (Tally(g_hyphenCheckWIP[key], "countWithSpaces"), SetMemberOfMember(g_hyphenFoundWords, key, matched, true)))
-			QueueFunction(HyphenCheckFindWithSpaces)
-			value.doneSpaces = true
-			return
-		}
+		HuntFor(new RegExp('\\b' + key.replaceAll('-', ' ').replaceAll('*', '\\w*') + '\\b', 'gi'), matched => (Tally(value, "countWithSpaces"), SetMemberOfMember(g_hyphenFoundWords, key, matched, true)))
 	}
 
-	QueueFunction(HyphenCheckFindWithNeither)
+	const isDone = TimeSlicedCallFuncForAllKeys(g_hyphenCheckWIP, "doneSpaces", MyCallback, 12, 0, 0.5)
+	QueueFunction(isDone ? HyphenCheckFindWithNeither : HyphenCheckFindWithSpaces)
 }
 
 function HyphenCheckAddCustom(beforeHyphen, afterHyphen, wildcardCollection)
@@ -189,7 +187,7 @@ function SetMemberOfMember(container, outerName, innerName, value)
 
 function HyphenCheckFirstPass()
 {
-	UpdateArea('hyphenCheckOutput', "Searching...")
+	UpdateAreaWithProgressBar('hyphenCheckOutput', 0)
 
 	// Find things with hyphens in document
 	var countEm = {}

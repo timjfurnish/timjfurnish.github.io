@@ -124,7 +124,7 @@ function ShowTab(name)
 	var newTab = document.getElementById("tab_" + g_selectedTabName)
 	newTab.className = "tabSelected"
 	
-	ShowContentForSelectedTab()
+	CallTheseFunctions(ShowContentForSelectedTab)
 }
 
 function SetTab(name)
@@ -156,12 +156,11 @@ function ButtonsBarSet(pageName)
 	CallTheseFunctions(ShowContentForSelectedTab)
 }
 
-function TabBuildButtonsBar(toHere, array)
+function TabBuildButtonsBar(toHere, array, theDefault)
 {
 	if (array.length)
 	{
-//		toHere.push("<center>")
-		OptionsMakeKey(g_selectedTabName, "page", array[0], array)
+		OptionsMakeKey(g_selectedTabName, "page", theDefault ?? array[0], array)
 		array.forEach(pageName => TabBuildButtonBarAdd(toHere, pageName, "ButtonsBarSet('" + pageName + "')", g_currentOptions[g_selectedTabName].page != pageName))
 
 		if (toHere.length >= 1)
@@ -172,7 +171,6 @@ function TabBuildButtonsBar(toHere, array)
 			}
 		}
 
-//		toHere.push("</center><br>")
 		toHere.push("<br><br>")
 	}
 }
@@ -180,7 +178,6 @@ function TabBuildButtonsBar(toHere, array)
 function RethinkEnabledTabs()
 {
 	const hasAnyDataNow = g_metaDataInOrder.length > 0
-	console.log("Data=" + g_metaDataInOrder.length + " so hasAnyDataNow=" + hasAnyDataNow)
 
 	if (g_canSelectTabs != hasAnyDataNow)
 	{
