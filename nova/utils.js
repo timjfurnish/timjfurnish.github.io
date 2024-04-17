@@ -194,7 +194,7 @@ function UpdateDebugListOfRunningFunctions()
 {
 	if (g_functionsStillToCall.length == 0)
 	{
-		document.getElementById("debugOut").style.display = "none"
+		document.getElementById("debugOut").innerHTML = "No queued functions"
 	}
 	else
 	{
@@ -235,11 +235,6 @@ function QueueFunction(func)
 	if (g_functionsStillToCall.length == 0)
 	{
 		setTimeout(CallNextQueuedFunction, 0)
-		
-		if (g_tweakableSettings.debugListQueuedFunctions)
-		{
-			document.getElementById("debugOut").style.display = "block"
-		}
 	}
 	else if (g_functionsStillToCall.includes(func))
 	{

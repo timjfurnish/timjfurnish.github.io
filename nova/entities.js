@@ -12,7 +12,6 @@ TabDefine("entities", function(reply, thenCall)
 	for (var eachOne of keys)
 	{
 		countOfMe = Object.keys(g_metaDataSeenValues[eachOne]).length
-		console.log(eachOne + " = " + countOfMe)
 		
 		if (theDefault === undefined || beatThis > countOfMe)
 		{

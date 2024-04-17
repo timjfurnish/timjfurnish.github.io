@@ -29,6 +29,11 @@ const kTweakableDefaults =
 	debugListQueuedFunctions:false,
 }
 
+const kSettingFunctions =
+{
+	debugListQueuedFunctions:val => document.getElementById("debugOut").style.display = val ? "block" : "none"
+}
+
 var g_tweakableSettings = {}
 
 function CopyToSetting([key, val])
@@ -89,7 +94,7 @@ const kOptionCustomNames =
 	["ISSUE SUMMARY"]:"Display issue summary",
 }
 
-const kHasNoEffect = ["voiceDefault", "voiceSpeech", "voiceHeading", "debugListQueuedFunctions"]
+const kHasNoEffect = ["voiceDefault", "voiceSpeech", "voiceHeading"]
 
 var g_nameLookup, g_permittedNameCapitalisations
 
@@ -159,6 +164,13 @@ function SettingsLoad()
 		}
 	}
 	
+	for (var [settingName, customFunc] of Object.entries(kSettingFunctions))
+	{
+		const param = g_tweakableSettings[settingName]
+		console.log("Initialised setting '" + settingName + "' so calling " + DescribeFunction(customFunc) + " with " + GetDataTypeVerbose(param) + " '" + param + "'")
+		customFunc(g_tweakableSettings[settingName])
+	}
+
 	ReadVoices()
 }
 
@@ -305,11 +317,18 @@ function FillInSettings()
 function UserChangedSetting(name)
 {
 	var elem = document.getElementById('setting_' + name)
-	const data = g_tweakableSettings[name]
 	
-	UpdateSettingFromText(name, GetDataType(data), (elem.type == "checkbox") ? elem.checked + "" : elem.value)
+	UpdateSettingFromText(name, GetDataType(g_tweakableSettings[name]), (elem.type == "checkbox") ? elem.checked + "" : elem.value)
 	
-	if (name == "language")
+	const customFunc = kSettingFunctions[name]
+	
+	if (customFunc)
+	{
+		const param = g_tweakableSettings[name]
+		console.log("User changed setting '" + name + "' so calling " + DescribeFunction(customFunc) + " with " + GetDataTypeVerbose(param) + " '" + param + "'")
+		customFunc(g_tweakableSettings[name])
+	}
+	else if (name == "language")
 	{
 		CallTheseFunctions(ReadVoices, ShowContentForSelectedTab)
 	}

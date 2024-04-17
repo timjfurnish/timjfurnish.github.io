@@ -187,8 +187,6 @@ function RethinkEnabledTabs()
 		for (var name of g_tabIconsToDisableWhenNoText)
 		{
 			document.getElementById("tabText_" + name).style.opacity = newOpacity
-			
-			console.log((hasAnyDataNow ? "   Enabling " : "   Disabling ") + name)
 		}
 		
 		if (! hasAnyDataNow)
