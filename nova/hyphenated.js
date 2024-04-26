@@ -20,17 +20,14 @@ function HuntFor(pattern, callback, doDbg)
 		{
 			if (! para.ignoreFragments)
 			{
-				const results = para.allOfIt.matchAll(pattern)
+				const results = [...para.allOfIt.matchAll(pattern)]
 
 				if (doDbg)
 				{
-					NovaLog("Checking in '" + para.allOfIt + "' - results=" + results + "; " + GetDataTypeVerbose(results))
+					NovaLog("Checking in '" + para.allOfIt + "' - results=" + GetDataTypeVerbose(results))
 				}
 				
-				if (results)
-				{
-					results.forEach(elem => elem.forEach(callback))
-				}
+				results.forEach(elem => elem.forEach(callback))
 			}
 		}
 	}
