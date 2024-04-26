@@ -11,7 +11,7 @@ function HuntFor(pattern, callback, doDbg)
 {
 	if (doDbg)
 	{
-		NovaLog("HuntFor " + pattern + " starting - " + GetDataType(pattern))
+		NovaLog("HuntFor " + pattern + " starting - " + GetDataType(pattern) + " using " + DescribeFunction("".matchAll))
 	}
 
 	for (var metadata of g_metaDataInOrder)
@@ -20,13 +20,17 @@ function HuntFor(pattern, callback, doDbg)
 		{
 			if (! para.ignoreFragments)
 			{
+				const results = para.allOfIt.matchAll(pattern)
+
 				if (doDbg)
 				{
-					NovaLog("Checking in '" + para.allOfIt + "'")
-					console.log(metadata.myParagraphs)
+					NovaLog("Checking in '" + para.allOfIt + "' - results=" + results + "; " + GetDataTypeVerbose(results))
 				}
-
-				para.allOfIt.matchAll(pattern).forEach(elem => elem.forEach(callback))
+				
+				if (results)
+				{
+					results.forEach(elem => elem.forEach(callback))
+				}
 			}
 		}
 	}
