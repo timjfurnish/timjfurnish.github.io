@@ -193,18 +193,21 @@ function SetMemberOfMember(container, outerName, innerName, value)
 
 function HyphenCheckFirstPass()
 {
-	NovaLog("HyphenCheckFirstPass")
+	NovaLog("HyphenCheckFirstPass A")
 	UpdateAreaWithProgressBar('hyphenCheckOutput', 0)
+	NovaLog("HyphenCheckFirstPass B")
 
 	// Find things with hyphens in document
 	var countEm = {}
 	HuntFor(/\b\w+[\w'\-]*-[\w']\w+\b/g, matched => Tally(countEm, matched.toLowerCase()))
+	NovaLog("HyphenCheckFirstPass C")
 
 	// Build full data structure
 	g_hyphenCheckWIP = {}
 	g_hyphenFoundWords = {}
 	var checksWithWildcard = {}
-	
+	NovaLog("HyphenCheckFirstPass D")
+
 	for (var custom of g_tweakableSettings.hyphenCheckPairs)
 	{
 		HyphenCheckAddCustom(...custom.split('-', 2), checksWithWildcard)
