@@ -25,7 +25,7 @@ function TabDefine(tabName, myFunction, displayNameOverride, tooltip)
 
 function SetTabTitle(tabName, text)
 {
-	console.log("Setting extra text for tab " + tabName + " to " + text)
+	NovaLog("Setting extra text for tab " + tabName + " to " + text)
 	var tabby = document.getElementById("tabText_" + tabName)
 	tabby.innerHTML = BuildTabDisplayText(tabName, text)
 }
@@ -40,6 +40,17 @@ function BuildTabDisplayText(tabName, extra)
 	}
 	
 	return main
+}
+
+function MakeIconWithTooltip(icon, angle, tooltipText, clickyFunc)
+{
+	const clickyHTML = clickyFunc ? ' onClick="' + clickyFunc + '"' : ''
+	return '<b CLASS="iconWithTooltip"' + clickyHTML + '>' + icon + '<span class="tooltipBubble" STYLE="transform:rotate(' + angle + 'deg)">' + tooltipText + '</span></b>'
+}
+
+function ShowTabs()
+{
+	document.getElementById("infoPanel").style.display = "block"
 }
 
 function BuildTabs()
@@ -66,13 +77,12 @@ function BuildTabs()
 			g_tabIconsToDisableWhenNoText.push(tabName)
 		}
 		
+		const iconHTML = '<span id="tabText_' + tabName + '">' + BuildTabDisplayText(tabName) + '</span>'
+		
 		spanCols += 2
 		output.push(joiner)
 		output.push('<TD WIDTH="10" ID="tab_' + tabName + '" TABINDEX=0 ONCLICK="SetTab(\'' + tabName + '\')" CLASS="tabDeselected">')
-		output.push('<DIV CLASS="iconWithTooltip">')
-		output.push('<span id="tabText_' + tabName + '">' + BuildTabDisplayText(tabName) + '</span>')
-		output.push('<span class="tooltipBubble" STYLE="transform:rotate(' + Math.round(Math.sin(tilty) * 10) + 'deg)">' + g_tabFunctions[tabName].tooltipText + '</span>')
-		output.push("</DIV>")
+		output.push(MakeIconWithTooltip(iconHTML, Math.round(Math.sin(tilty) * 10), g_tabFunctions[tabName].tooltipText))
 		output.push("</TD>")
 		joiner = '<TD WIDTH="1" STYLE="border-bottom:' + kTabLine + '"></TD>'
 		tilty += 3
@@ -99,7 +109,7 @@ function ShowContentForSelectedTab()
 	var displayThis = []
 	var thenCall = []
 	
-//	console.log("Showing '" + g_selectedTabName + "' tab...")
+	NovaLog("Showing contents for '" + g_selectedTabName + "' tab")
 
 	g_tabFunctions[g_selectedTabName].func(displayThis, thenCall)
 		
@@ -125,6 +135,7 @@ function ShowTab(name)
 	newTab.className = "tabSelected"
 	
 	CallTheseFunctions(ShowContentForSelectedTab)
+	NovaLogClear("Selected tab '" + name + "'")
 }
 
 function SetTab(name)

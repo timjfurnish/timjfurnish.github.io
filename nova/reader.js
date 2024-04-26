@@ -49,7 +49,7 @@ function ReadVoices()
 			}
 		}
 		g_voiceLanguages = Object.keys(languages).sort()
-		console.log("Of " + voices.length + " total voices, " + Object.keys(g_voiceLookUp).length + " '" + wantLang + "' voices added to look-up table (" + g_voiceLanguages.length + " languages)")
+		NovaLog("Of " + voices.length + " total voices, " + Object.keys(g_voiceLookUp).length + " '" + wantLang + "' voices added to look-up table (" + g_voiceLanguages.length + " languages)")
 	}
 	catch (error)
 	{

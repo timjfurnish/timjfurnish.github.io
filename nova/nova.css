@@ -75,6 +75,12 @@ button
 	text-align:left;
 	color:white;
 }
+#debugLog
+{
+	display:none;
+	border:2px solid rgba(0, 0, 0, 0.25);
+	background:#DDDDEE;
+}
 #hoverControls button
 {
 	font-size:200%;
@@ -198,7 +204,8 @@ button
 }
 .iconWithTooltip
 {
-  position:relative;
+	position:relative;
+	cursor:pointer
 }
 .iconWithTooltip .tooltipBubble
 {

@@ -20,6 +20,8 @@ const kTweakableDefaults =
 	replace:['\\bO\\.S\\./OFFSCREEN', '([0-9]+)\\.([0-9]+)/$1^$2', '^== (.*) ==$/$1.'],
 	hyphenCheckPairs:["sat-nav", "set-up", "under-cover", "self-reliance reliant control esteem respect awareness aware", "short-term", "left right-hand", "sand-timer", "back-stage", "stage-left right", "dance-floor", "slow-motion", "some-thing where how what body one", "heart-break breaking breaks breakingly broken", "car-park parks", "brain-wave waves", "mind lip-reading reader readers read reads", "twenty thirty forty fifty sixty seventy eighty ninety-one two three four five six seven eight nine", "one two three four five six seven eight nine ten-hundred thousand million billion trillion"],
 	names:[],
+	names_places:[],
+	names_other:[],
 	splitInfinitiveIgnoreList:[],
 	numberIgnoreList:[],
 	headingIdentifier:"",
@@ -27,11 +29,15 @@ const kTweakableDefaults =
 	headingMaxCharacters:100,
 	numTextBoxes:1,
 	debugListQueuedFunctions:false,
+	debugLog:false,
 }
+
+const kSettingsWhichProvideNames = MakeColourLookUpTable(["names", "names_places", "names_other"])
 
 const kSettingFunctions =
 {
-	debugListQueuedFunctions:val => document.getElementById("debugOut").style.display = val ? "block" : "none"
+	debugListQueuedFunctions:val => document.getElementById("debugOut").style.display = val ? "block" : "none",
+	debugLog:val => document.getElementById("debugLog").style.display = val ? "block" : "none",
 }
 
 var g_tweakableSettings = {}
@@ -62,7 +68,9 @@ const kSettingNames =
 	},
 	NAMES:
 	{
-		names:"Entity names|class=mediumTextBox",
+		names:"Characters|class=mediumTextBox",
+		names_places:"Places|class=mediumTextBox",
+		names_other:"Other|class=mediumTextBox",
 	},
 	HYPHENS:
 	{
@@ -85,6 +93,7 @@ const kSettingNames =
 	DEBUG:
 	{
 		debugListQueuedFunctions:"List queued functions",
+		debugLog:"Show log",
 	}
 }
 
@@ -103,9 +112,9 @@ OnEvent("clear", true, () =>
 	g_nameLookup = {}
 	g_permittedNameCapitalisations = {}
 
-	for (var nameList of SettingsGetNamesArrayArray())
+	for (var nameList of SettingsGetNamesArrays())
 	{
-		for (var name of nameList)
+		for (var name of nameList.arr)
 		{
 			const lowerName = name.toLowerCase()
 
@@ -114,7 +123,7 @@ OnEvent("clear", true, () =>
 				IssueAdd("Name " + FixStringHTML(name) + " features multiple times in name list", "SETTINGS")
 			}
 
-			g_nameLookup[lowerName] = nameList[0]
+			g_nameLookup[lowerName] = nameList.arr[0]
 			g_permittedNameCapitalisations[name] = true
 			g_permittedNameCapitalisations[CapitaliseFirstLetter(name)] = true
 			g_permittedNameCapitalisations[name.toUpperCase()] = true
@@ -195,20 +204,23 @@ function SettingUpdate(name, newValue, isLoading)
 	}
 }
 
-function SettingsGetNamesArrayArray()
+function SettingsGetNamesArrays()
 {
 	var reply = []
 	
-	for (var n of g_tweakableSettings.names)
+	for (var key of Object.keys(kSettingsWhichProvideNames))
 	{
-		var inner = []
-		for (var name of n.split(' '))
+		for (var n of g_tweakableSettings[key])
 		{
-			inner.push(name)
+			var inner = []
+			for (var name of n.split(' '))
+			{
+				inner.push(name)
+			}
+			reply.push({arr:inner, type:key})
 		}
-		reply.push(inner)
 	}
-	
+
 	return reply
 }
 
@@ -325,7 +337,7 @@ function UserChangedSetting(name)
 	if (customFunc)
 	{
 		const param = g_tweakableSettings[name]
-		console.log("User changed setting '" + name + "' so calling " + DescribeFunction(customFunc) + " with " + GetDataTypeVerbose(param) + " '" + param + "'")
+		NovaLog("User changed setting '" + name + "' so calling " + DescribeFunction(customFunc) + " with " + GetDataTypeVerbose(param) + " '" + param + "'")
 		customFunc(g_tweakableSettings[name])
 	}
 	else if (name == "language")
@@ -338,9 +350,18 @@ function UserChangedSetting(name)
 	}
 }
 
-function SettingsAdd(reply, txt, formBits, className)
+function SettingsAdd(reply, txt, formBits, className, canExpand)
 {
-	reply.push('<tr><td width="10" valign="top" align="right" class="cellNoWrap">' + txt + '&nbsp;&nbsp;&nbsp;</td><td class="' + className + '">' + formBits + "</td></tr>")
+	var expander = ""
+	
+	if (canExpand)
+	{
+		expander = kIconOpen
+	}
+	
+	reply.push('<tr><td valign="top" align="right" class="cellNoWrap">' + txt + '</td>')
+	reply.push('<td valign="top" align="right" class="cellNoWrap">' + expander + '</td>')
+	reply.push('<td class="' + className + '">' + formBits + "</td></tr>")
 }
 
 function SettingAskRevert(whichOne)
@@ -420,7 +441,7 @@ TabDefine("settings", function(reply, thenCall)
 					theMiddle += "<option>" + voice + "</option>"
 				}
 				extra = ''
-				revert = "&nbsp;" + CreateClickableText(kIconSpeech, "SettingTestSpeech('" + k + "')")
+				revert = "&nbsp;" + MakeIconWithTooltip(kIconSpeech, 0, "Test", "SettingTestSpeech('" + k + "')")
 			}
 			else if (extra == 'language')
 			{
@@ -437,18 +458,18 @@ TabDefine("settings", function(reply, thenCall)
 			}
 			else
 			{
-				revert = "&nbsp;" + CreateClickableText(kIconRevert, "SettingAskRevert('" + k + "')")
+				revert = "&nbsp;" + MakeIconWithTooltip(kIconRevert, 0, "Revert", "SettingAskRevert('" + k + "')")
 				if (Array.isArray(g_tweakableSettings[k]))
 				{
 					theType = 'textarea'
 					if (kTweakableDefaults[k].length)
 					{
-						revert += CreateClickableText(kIconFix, "SettingFixArray('" + k + "')")
+						revert += MakeIconWithTooltip(kIconFix, 0, "Repair", "SettingFixArray('" + k + "')")
 					}
 				}
 			}
 		
-			SettingsAdd(reply, displayName, '<' + theType + ' onChange="UserChangedSetting(\'' + k + '\')" ' + (extra ? extra + ' ' : '') + 'id="setting_' + k + '">' + theMiddle + '</' + theType.split(' ', 1)[0] + '>' + revert, "cellNoWrap")
+			SettingsAdd(reply, displayName, '<nobr><' + theType + ' onChange="UserChangedSetting(\'' + k + '\')" ' + (extra ? extra + ' ' : '') + 'id="setting_' + k + '">' + theMiddle + '</' + theType.split(' ', 1)[0] + '>' + revert + "</nobr>", "cellNoWrap", theType == 'textarea')
 		}
 		else
 		{

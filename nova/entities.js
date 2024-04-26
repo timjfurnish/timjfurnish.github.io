@@ -45,8 +45,6 @@ TabDefine("entities", function(reply, thenCall)
 				reply.push('<TD CLASS="cellNoWrap" ALIGN=center VALIGN=bottom>')
 				reply.push((consolidateToHere.name.length > 1) ? '<DIV CLASS="rotate90">' + consolidateToHere.name + "</DIV></TD>" : (consolidateToHere.name + "</TD>"))
 				
-				// console.log(consolidateToHere)
-				
 				segments.push(consolidateToHere)
 			}
 		}

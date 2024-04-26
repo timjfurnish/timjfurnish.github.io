@@ -43,7 +43,7 @@ function MetaDataCombine(container, name, addThisValue)
 
 	if (! (name in container))
 	{
-		console.log("Adding " + name + " data '" + addThisValue + "' of type " + addThisType + " to container that only contains this data: [" + Object.keys(container).join(", ") + "]")
+		NovaLog("Adding " + name + " data '" + addThisValue + "' of type " + addThisType + " to container that only contains this data: [" + Object.keys(container).join(", ") + "]")
 		container[name] = (addThisType == "number") ? 0 : {}
 	}
 
@@ -434,7 +434,12 @@ function MetaDataDrawTable()
 
 			if (typeof value == "object")
 			{
-				contents = Object.keys(value).join(" ")
+				var listEm = []
+				for (var n of Object.keys(value))
+				{
+					listEm.push('<NOBR class="issueType" style="background:#FFFFFF">' + n + '</nobr>')
+				}
+				contents = listEm.join("<wbr>")
 			}
 			else if (name.startsWith("Percent"))
 			{

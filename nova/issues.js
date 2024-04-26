@@ -30,7 +30,7 @@ function BuildWarningNamesList()
 		list.push(autoErrName.toUpperCase())
 	}
 	
-	return MakeSet(...list)
+	return MakeColourLookUpTable(list)
 }
 
 var g_warningNames = BuildWarningNamesList()
@@ -67,17 +67,14 @@ TabDefine("issues", function(reply, thenCall)
 
 function ClearEarlyIssues()
 {
-		g_issueCount = 0
+	g_issueCount = 0
 	g_issues = {}
 	g_disabledWarnings = {}
 	g_issueStats = {}
 
 	function InitOneStat(theName)
 	{
-		if (! (theName in kOptionCustomNames))
-		{
-			g_issueStats[theName] = 0
-		}
+		(theName in kOptionCustomNames) || (g_issueStats[theName] = 0)
 	}
 
 	Object.keys(g_warningNames).forEach(InitOneStat)
@@ -93,7 +90,7 @@ function ClearEarlyIssues()
 		}
 	}
 
-	console.log("Reset disabled warnings to defaults: " + Object.keys(g_disabledWarnings))
+//	NovaLog("Reset disabled warnings to defaults: " + Object.keys(g_disabledWarnings))
 }
 
 OnEvent("clear", false, ClearEarlyIssues)
@@ -109,10 +106,12 @@ function IssueAdd(addThis, theType)
 
 	if (theType)
 	{
-		if (!g_warningNames[theType])
+		const col = g_warningNames[theType]
+
+		if (! col)
 		{
-			ShowError("Please add " + theType + " to list of warning names")
-			g_warningNames[theType] = true
+			ShowError("Please add " + theType + " to list of warning types")
+			g_warningNames[theType] = "#FF2222"
 		}
 		
 		if (g_disabledWarnings[theType])
@@ -120,7 +119,7 @@ function IssueAdd(addThis, theType)
 			return
 		}
 		
-		addThis = '<NOBR class="issueType">' + theType + '</NOBR> ' + addThis
+		addThis = '<NOBR class="issueType" style="background:' + col + '">' + theType + '</NOBR> ' + addThis
 	}
 
 	Tally(g_issueStats, theType ?? "NO TYPE")

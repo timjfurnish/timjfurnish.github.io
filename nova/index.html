@@ -5,6 +5,7 @@
   <title>NOVA</title>
   <link rel="stylesheet" href="nova.css" type="text/css">
   <script src="build.js"></script>
+  <script src="debug.js"></script>
   <script src="utils.js"></script>
   <script src="tabs.js"></script>
   <script src="specific.js"></script>
@@ -29,8 +30,9 @@
    <button onClick="pasteToInputBox()">Paste</button>
   </span>
   <p id=inputs></p>
-  <P id=infoPanel align=center></P>
-  <div id=hoverControls></div>
-  <div id=debugOut>Laa</div>
+  <P id=infoPanel style="display:none" align=center></P>
+  <P id=debugLog style="display:none" align=center><b>Initialising</b></P>
+  <div id=hoverControls style="display:none"></div>
+  <div id=debugOut style="display:none"></div>
  </body>
 </html>

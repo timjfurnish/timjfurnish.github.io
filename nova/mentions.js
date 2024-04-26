@@ -39,12 +39,11 @@ function RedrawMentions()
 
 		if (entityNames && g_metaDataInOrder.length)
 		{
-			var names = entityNames.split('+')
 			var aBreak = ""
-			const theString = "\\b(?:" + names.join('|').replaceAll('*', '\\w*') + ")\\b"
+			const theString = "\\b(?:" + TurnNovaShorthandIntoRegex(entityNames) + ")\\b"
 			const exp = new RegExp(theString, "ig");
 
-			console.log("Searching for " + theString)
+			NovaLog("Searching for " + theString)
 
 			for (var metadata of g_metaDataInOrder)
 			{
@@ -84,12 +83,12 @@ function RedrawMentions()
 
 TabDefine("search", function(reply, thenCall)
 {
-	const specificNames = SettingsGetNamesArrayArray()
+	const specificNames = SettingsGetNamesArrays()
 	var nameData = {[""]:"Custom"}
 
 	for (var name of specificNames)
 	{
-		nameData[name.join('+')] = CapitaliseFirstLetter(name[0])
+		nameData[name.arr.join('|')] = CapitaliseFirstLetter(name.arr[0])
 	}
 	
 	var options = []
@@ -221,11 +220,11 @@ TabDefine("voice", function(reply, thenCall)
 		var options = []
 		var hoverOptions = []
 		OptionsMakeSelect(options, "RedrawThread()", "Only show text from " + g_currentOptions.voice.page.toLowerCase(), "showThis", nameData, "", true)
-		hoverOptions.push('<button onclick="HighlightThreadSection(g_threadSectionSelected - 1, true)">&lt;</button>')
-		hoverOptions.push('<button onclick="HighlightThreadSection(g_threadSectionSelected + 1, true)">&gt;</button>')
-		hoverOptions.push('<BUTTON ONCLICK="ThreadRead()">Read</BUTTON>')
-		hoverOptions.push('<BUTTON ONCLICK="speechSynthesis.cancel()">Stop</BUTTON>')
-		hoverOptions.push('<BUTTON ONCLICK="window.scrollTo(0,0)">' + kIconToTop + '</BUTTON>')
+//		hoverOptions.push('<button onclick="HighlightThreadSection(g_threadSectionSelected - 1, true)">&lt;</button>')
+//		hoverOptions.push('<button onclick="HighlightThreadSection(g_threadSectionSelected + 1, true)">&gt;</button>')
+		hoverOptions.push('<BUTTON ONCLICK="ThreadRead()">' + MakeIconWithTooltip(kIconSpeech, -15, "Speak") + '</BUTTON>')
+		hoverOptions.push('<BUTTON ONCLICK="speechSynthesis.cancel()">' + MakeIconWithTooltip(kIconMute, -4, "Stop") + '</BUTTON>')
+		hoverOptions.push('<BUTTON ONCLICK="window.scrollTo(0,0)">' + MakeIconWithTooltip(kIconToTop, 20, "Scroll to top") + '</BUTTON>')
 
 		reply.push(OptionsConcat(options))
 		MakeUpdatingArea(reply, "threadsGoHere", 'align="left"')
@@ -234,7 +233,7 @@ TabDefine("voice", function(reply, thenCall)
 		
 		thenCall.push(RedrawThread)
 	}
-}, kIconSpeech)
+}, kIconBooks, "Read")
 
 //---------------------------------------
 // Switch to here from another tab
@@ -242,21 +241,21 @@ TabDefine("voice", function(reply, thenCall)
 
 function SwitchToMentionsAndSearchEntity(txt)
 {
-	const specificNames = SettingsGetNamesArrayArray()
+	const specificNames = SettingsGetNamesArrays()
 
 	for (var name of specificNames)
 	{
-		if (txt == name[0])
+		if (txt == name.arr[0])
 		{
-			const searchFor = name.join('+')
+			const searchFor = name.arr.join('|')
 			OptionsMakeKey("search", "entity", searchFor, true)
 			OptionsMakeKey("search", "custom", searchFor, true)
 			ShowTab("search")
 			return
 		}
-		else if (txt.toUpperCase() == name[0].toUpperCase())
+		else if (txt.toUpperCase() == name.arr[0].toUpperCase())
 		{
-			console.log("Suspicious! Text in '" + txt + "' NEARLY matches '" + name[0] + "'")
+			NovaLog("Suspicious! Text in '" + txt + "' NEARLY matches '" + name.arr[0] + "'")
 		}
 	}
 

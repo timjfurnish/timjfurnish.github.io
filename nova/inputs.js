@@ -55,7 +55,7 @@ async function pasteToInputBox()
 	}
 	catch (error)
 	{
-		console.warn('Failed to read clipboard: ' + error)
+		NovaLog('Failed to read clipboard: ' + error)
 	}
 }
 

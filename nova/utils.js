@@ -7,8 +7,6 @@
 // Web browser things
 //---------------------------
 
-var g_canShowError = true
-
 function SetUp_FixTitle()
 {
 	const location = document.location.href
@@ -16,24 +14,6 @@ function SetUp_FixTitle()
 	if (location.substr(0, 4) == "file")
 	{
 		document.title += " (LOCAL)"
-	}
-}
-
-function ShowError(message)
-{
-	console.error(message)
-
-	if (g_canShowError)
-	{
-		g_canShowError = confirm(message + "\n\n" + new Error().stack + "\n\nKeep showing errors?")
-	}
-}
-
-function Assert(condition, err)
-{
-	if (! condition)
-	{
-		ShowError("Assert failed!")
 	}
 }
 
@@ -83,6 +63,11 @@ function HighlighterWithDots(matched)
 	return '<span class="highlighterWithDots">' + matched + '</span>'
 }
 
+function TurnNovaShorthandIntoRegex(txt)
+{
+	return txt.replaceAll('*', '\\w*')
+}
+
 function TrySetElementClass(elemName, className, add)
 {
 	var elem = document.getElementById(elemName)
@@ -123,17 +108,19 @@ function rgbToHex(rIn, gIn, bIn)
 	return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
-function MakeColourLookUpTable(names)
+function MakeColourLookUpTable(arr)
 {
 	var reply = {}
 	var count = 0
-	var total = names.length
+	var total = arr.length
 
-	for (var each of names)
+	for (var each of arr)
 	{
 		var colourWheelAngle = Math.PI * 2 * count / total
 		++ count
-		reply[each] = rgbToHex(0.9 + Math.sin(colourWheelAngle) * 0.1, 0.9 + Math.sin(colourWheelAngle + 2) * 0.1, 0.9 + Math.sin(colourWheelAngle + 4) * 0.1)
+		var mult = (count & 1) ? (count & 2) ? 0.05 : 0.08 : 0.15
+		var add = 1 - mult
+		reply[each] = rgbToHex(add + Math.sin(colourWheelAngle) * mult, add + Math.sin(colourWheelAngle + 2) * mult, add + Math.sin(colourWheelAngle + 4) * mult)
 	}
 	
 	return reply
@@ -184,6 +171,7 @@ function Tally(toHere, key, num)
 //---------------------------
 
 var g_functionsStillToCall = []
+var g_onQueueEmpty = []
 
 function DescribeFunction(func)
 {
@@ -207,11 +195,22 @@ function UpdateDebugListOfRunningFunctions()
 	}
 }
 
+function DescribeFunctions(arr)
+{
+	var out = []
+	for (var f of arr)
+	{
+		out.push(f.name ?? "<anon>")
+	}
+	return out.join(", ")
+}
+
 function CallNextQueuedFunction()
 {
-	const func = g_functionsStillToCall.shift()
+	const queue = DescribeFunctions(g_functionsStillToCall)
 
-//	console.log("Calling queued " + DescribeFunction(func))
+	const func = g_functionsStillToCall.shift()
+//	NovaLog("Calling queued " + DescribeFunction(func))
 
 	UpdateDebugListOfRunningFunctions()
 
@@ -228,6 +227,22 @@ function CallNextQueuedFunction()
 	{
 		ShowError("While calling " + DescribeFunction(func) + ":\n\n" + err.stack)
 	}
+
+	if (g_functionsStillToCall.length == 0)
+	{
+		NovaLog("Function queue changed from '" + queue + "' to empty")
+		CallTheseFunctionsNow(...g_onQueueEmpty)
+		g_onQueueEmpty = []
+	}
+	else
+	{
+		const newQueue = DescribeFunctions(g_functionsStillToCall)
+
+		if (newQueue != queue)
+		{
+			NovaLog("Function queue changed from '" + queue + "' to '" + newQueue + "'")
+		}
+	}
 }
 
 function QueueFunction(func)
@@ -238,7 +253,7 @@ function QueueFunction(func)
 	}
 	else if (g_functionsStillToCall.includes(func))
 	{
-//		console.log("Not queueing " + DescribeFunction(func) + " at it's already in the queue")
+//		NovaLog("Not queueing " + DescribeFunction(func) + " at it's already in the queue")
 		return
 	}
 	
@@ -254,15 +269,20 @@ function CallTheseFunctions(...list)
 
 function CallTheseFunctionsNow(...list)
 {
-	for (var func of list)
+	if (list?.length)
 	{
-		try
+		NovaLog("Calling these functions immediately: " + DescribeFunctions(list))
+		
+		for (var func of list)
 		{
-			func()
-		}
-		catch(err)
-		{
-			ShowError("While calling " + DescribeFunction(func) + ":\n\n" + err.stack)
+			try
+			{
+				func()
+			}
+			catch(err)
+			{
+				ShowError("While calling " + DescribeFunction(func) + ":\n\n" + err.stack)
+			}
 		}
 	}
 }
@@ -277,14 +297,14 @@ function OnEvent(eventName, late, call)
 {
 	(eventName in g_eventFuncs) ? late ? g_eventFuncs[eventName].push(call) : g_eventFuncs[eventName].unshift(call) : (g_eventFuncs[eventName] = [call])
 	
-	console.log("On " + eventName + " (late=" + late + ") call " + DescribeFunction(call))
+	NovaLog("On " + eventName + " (late=" + late + ") call " + DescribeFunction(call))
 }
 
 function DoEvent(eventName)
 {
 	if (eventName in g_eventFuncs)
 	{
-		console.log("Calling " + g_eventFuncs[eventName].length + " '" + eventName + "' callbacks")
+		NovaLog("Calling " + g_eventFuncs[eventName].length + " '" + eventName + "' callbacks")
 		CallTheseFunctionsNow(...g_eventFuncs[eventName])
 	}
 }

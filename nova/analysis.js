@@ -37,6 +37,7 @@ const kIllegalSubstrings =
 
 function SetUp()
 {
+	g_onQueueEmpty.push(ShowTabs)
 	CallTheseFunctions(InitTabs, InitSettings, AddAllInputBoxes, BuildTabs, SetUp_FixTitle, SettingsLoad, ProcessInput)
 }
 
@@ -212,8 +213,6 @@ function HandleNewHeading(workspace, txtInRaw, displayThis)
 
 function SplitIntoFragments(thisBunch)
 {
-//	console.log("[IN] " + thisBunch)
-
 	const fragments = []
 	const joiners = []
 	const allBits = thisBunch.split(/([\|\!\?;:]+) */g)
@@ -225,7 +224,6 @@ function SplitIntoFragments(thisBunch)
 		
 		if (oneFragment || oneJoiner)
 		{
-//			console.log("  [READ] '" + oneFragment + "' followed by '" + oneJoiner + "'")
 			fragments.push(oneFragment)
 			
 			if (oneJoiner)
@@ -333,8 +331,6 @@ function ProcessInput()
 						else
 						{
 							const withValidCharsRemoved = thisBunchOfFragments.replace(/[A-Z0-9# \(\)'\.]+/, '')
-
-//							console.log ("  [SCRIPT] '" + thisBunchOfFragments + " with valid chars removed leaves '" + withValidCharsRemoved + "'")
 
 							if (withValidCharsRemoved == '')
 							{
@@ -478,8 +474,6 @@ function ProcessInput()
 							}
 							else if (marksEndOfSentence === true)
 							{
-//								console.log("  Found " + followedBy + " after " + s + " with " + joiners.length + " bits left to read")
-
 								if (joiners.length || followedBy == '.' || !isSpeech)
 								{
 									shouldStartWithCapital = "following '" + followedBy + "' in"

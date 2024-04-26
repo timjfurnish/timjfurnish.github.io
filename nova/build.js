@@ -12,12 +12,17 @@ const kIconPaste = "&#128203;"
 const kIconFix = "&#128736;"
 const kIconSpeech = "&#128172;" // "&#128266;"
 const kIconPhrase = "&#128209;"
-const kIconToTop = "&#8679;"
+const kIconToTop = "&#9757;&#65039;" // "&#128285;" // "&#8679;"
 const kIconRevert = "&hookleftarrow;"
 const kIconSettings = "&#128736;&#65039;"
 const kIconIssues = "&#9888;&#65039;"
 const kIconEntities = "&#129333;"
 const kIconHyphen = "&#127846;"
+const kIconBooks = "&#128218;"
+const kIconMute = "&#128263;"
+const kIconOpen = "&#x1f53d;"
+const kIconClosed = "&#x25B6;&#xFE0F;"
+const kIconText = "&#128263;"
 
 const kCharacterElipsis = "\u2026"
 const kCharacterEmDash = "\u2014"
@@ -45,7 +50,7 @@ function TableNewRow(reply, extra)
 
 function TableAddHeading(reply, h)
 {
-	reply.push('<td bgcolor=#DDDDDD CLASS=cellNoWrap><B>' + h + '</B>')
+	reply.push('<td bgcolor=#DDDDDD CLASS=cell><B>' + h + '</B>')
 }
 
 function TableClose(reply)
@@ -152,25 +157,19 @@ function OptionsMakeKey(tab, id, defVal, overwrite)
 			if (id in g_currentOptions[tab])
 			{
 				overwrite = !checkThisArray.includes(g_currentOptions[tab][id])
-//				console.log("Should we reset " + tab + "." + id + ", currently '" + g_currentOptions[tab][id] + "', to '" + defVal + "'? " + (overwrite ? "Yes!" : "No!") + " Valid options=[" + checkThisArray + "]")
 			}
 		}
 		
 		if (overwrite || ! (id in g_currentOptions[tab]))
 		{
 			g_currentOptions[tab][id] = defVal
-
-//			console.log ("[OPTIONS] Updated '" + tab + "' set:")
-//			console.log (g_currentOptions[tab])
 		}
 	}
 	else
 	{
 		g_currentOptions[tab] = {[id]:defVal}
-
-//		console.log ("[OPTIONS] Created '" + tab + "' set:")
-//		console.log (g_currentOptions[tab])
 	}
+
 	return tab + "." + id
 }
 

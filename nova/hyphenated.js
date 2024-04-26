@@ -53,7 +53,7 @@ function HyphenCheckDrawTable()
 		}
 
 		TableNewRow(reply, bDisc ? 'BGCOLOR="#FFDDDD"' : undefined)
-		const searchFor = phrase + "+" + phrase.replaceAll('-', '') + "+" + phrase.replaceAll('-', ' ')
+		const searchFor = phrase + "|" + phrase.replaceAll('-', '') + "|" + phrase.replaceAll('-', ' ')
 		reply.push('<TD CLASS="cell">' + phrase + '&nbsp;' + CreateClickableText(kIconSearch, "SwitchToMentionsAndSearch(" + MakeParamsString(searchFor) + ")") + '</TD>')
 		reply.push('<TD CLASS="cell">' + data.total + '</TD>')
 		reply.push('<TD CLASS="cell">' + (data.countWithHyphens ?? "") + '</TD>')
@@ -126,28 +126,34 @@ function TimeSlicedCallFuncForAllKeys(container, markerName, thisFunction, numPe
 
 	UpdateAreaWithProgressBar('hyphenCheckOutput', startFrac + (countDone / entries.length) * scaleFrac)
 
-	return countDone >= entries.length
+	if (countDone >= entries.length)
+	{
+		NovaLog("Finished " + countDone + " calls to " + DescribeFunction(thisFunction) + " (" + markerName + ")")
+		return true
+	}
+	
+	return false
 }
 
 function HyphenCheckFindWithNeither()
 {
-	function MyCallback(key, value)
+	function NoSpaceCallback(key, value)
 	{
-		HuntFor(new RegExp('\\b' + key.replaceAll('-', '').replaceAll('*', '\\w*') + '\\b', 'gi'), matched => (Tally(value, "countWithNeither"), SetMemberOfMember(g_hyphenFoundWords, key, matched, true)))
+		HuntFor(new RegExp('\\b' + TurnNovaShorthandIntoRegex(key.replaceAll('-', '')) + '\\b', 'gi'), matched => (Tally(value, "countWithNeither"), SetMemberOfMember(g_hyphenFoundWords, key, matched, true)))
 	}
 	
-	const isDone = TimeSlicedCallFuncForAllKeys(g_hyphenCheckWIP, "doneHyphen", MyCallback, 12, 0.5, 0.5)
+	const isDone = TimeSlicedCallFuncForAllKeys(g_hyphenCheckWIP, "doneNoSpaceCheck", NoSpaceCallback, 12, 0.5, 0.5)
 	QueueFunction(isDone ? HyphenCheckCalcTotals : HyphenCheckFindWithNeither)
 }
 
 function HyphenCheckFindWithSpaces()
 {
-	function MyCallback(key, value)
+	function SpaceCallback(key, value)
 	{
-		HuntFor(new RegExp('\\b' + key.replaceAll('-', ' ').replaceAll('*', '\\w*') + '\\b', 'gi'), matched => (Tally(value, "countWithSpaces"), SetMemberOfMember(g_hyphenFoundWords, key, matched, true)))
+		HuntFor(new RegExp('\\b' + TurnNovaShorthandIntoRegex(key.replaceAll('-', ' ')) + '\\b', 'gi'), matched => (Tally(value, "countWithSpaces"), SetMemberOfMember(g_hyphenFoundWords, key, matched, true)))
 	}
 
-	const isDone = TimeSlicedCallFuncForAllKeys(g_hyphenCheckWIP, "doneSpaces", MyCallback, 12, 0, 0.5)
+	const isDone = TimeSlicedCallFuncForAllKeys(g_hyphenCheckWIP, "doneSpaceCheck", SpaceCallback, 12, 0, 0.5)
 	QueueFunction(isDone ? HyphenCheckFindWithNeither : HyphenCheckFindWithSpaces)
 }
 
@@ -162,7 +168,7 @@ function HyphenCheckAddCustom(beforeHyphen, afterHyphen, wildcardCollection)
 			for (var splitAfter of afterHyphenSplit)
 			{
 				const key = splitBefore + "-" + splitAfter
-//				console.log("Adding '" + key + "'")
+//				NovaLog("Adding '" + key + "'")
 				g_hyphenCheckWIP[key] = {}
 				if (key.includes("*"))
 				{
@@ -187,6 +193,7 @@ function SetMemberOfMember(container, outerName, innerName, value)
 
 function HyphenCheckFirstPass()
 {
+	NovaLog("HyphenCheckFirstPass")
 	UpdateAreaWithProgressBar('hyphenCheckOutput', 0)
 
 	// Find things with hyphens in document
@@ -203,6 +210,9 @@ function HyphenCheckFirstPass()
 		HyphenCheckAddCustom(...custom.split('-', 2), checksWithWildcard)
 	}
 	
+	NovaLog("g_hyphenCheckWIP contains " + Object.keys(g_hyphenCheckWIP).length + " entries")
+	NovaLog("countEm contains " + Object.keys(countEm).length + " entries")
+
 //	console.log(checksWithWildcard)
 	
 	for (var [key, value] of Object.entries(countEm))
@@ -213,6 +223,7 @@ function HyphenCheckFirstPass()
 	}
 	
 	QueueFunction(HyphenCheckFindWithSpaces)
+	NovaLog("HyphenCheckFirstPass ending")
 }
 
 function HyphenCheckShowGoButton()
@@ -230,7 +241,7 @@ function HyphenCheckShowGoButton()
 TabDefine("hyphen_check", function(reply, thenCall)
 {
 	var options = []
-	OptionsMakeCheckbox(options, "HyphenCheckShowGoButton()", "disc", "Only show discrepancies", false, true)
+	OptionsMakeCheckbox(options, "HyphenCheckShowGoButton()", "disc", "Only show discrepancies", true, true)
 	reply.push(OptionsConcat(options))
 	MakeUpdatingArea(reply, "hyphenCheckOutput")
 	thenCall.push(HyphenCheckShowGoButton)
