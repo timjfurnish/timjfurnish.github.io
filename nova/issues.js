@@ -102,7 +102,7 @@ function IssueGetTotal()
 
 function IssueAdd(addThis, theType)
 {
-	//	console.warn(issueHeading + " - " + addThis)
+	//	NovaWarn(issueHeading + " - " + addThis)
 
 	if (theType)
 	{

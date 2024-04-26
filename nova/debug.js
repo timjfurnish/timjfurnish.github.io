@@ -16,6 +16,17 @@ function NovaLog(message)
 	}
 }
 
+function NovaWarn(message)
+{
+	console.warn(message)
+	const elem = document.getElementById("debugLog")
+
+	if (elem)
+	{
+		elem.innerHTML += "<br><font color=#663300>" + message + "</font>"
+	}
+}
+
 function NovaLogClear(message)
 {
 	document.getElementById("debugLog").innerHTML = "<b>" + message + "</b>"
@@ -23,7 +34,7 @@ function NovaLogClear(message)
 
 function ShowError(message)
 {
-	NovaLog("ERROR: " + message)
+	NovaWarn("ERROR: " + message)
 
 	if (g_canShowError)
 	{

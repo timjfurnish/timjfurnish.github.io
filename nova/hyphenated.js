@@ -7,17 +7,33 @@ var g_hyphenCheckWIP = null
 var g_hyphenFoundWords = null
 var g_hyphenCheckDataIsValid = false
 
-function HuntFor(pattern, callback)
+function HuntFor(pattern, callback, doDbg)
 {
+	if (doDbg)
+	{
+		NovaLog("HuntFor " + pattern + " starting - " + GetDataType(pattern))
+	}
+
 	for (var metadata of g_metaDataInOrder)
-	{			
+	{
 		for (var para of metadata.myParagraphs)
 		{
 			if (! para.ignoreFragments)
 			{
+				if (doDbg)
+				{
+					NovaLog("Checking in '" + para.allOfIt + "'")
+					console.log(metadata.myParagraphs)
+				}
+
 				para.allOfIt.matchAll(pattern).forEach(elem => elem.forEach(callback))
 			}
 		}
+	}
+	
+	if (doDbg)
+	{
+		NovaLog("HuntFor " + pattern + " done")
 	}
 }
 
@@ -199,7 +215,7 @@ function HyphenCheckFirstPass()
 
 	// Find things with hyphens in document
 	var countEm = {}
-	HuntFor(/\b\w+[\w'\-]*-[\w']\w+\b/g, matched => Tally(countEm, matched.toLowerCase()))
+	HuntFor(/\b\w+[\w'\-]*-[\w']\w+\b/g, matched => Tally(countEm, matched.toLowerCase()), true)
 	NovaLog("HyphenCheckFirstPass C")
 
 	// Build full data structure

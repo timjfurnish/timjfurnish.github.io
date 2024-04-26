@@ -145,7 +145,7 @@ function OptionsMakeKey(tab, id, defVal, overwrite)
 {
 	if (! tab)
 	{
-		console.warn("Current tab is " + tab)
+		NovaWarn("Can't make key '" + id + "' - current tab is " + tab)
 	}
 
 	if (tab in g_currentOptions)

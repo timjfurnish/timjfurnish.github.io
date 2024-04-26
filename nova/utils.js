@@ -84,16 +84,26 @@ function TrySetElementClass(elemName, className, add)
 // Data management
 //---------------------------
 
+function GetDataTypeShared(data)
+{
+	if (data instanceof RegExp)
+	{
+		return "regex"
+	}
+
+	return (data === null) ? "null" : (data === undefined) ? "undefined" : data.tagName ? data.tagName + " (" + data.type + ")" : null
+}
+
 function GetDataType(data)
 {
-	return (data === null) ? "null" : (data === undefined) ? "undefined" : Array.isArray(data) ? "array" : data.tagName ? data.tagName + " (" + data.type + ")" : typeof(data)
+	return GetDataTypeShared(data) ?? (Array.isArray(data) ? "array" : typeof(data))
 }
 
 // This should only be used for display purposes, not comparing result - for that use GetDataType
 // Could well revisit this periodically and change the output!
 function GetDataTypeVerbose(data)
 {
-	return (data === null) ? "null" : (data === undefined) ? "undefined" : Array.isArray(data) ? "array of length " + data.length : data.tagName ? data.tagName + " (" + data.type + ")" : typeof(data)
+	return GetDataTypeShared(data) ?? (Array.isArray(data) ? "array of length " + data.length : typeof(data))
 }
 
 //---------------------------

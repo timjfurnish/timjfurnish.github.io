@@ -42,10 +42,14 @@ function BuildTabDisplayText(tabName, extra)
 	return main
 }
 
-function MakeIconWithTooltip(icon, angle, tooltipText, clickyFunc)
+function MakeIconWithTooltip(icon, angle, tooltipText, clickyFunc, id)
 {
-	const clickyHTML = clickyFunc ? ' onClick="' + clickyFunc + '"' : ''
-	return '<b CLASS="iconWithTooltip"' + clickyHTML + '>' + icon + '<span class="tooltipBubble" STYLE="transform:rotate(' + angle + 'deg)">' + tooltipText + '</span></b>'
+	var extraArgs = clickyFunc ? ' onClick="' + clickyFunc + '"' : ''
+	if (id)
+	{
+		extraArgs += ' id="' + id + '"'
+	}
+	return '<b CLASS="iconWithTooltip"' + extraArgs + '>' + icon + '<span class="tooltipBubble" STYLE="transform:rotate(' + angle + 'deg)">' + tooltipText + '</span></b>'
 }
 
 function ShowTabs()

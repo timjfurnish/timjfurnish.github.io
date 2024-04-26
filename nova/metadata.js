@@ -65,7 +65,7 @@ function MetaDataCombine(container, name, addThisValue)
 	}
 	else
 	{
-		console.warn("Can't add " + name + " data [" + addThisValue + "] of type " + addThisType + " to member [" + container[name] + "] of type " + toHereType)
+		NovaWarn("Can't add " + name + " data [" + addThisValue + "] of type " + addThisType + " to member [" + container[name] + "] of type " + toHereType)
 	}
 }
 

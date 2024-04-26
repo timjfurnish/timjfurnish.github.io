@@ -41,6 +41,7 @@ const kSettingFunctions =
 }
 
 var g_tweakableSettings = {}
+var g_openTextAreas = {}
 
 function CopyToSetting([key, val])
 {
@@ -153,7 +154,7 @@ function UpdateSettingFromText(name, type, savedSetting, isLoading)
 	}
 	else
 	{
-		console.warn("Don't know how to parse '" + name + "' setting and turn it into type " + type)
+		NovaWarn("Don't know how to parse '" + name + "' setting and turn it into type " + type)
 	}
 }
 
@@ -200,7 +201,7 @@ function SettingUpdate(name, newValue, isLoading)
 	}
 	else
 	{
-		console.warn("There's no setting called '" + name + "' in settings structure")
+		NovaWarn("There's no setting called '" + name + "' in settings structure")
 	}
 }
 
@@ -315,7 +316,7 @@ function FillInSetting(k)
 			
 			if (data != elem.value)
 			{
-				console.warn("Mismatch! Wanted to set '" + k + "' to " + GetDataTypeVerbose(data) + " '" + data + "' but it's set to " + GetDataTypeVerbose(elem.value) + " '" + elem.value + "'")
+				NovaWarn("Mismatch! Wanted to set '" + k + "' to " + GetDataTypeVerbose(data) + " '" + data + "' but it's set to " + GetDataTypeVerbose(elem.value) + " '" + elem.value + "'")
 			}
 		}
 	}
@@ -350,18 +351,50 @@ function UserChangedSetting(name)
 	}
 }
 
-function SettingsAdd(reply, txt, formBits, className, canExpand)
-{
-	var expander = ""
+function SettingsAdd(reply, txt, formBits, className, expandId)
+{	
+	reply.push('<tr><td valign="top" align="right" class="cellNoWrap">' + txt + '</td>')
 	
-	if (canExpand)
+	if (expandId)
 	{
-		expander = kIconOpen
+		reply.push('<td id="expandButton_' + expandId + '" valign="top" align="right" class="cellNoWrap">')
+		reply.push(MakeOpenCloseButton(expandId))
+	}
+	else
+	{
+		reply.push('<td class="cellNoWrap">')
 	}
 	
-	reply.push('<tr><td valign="top" align="right" class="cellNoWrap">' + txt + '</td>')
-	reply.push('<td valign="top" align="right" class="cellNoWrap">' + expander + '</td>')
-	reply.push('<td class="' + className + '">' + formBits + "</td></tr>")
+	reply.push('</td><td class="' + className + '">' + formBits + "</td></tr>")
+}
+
+function MakeOpenCloseButton(k)
+{
+	if (k in g_openTextAreas)
+	{
+		return MakeIconWithTooltip(kIconOpen, 0, "Close", "SettingsOpenClose('" + k + "')")
+	}
+	
+	return MakeIconWithTooltip(kIconClosed, 0, "Open", "SettingsOpenClose('" + k + "')")
+}
+
+function SettingsOpenClose(whichOne)
+{
+	const elem = document.getElementById("expandButton_" + whichOne)
+	const textArea = document.getElementById("setting_" + whichOne)
+
+	if (whichOne in g_openTextAreas)
+	{
+		textArea.style.maxHeight = "32px"
+		delete g_openTextAreas[whichOne]
+	}
+	else
+	{
+		textArea.style.maxHeight = ""
+		g_openTextAreas[whichOne] = true
+	}
+
+	elem.innerHTML = MakeOpenCloseButton(whichOne)
 }
 
 function SettingAskRevert(whichOne)
@@ -432,6 +465,7 @@ TabDefine("settings", function(reply, thenCall)
 			var theType = 'input type=text'
 			var theMiddle = ""
 			var revert = ""
+			var expandId = undefined
 
 			if (extra == 'voice')
 			{
@@ -462,6 +496,13 @@ TabDefine("settings", function(reply, thenCall)
 				if (Array.isArray(g_tweakableSettings[k]))
 				{
 					theType = 'textarea'
+					expandId = k
+					
+					if (! (k in g_openTextAreas))
+					{
+						theType += ' style="max-height:32px"'
+					}
+					
 					if (kTweakableDefaults[k].length)
 					{
 						revert += MakeIconWithTooltip(kIconFix, 0, "Repair", "SettingFixArray('" + k + "')")
@@ -469,7 +510,7 @@ TabDefine("settings", function(reply, thenCall)
 				}
 			}
 		
-			SettingsAdd(reply, displayName, '<nobr><' + theType + ' onChange="UserChangedSetting(\'' + k + '\')" ' + (extra ? extra + ' ' : '') + 'id="setting_' + k + '">' + theMiddle + '</' + theType.split(' ', 1)[0] + '>' + revert + "</nobr>", "cellNoWrap", theType == 'textarea')
+			SettingsAdd(reply, displayName, '<nobr><' + theType + ' onChange="UserChangedSetting(\'' + k + '\')" ' + (extra ? extra + ' ' : '') + 'id="setting_' + k + '">' + theMiddle + '</' + theType.split(' ', 1)[0] + '>' + revert + "</nobr>", "cellNoWrap", expandId)
 		}
 		else
 		{
