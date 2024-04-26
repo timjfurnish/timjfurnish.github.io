@@ -7,34 +7,17 @@ var g_hyphenCheckWIP = null
 var g_hyphenFoundWords = null
 var g_hyphenCheckDataIsValid = false
 
-function HuntFor(pattern, callback, doDbg)
+function HuntFor(pattern, callback)
 {
-	if (doDbg)
-	{
-		NovaLog("HuntFor " + pattern + " starting - " + GetDataType(pattern) + " using " + DescribeFunction("".matchAll))
-	}
-
 	for (var metadata of g_metaDataInOrder)
 	{
 		for (var para of metadata.myParagraphs)
 		{
 			if (! para.ignoreFragments)
 			{
-				const results = [...para.allOfIt.matchAll(pattern)]
-
-				if (doDbg)
-				{
-					NovaLog("Checking in '" + para.allOfIt + "' - results=" + GetDataTypeVerbose(results))
-				}
-				
-				results.forEach(elem => elem.forEach(callback))
+				[...para.allOfIt.matchAll(pattern)].forEach(elem => elem.forEach(callback))
 			}
 		}
-	}
-	
-	if (doDbg)
-	{
-		NovaLog("HuntFor " + pattern + " done")
 	}
 }
 
@@ -210,20 +193,17 @@ function SetMemberOfMember(container, outerName, innerName, value)
 
 function HyphenCheckFirstPass()
 {
-	NovaLog("HyphenCheckFirstPass A")
 	UpdateAreaWithProgressBar('hyphenCheckOutput', 0)
-	NovaLog("HyphenCheckFirstPass B")
 
 	// Find things with hyphens in document
 	var countEm = {}
 	HuntFor(/\b\w+[\w'\-]*-[\w']\w+\b/g, matched => Tally(countEm, matched.toLowerCase()), true)
-	NovaLog("HyphenCheckFirstPass C")
+	NovaLog("Doing HyphenCheckFirstPass: countEm contains " + Object.keys(countEm).length + " entries")
 
 	// Build full data structure
 	g_hyphenCheckWIP = {}
 	g_hyphenFoundWords = {}
 	var checksWithWildcard = {}
-	NovaLog("HyphenCheckFirstPass D")
 
 	for (var custom of g_tweakableSettings.hyphenCheckPairs)
 	{
@@ -231,9 +211,6 @@ function HyphenCheckFirstPass()
 	}
 	
 	NovaLog("g_hyphenCheckWIP contains " + Object.keys(g_hyphenCheckWIP).length + " entries")
-	NovaLog("countEm contains " + Object.keys(countEm).length + " entries")
-
-//	console.log(checksWithWildcard)
 	
 	for (var [key, value] of Object.entries(countEm))
 	{
