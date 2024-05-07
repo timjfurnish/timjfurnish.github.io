@@ -4,7 +4,7 @@
 //==============================================
 
 //---------------------------
-// Web browser things
+// Webpage things
 //---------------------------
 
 function SetUp_FixTitle()
@@ -15,6 +15,18 @@ function SetUp_FixTitle()
 	{
 		document.title += " (LOCAL)"
 	}
+}
+
+function TrySetElementClass(elemName, className, add)
+{
+	var elem = document.getElementById(elemName)
+	
+	if (elem)
+	{
+		add ? elem.classList.add(className) : elem.classList.remove(className)
+	}
+	
+	return elem
 }
 
 //---------------------------
@@ -66,18 +78,6 @@ function HighlighterWithDots(matched)
 function TurnNovaShorthandIntoRegex(txt)
 {
 	return txt.replaceAll('*', '\\w*')
-}
-
-function TrySetElementClass(elemName, className, add)
-{
-	var elem = document.getElementById(elemName)
-	
-	if (elem)
-	{
-		add ? elem.classList.add(className) : elem.classList.remove(className)
-	}
-	
-	return elem
 }
 
 //---------------------------
@@ -210,8 +210,17 @@ function DescribeFunctions(arr)
 	var out = []
 	for (var f of arr)
 	{
-		out.push(f.name ?? "<anon>")
+		if (typeof f == "function")
+		{
+			out.push((f.name == "") ? "[anon]" : f.name)
+		}
+		else
+		{
+			out.push("[" + GetDataTypeVerbose(f) + "]")
+		}
 	}
+//	console.log(arr)
+//	console.log(out)
 	return out.join(", ")
 }
 

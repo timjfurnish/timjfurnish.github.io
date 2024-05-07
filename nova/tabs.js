@@ -76,7 +76,7 @@ function BuildTabs()
 			g_selectedTabName = tabName
 		}
 
-		if (tabName != 'settings')
+		if (tabName != 'settings' && tabName != 'issues')
 		{
 			g_tabIconsToDisableWhenNoText.push(tabName)
 		}
@@ -162,7 +162,7 @@ function TabBuildButtonBarAdd(toHere, displayText, callThis, enable)
 {
 	const extra = enable ? 'ONCLICK="' + callThis + '"' : 'disabled'
 	toHere.push('<BUTTON ' + extra + '>' + displayText + '</BUTTON>')
-	toHere.push('&nbsp;')
+	toHere.push('')
 }
 
 function ButtonsBarSet(pageName)

@@ -12,7 +12,7 @@ function NovaLog(message)
 
 	if (elem)
 	{
-		elem.innerHTML += "<br>" + message
+		elem.innerHTML += "<div>" + message + "</div>"
 	}
 }
 

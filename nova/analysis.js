@@ -22,10 +22,23 @@ const kValidJoiners =
 	["?"]:true
 }
 
+function ShouldIgnoreNumberFoundInText(number)
+{
+	for (var eachIgnoreRule of g_tweakableSettings.numberIgnoreList)
+	{
+		if (eachIgnoreRule === number)
+		{
+			return true
+		}
+	}
+
+	return false
+}
+
 const kIllegalSubstrings =
 [
 	["tab character", "\t"],
-	["numbers", /#?[A-Z\/\-\.]*[0-9]+[A-Z\/\-0-9]*/gi, txt => g_tweakableSettings.numberIgnoreList.includes(txt)],
+	["numbers", /#?[A-Z\/\-\.]*[0-9]+[A-Z\/\-0-9]*/gi, ShouldIgnoreNumberFoundInText],
 	["double apostrophe", "''"],
 	["misused hyphen", /( \-)|(\- )/g],
 	["double quote", "\"\""],
@@ -127,12 +140,14 @@ function CheckEachWord(word, s, workspace)
 
 	if (name)
 	{
+		++ name.seen
+
 		if (! (word in g_permittedNameCapitalisations))
 		{
 			IssueAdd("Check capitalisation of " + FixStringHTML(word) + " in "  + FixStringHTML(s), "CAPITALS")			
 		}
 		
-		MetaDataIncreaseCount(name)
+		MetaDataIncreaseCount(name.means)
 	}
 	
 	const lastApostrophe = word.lastIndexOf("'")

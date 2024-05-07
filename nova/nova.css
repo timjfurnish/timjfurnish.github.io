@@ -22,15 +22,6 @@ input[type=text]
 {
 	cursor:text
 }
-button
-{
-	font-size:110%;
-	border-radius:9px;
-	padding:5px 10px 4px 10px;
-	border:1px solid rgba(0, 0, 0, 0.6);
-	background-image:linear-gradient(white, rgba(200,200,200,1));
-	text-shadow:1px 1px #999999;
-}
 #issueText
 {
 	font-size:85%;
@@ -66,7 +57,6 @@ button
 	top:5px;
 	left:5px;
 	position:fixed;
-	display:none;
 	border:2px solid rgba(200, 0, 0, 0.8);
 	background:rgba(100,0,0,0.6);
 	backdrop-filter:blur(2px);
@@ -77,13 +67,24 @@ button
 }
 #debugLog
 {
-	display:none;
+	text-align:left;
+	padding-left:25px;
 	border:2px solid rgba(0, 0, 0, 0.25);
 	background:#DDDDEE;
+	text-indent:-25px;
+	font-size:75%;
 }
 #hoverControls button
 {
 	font-size:200%;
+}
+.closedTextArea
+{
+	mask: linear-gradient(to bottom, 
+      rgba(0,0,0, 1) 0,   rgba(0,0,0, 1) 20%, 
+      rgba(0,0,0, 0) 95%, rgba(0,0,0, 0) 0
+  ) 100% 50% / 100% 100% repeat-x;
+	max-height: 80px
 }
 .docIn
 {
@@ -169,6 +170,37 @@ button
 {
 	width:300px;
 }
+/* BUTTONS */
+button
+{
+	font-weight:500;
+	font-size:110%;
+	border-radius:9px;
+	padding:5px 10px 4px 10px;
+	border:1px solid rgba(0, 0, 0, 0.6);
+	background-position:bottom;
+	background-image:linear-gradient(0deg, rgba(220,220,220,1),white);
+	background-size:200px 200px;
+	text-shadow:1px 1px 1px rgba(0, 0, 0, 0.5);
+	color:black;
+	margin-left:4px;
+	margin-right:4px;
+	transition:background 0.3s ease-out;
+	box-shadow: 0px 2px 3px rgba(0, 0, 0, 0.75);
+}
+button:hover
+{
+	background-position:top;
+}
+button:disabled, button[disabled]
+{
+	font-weight:750;
+	color:#224422;
+	box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.75);
+	background:#DDFFDD;
+	background-position:0px;
+	cursor:default
+}
 @media screen and (max-width:1000px)
 {
 	body
@@ -214,6 +246,7 @@ button
 	background-color:#FFFFAA;
 	padding:5px;
 	font-size:70%;
+	color:black;
 	text-align:center;
 	visibility:hidden;
 	position:absolute;
@@ -226,8 +259,8 @@ button
 }
 .iconWithTooltip:hover .tooltipBubble
 {
-  visibility:visible;
-  opacity:1;
+	visibility:visible;
+	opacity:1;
 }
 .alertBubble
 {

@@ -13,7 +13,7 @@ function BuildWarningNamesList()
 	const list =
 	[
 		// Start off
-		'SCRIPT', 'ISSUE SUMMARY',
+		'SCRIPT', 'ISSUE SUMMARY', 'UNSEEN NAMES',
 		
 		// Start on
 		'NUMBERS', 'TODO', 'DISALLOWED WORD', 'ILLEGAL CHARACTERS',
@@ -100,7 +100,7 @@ function IssueGetTotal()
 	return g_issueCount
 }
 
-function IssueAdd(addThis, theType)
+function IssueAdd(addThis, theType, overrideIssueHeading)
 {
 	//	NovaWarn(issueHeading + " - " + addThis)
 
@@ -126,7 +126,7 @@ function IssueAdd(addThis, theType)
 
 	++ g_issueCount
 
-	const issueHeading = MetaDataMakeFragmentDescription()
+	const issueHeading = overrideIssueHeading ?? MetaDataMakeFragmentDescription()
 
 	if (issueHeading in g_issues)
 	{
@@ -140,6 +140,17 @@ function IssueAdd(addThis, theType)
 
 OnEvent("processingDone", false, () =>
 {
+	if (! g_disabledWarnings["UNSEEN NAMES"])
+	{
+		for (var [key, val] of Object.entries(g_nameLookup))
+		{
+			if (val.seen == 0)
+			{
+				IssueAdd("Name " + FixStringHTML(key) + " not present in text", "UNSEEN NAMES", "Entire text")
+			}
+		}
+	}
+	
 	SetTabTitle('issues', g_issueCount || undefined)
 })
 

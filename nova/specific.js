@@ -32,13 +32,14 @@ const kTweakableDefaults =
 	debugLog:false,
 }
 
-const kSettingsWhichProvideNames = MakeColourLookUpTable(["names", "names_places", "names_other"])
-
 const kSettingFunctions =
 {
 	debugListQueuedFunctions:val => document.getElementById("debugOut").style.display = val ? "block" : "none",
 	debugLog:val => document.getElementById("debugLog").style.display = val ? "block" : "none",
 }
+
+const kCurrentSaveFormatVersion = 2
+const kSettingsWhichProvideNames = MakeColourLookUpTable(["names", "names_places", "names_other"])
 
 var g_tweakableSettings = {}
 var g_openTextAreas = {}
@@ -54,12 +55,12 @@ const kSettingNames =
 {
 	INPUT:
 	{
-		replace:"Replace (regex)|class=mediumTextBox",
-		wordsContainingFullStops:"Valid words containing full stops|class=shortTextBox",
-		skip:"Skip lines starting with|class=shortTextBox",
-		headingIdentifier:"Line is a heading if it includes|class=shortTextBox",
+		replace:"Replace (regex)|mediumTextBox",
+		wordsContainingFullStops:"Valid words containing full stops|shortTextBox",
+		skip:"Skip lines starting with|shortTextBox",
+		headingIdentifier:"Line is a heading if it includes|shortTextBox",
 		removeHeadingIdentifier:"Remove heading identifier",
-		headingMaxCharacters:"Max characters in a heading|class=shortTextBox",
+		headingMaxCharacters:"Max characters in a heading|shortTextBox",
 	},
 	VOICE:
 	{
@@ -69,25 +70,25 @@ const kSettingNames =
 	},
 	NAMES:
 	{
-		names:"Characters|class=mediumTextBox",
-		names_places:"Places|class=mediumTextBox",
-		names_other:"Other|class=mediumTextBox",
+		names:"Characters|mediumTextBox",
+		names_places:"Places|mediumTextBox",
+		names_other:"Other|mediumTextBox",
 	},
 	HYPHENS:
 	{
-		hyphenCheckPairs:"Hyphen check text|class=longTextBox",
+		hyphenCheckPairs:"Hyphen check text|longTextBox",
 	},
 	CHECKS:
 	{
-		badWords:"Bad words|class=longTextBox",
-		allowedCharacters:"Valid characters|class=longTextBox",
-		allowedStartCharacters:"Start of paragraph|class=longTextBox",
-		startOfSpeech:"Start of speech|class=longTextBox",
-		endOfSpeech:"End of speech|class=shortTextBox",
-		endOfParagraphSpeech:"End of paragraph speech|class=shortTextBox",
-		endOfParagraphNarrative:"End of paragraph narrative|class=shortTextBox",
-		splitInfinitiveIgnoreList:"Split infinitive check ignores|class=shortTextBox",
-		numberIgnoreList:"Number check ignores|class=shortTextBox",
+		badWords:"Bad words|longTextBox",
+		allowedCharacters:"Valid characters|longTextBox",
+		allowedStartCharacters:"Start of paragraph|longTextBox",
+		startOfSpeech:"Start of speech|longTextBox",
+		endOfSpeech:"End of speech|shortTextBox",
+		endOfParagraphSpeech:"End of paragraph speech|shortTextBox",
+		endOfParagraphNarrative:"End of paragraph narrative|shortTextBox",
+		splitInfinitiveIgnoreList:"Split infinitive check ignores|shortTextBox",
+		numberIgnoreList:"Number check ignores|shortTextBox",
 		["Enabled checks"]:() => BuildIssueDefaults(false),
 		["Additional settings"]:() => BuildIssueDefaults(true),
 	},
@@ -102,6 +103,7 @@ const kOptionCustomNames =
 {
 	SCRIPT:"Use script format checking rules",
 	["ISSUE SUMMARY"]:"Display issue summary",
+	["UNSEEN NAMES"]:"Check for unseen names",
 }
 
 const kHasNoEffect = ["voiceDefault", "voiceSpeech", "voiceHeading"]
@@ -124,7 +126,7 @@ OnEvent("clear", true, () =>
 				IssueAdd("Name " + FixStringHTML(name) + " features multiple times in name list", "SETTINGS")
 			}
 
-			g_nameLookup[lowerName] = nameList.arr[0]
+			g_nameLookup[lowerName] = {means:nameList.arr[0], seen:0}
 			g_permittedNameCapitalisations[name] = true
 			g_permittedNameCapitalisations[CapitaliseFirstLetter(name)] = true
 			g_permittedNameCapitalisations[name.toUpperCase()] = true
@@ -132,13 +134,15 @@ OnEvent("clear", true, () =>
 	}
 })
 
-function UpdateSettingFromText(name, type, savedSetting, isLoading)
+function UpdateSettingFromText(name, type, savedSetting, loadingVersion)
 {
 	typeof(savedSetting) == "string" || ShowError("Data '" + name + "' isn't a string")
+	const isLoading = !!loadingVersion
 
 	if (type == 'array')
 	{
-		SettingUpdate(name, OnlyKeepValid(savedSetting.split(isLoading ? ',' : '\n')), isLoading)
+		const splitCharacter = (loadingVersion == 1) ? ',' : '\n'
+		SettingUpdate(name, OnlyKeepValid(savedSetting.split(splitCharacter)), isLoading)
 	}
 	else if (type == 'number')
 	{
@@ -160,28 +164,67 @@ function UpdateSettingFromText(name, type, savedSetting, isLoading)
 
 function SettingsLoad()
 {
-	for (var [name, val] of Object.entries(g_tweakableSettings))
+	var savedVersion = window?.localStorage?.getItem("nova_saveVersion")
+	savedVersion = savedVersion ? parseInt(savedVersion) : 1
+
+	if (savedVersion > kCurrentSaveFormatVersion)
 	{
-		var savedSetting = window?.localStorage?.getItem("nova_" + name)
-		
-		if (savedSetting === null || savedSetting === undefined)
+		ShowError("SETTINGS: Couldn't read v" + savedVersion + ".0 settings as script only supports up to v" + kCurrentSaveFormatVersion + ".0")
+	}
+	else
+	{
+		if (savedVersion == kCurrentSaveFormatVersion)
 		{
-//			console.log("No '" + name + "' setting saved, using default " + GetDataType(val) + " '" + val + "'")
+			NovaLog("SETTINGS: Reading settings (v" + savedVersion + ".0)")
 		}
 		else
 		{
-			UpdateSettingFromText(name, GetDataType(val), savedSetting, true)
+			NovaLog("SETTINGS: Reading and resaving settings (from v" + savedVersion + ".0 to v" + kCurrentSaveFormatVersion + ".0)")
+			window.localStorage.setItem("nova_saveVersion", kCurrentSaveFormatVersion)
+		}
+
+		for (var [name, val] of Object.entries(g_tweakableSettings))
+		{
+			var savedSetting = window?.localStorage?.getItem("nova_" + name)
+			
+			if (savedSetting === null || savedSetting === undefined)
+			{
+	//			console.log("No '" + name + "' setting saved, using default " + GetDataType(val) + " '" + val + "'")
+			}
+			else
+			{
+				UpdateSettingFromText(name, GetDataType(val), savedSetting, savedVersion)
+				
+				if (savedVersion != kCurrentSaveFormatVersion)
+				{
+					SettingSave(name)
+				}
+			}
 		}
 	}
 	
 	for (var [settingName, customFunc] of Object.entries(kSettingFunctions))
 	{
 		const param = g_tweakableSettings[settingName]
-		console.log("Initialised setting '" + settingName + "' so calling " + DescribeFunction(customFunc) + " with " + GetDataTypeVerbose(param) + " '" + param + "'")
+		NovaLog("SETTINGS: Initialised '" + settingName + "' so calling " + DescribeFunction(customFunc) + " with " + GetDataTypeVerbose(param) + " '" + param + "'")
 		customFunc(g_tweakableSettings[settingName])
 	}
 
 	ReadVoices()
+}
+
+function SettingSave(name)
+{
+	var newValue = g_tweakableSettings[name]
+	NovaLog("SETTINGS: Saving " + GetDataTypeVerbose(newValue) + " '" + name + "'")
+	
+	// Some special case fun to save things in the right format...
+	if (Array.isArray(newValue))
+	{
+		newValue = newValue.join('\n')
+	}
+	
+	window.localStorage.setItem("nova_" + name, newValue)
 }
 
 function SettingUpdate(name, newValue, isLoading)
@@ -194,7 +237,7 @@ function SettingUpdate(name, newValue, isLoading)
 
 			if (! isLoading)
 			{
-				window.localStorage.setItem("nova_" + name, newValue)
+				SettingSave(name)
 				FillInSetting(name)
 			}
 		}
@@ -378,6 +421,14 @@ function MakeOpenCloseButton(k)
 	return MakeIconWithTooltip(kIconClosed, 0, "Open", "SettingsOpenClose('" + k + "')")
 }
 
+function CheckItsOpen(whichOne)
+{
+	if (! (whichOne in g_openTextAreas))
+	{
+		SettingsOpenClose(whichOne)
+	}
+}
+
 function SettingsOpenClose(whichOne)
 {
 	const elem = document.getElementById("expandButton_" + whichOne)
@@ -385,12 +436,14 @@ function SettingsOpenClose(whichOne)
 
 	if (whichOne in g_openTextAreas)
 	{
-		textArea.style.maxHeight = "32px"
+		// It's open, so close it
+		textArea.classList.add("closedTextArea")
 		delete g_openTextAreas[whichOne]
 	}
 	else
 	{
-		textArea.style.maxHeight = ""
+		// It's closed, so open it
+		textArea.classList.remove("closedTextArea")
 		g_openTextAreas[whichOne] = true
 	}
 
@@ -461,30 +514,32 @@ TabDefine("settings", function(reply, thenCall)
 	{
 		if (typeof display == "string")
 		{
-			var [displayName, extra] = display.split('|', 2)
+			var [displayName, classList] = display.split('|', 2)
 			var theType = 'input type=text'
 			var theMiddle = ""
 			var revert = ""
 			var expandId = undefined
+			
+			classList = classList ? classList.split(' ') : []
 
-			if (extra == 'voice')
+			if (classList == 'voice')
 			{
 				theType = 'select'
 				for (var voice of Object.keys(g_voiceLookUp).sort())
 				{
 					theMiddle += "<option>" + voice + "</option>"
 				}
-				extra = ''
+				classList = ''
 				revert = "&nbsp;" + MakeIconWithTooltip(kIconSpeech, 0, "Test", "SettingTestSpeech('" + k + "')")
 			}
-			else if (extra == 'language')
+			else if (classList == 'language')
 			{
 				theType = 'select'
 				for (var voice of g_voiceLanguages)
 				{
 					theMiddle += "<option>" + voice + "</option>"
 				}
-				extra = ''
+				classList = ''
 			}
 			else if (typeof g_tweakableSettings[k] === "boolean")
 			{
@@ -495,12 +550,12 @@ TabDefine("settings", function(reply, thenCall)
 				revert = "&nbsp;" + MakeIconWithTooltip(kIconRevert, 0, "Revert", "SettingAskRevert('" + k + "')")
 				if (Array.isArray(g_tweakableSettings[k]))
 				{
-					theType = 'textarea'
+					theType = 'textarea onFocus="CheckItsOpen(\'' + k + '\')"'
 					expandId = k
 					
 					if (! (k in g_openTextAreas))
 					{
-						theType += ' style="max-height:32px"'
+						classList.push('closedTextArea')
 					}
 					
 					if (kTweakableDefaults[k].length)
@@ -510,7 +565,9 @@ TabDefine("settings", function(reply, thenCall)
 				}
 			}
 		
-			SettingsAdd(reply, displayName, '<nobr><' + theType + ' onChange="UserChangedSetting(\'' + k + '\')" ' + (extra ? extra + ' ' : '') + 'id="setting_' + k + '">' + theMiddle + '</' + theType.split(' ', 1)[0] + '>' + revert + "</nobr>", "cellNoWrap", expandId)
+			const tagBits = theType + ' onChange="UserChangedSetting(\'' + k + '\')" ' + (classList.length ? 'class="' + classList.join(' ') + '" ' : '') + 'id="setting_' + k + '"'
+			console.log(tagBits)
+			SettingsAdd(reply, displayName, '<nobr><' + tagBits + '>' + theMiddle + '</' + theType.split(' ', 1)[0] + '>' + revert + "</nobr>", "cellNoWrap", expandId)
 		}
 		else
 		{
