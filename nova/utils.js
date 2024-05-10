@@ -33,6 +33,21 @@ function TrySetElementClass(elemName, className, add)
 // String things
 //---------------------------
 
+function UtilFormatTime(numSeconds)
+{
+	const numWholeSeconds = Math.ceil(numSeconds)
+	const numWholeMinutes = Math.floor(numWholeSeconds / 60)
+	const numWholeHours = Math.floor(numWholeMinutes / 60)
+	
+	if (numWholeHours || numWholeMinutes)
+	{
+		const prefix = numWholeHours ? numWholeHours + ":" + ("0" + numWholeMinutes % 60).substr(-2) : numWholeMinutes
+		return prefix + ":" + ("0" + numWholeSeconds % 60).substr(-2)
+	}
+
+	return numWholeSeconds + " seconds"
+}
+
 function CapitaliseFirstLetter(name)
 {
 	return name.charAt(0).toUpperCase() + name.slice(1)
@@ -229,7 +244,7 @@ function CallNextQueuedFunction()
 	const queue = DescribeFunctions(g_functionsStillToCall)
 
 	const func = g_functionsStillToCall.shift()
-//	NovaLog("Calling queued " + DescribeFunction(func))
+//	NovaLog("QUEUE", "Calling queued " + DescribeFunction(func))
 
 	UpdateDebugListOfRunningFunctions()
 
@@ -249,7 +264,7 @@ function CallNextQueuedFunction()
 
 	if (g_functionsStillToCall.length == 0)
 	{
-		NovaLog("Function queue changed from '" + queue + "' to empty")
+		NovaLog("QUEUE", "Function queue changed from '" + queue + "' to empty")
 		CallTheseFunctionsNow(...g_onQueueEmpty)
 		g_onQueueEmpty = []
 	}
@@ -259,7 +274,7 @@ function CallNextQueuedFunction()
 
 		if (newQueue != queue)
 		{
-			NovaLog("Function queue changed from '" + queue + "' to '" + newQueue + "'")
+			NovaLog("QUEUE", "Function queue changed from '" + queue + "' to '" + newQueue + "'")
 		}
 	}
 }
@@ -272,7 +287,7 @@ function QueueFunction(func)
 	}
 	else if (g_functionsStillToCall.includes(func))
 	{
-//		NovaLog("Not queueing " + DescribeFunction(func) + " at it's already in the queue")
+//		NovaLog("QUEUE", "Not queueing " + DescribeFunction(func) + " at it's already in the queue")
 		return
 	}
 	
@@ -290,7 +305,7 @@ function CallTheseFunctionsNow(...list)
 {
 	if (list?.length)
 	{
-		NovaLog("Calling these functions immediately: " + DescribeFunctions(list))
+		NovaLog("QUEUE", "Calling these functions immediately: " + DescribeFunctions(list))
 		
 		for (var func of list)
 		{
@@ -316,14 +331,14 @@ function OnEvent(eventName, late, call)
 {
 	(eventName in g_eventFuncs) ? late ? g_eventFuncs[eventName].push(call) : g_eventFuncs[eventName].unshift(call) : (g_eventFuncs[eventName] = [call])
 	
-	NovaLog("On " + eventName + " (late=" + late + ") call " + DescribeFunction(call))
+	NovaLog("EVENTS", "On " + eventName + " (late=" + late + ") call " + DescribeFunction(call))
 }
 
 function DoEvent(eventName)
 {
 	if (eventName in g_eventFuncs)
 	{
-		NovaLog("Calling " + g_eventFuncs[eventName].length + " '" + eventName + "' callbacks")
+		NovaLog("EVENTS", "Calling " + g_eventFuncs[eventName].length + " '" + eventName + "' callbacks")
 		CallTheseFunctionsNow(...g_eventFuncs[eventName])
 	}
 }

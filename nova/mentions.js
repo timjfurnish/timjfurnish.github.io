@@ -43,7 +43,7 @@ function RedrawMentions()
 			const theString = "\\b(?:" + TurnNovaShorthandIntoRegex(entityNames) + ")\\b"
 			const exp = new RegExp(theString, "ig");
 
-			NovaLog("Searching for " + theString)
+			NovaLog("SEARCH", "Searching for " + theString)
 
 			for (var metadata of g_metaDataInOrder)
 			{
@@ -255,7 +255,7 @@ function SwitchToMentionsAndSearchEntity(txt)
 		}
 		else if (txt.toUpperCase() == name.arr[0].toUpperCase())
 		{
-			NovaLog("Suspicious! Text in '" + txt + "' NEARLY matches '" + name.arr[0] + "'")
+			NovaWarn("Suspicious! Text in '" + txt + "' NEARLY matches '" + name.arr[0] + "'")
 		}
 	}
 

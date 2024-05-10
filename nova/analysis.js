@@ -277,24 +277,21 @@ function ProcessInput()
 		try
 		{
 			const oldNumIssues = IssueGetTotal()
-
-			var txtInVeryRaw = txtInRaw.trim()
+			var txtInProcessed = txtInRaw.trim()
 			
-			if (txtInRaw != txtInVeryRaw)
+			if (txtInProcessed != txtInRaw)
 			{
-				IssueAdd("Paragraph starts and/or ends with space: " + FixStringHTML(txtInVeryRaw), "LEADING OR TRAILING SPACE")
+				IssueAdd("Paragraph starts and/or ends with space: " + FixStringHTML(txtInRaw), "LEADING OR TRAILING SPACE")
 			}
-
-			txtInVeryRaw = txtInRaw
 
 			for (var rule of workspace.replaceRules)
 			{
-				txtInRaw = txtInRaw.replace(rule.regex, rule.replaceWith)
+				txtInProcessed = txtInProcessed.replace(rule.regex, rule.replaceWith)
 			}
 
-			if (! ShouldIgnorePara(txtInRaw) && ! HandleNewHeading(workspace, txtInRaw, txtInVeryRaw))
+			if (! ShouldIgnorePara(txtInProcessed) && ! HandleNewHeading(workspace, txtInProcessed, txtInRaw))
 			{
-				var txtInProcessed = txtInRaw.trim()
+				var txtInProcessed = txtInProcessed.trim()
 				var storeAsFragments = []
 
 				workspace.foundTextBetweenHeadings = true
@@ -306,7 +303,7 @@ function ProcessInput()
 
 				if ((talkyNonTalky.length & 1) == 0)
 				{
-					IssueAdd("Found odd number of quotation marks in " + FixStringHTML(txtInRaw), "UNFINISHED QUOTE")
+					IssueAdd("Found odd number of quotation marks in " + FixStringHTML(txtInProcessed), "UNFINISHED QUOTE")
 				}
 				
 				var isSpeech = true
@@ -380,7 +377,7 @@ function ProcessInput()
 
 						if (! thisBunchOfFragments)
 						{
-							IssueAdd("Found empty speech in " + FixStringHTML(txtInRaw), "EMPTY SPEECH")
+							IssueAdd("Found empty speech in " + FixStringHTML(txtInProcessed), "EMPTY SPEECH")
 						}
 						else
 						{
@@ -512,7 +509,7 @@ function ProcessInput()
 					CheckFinalCharacter(txtInProcessed, isTreatingAsSpeech)
 				}
 				
-				const pushThis = {allOfIt:txtInVeryRaw, fragments:storeAsFragments, issues:IssueGetTotal() - oldNumIssues}
+				const pushThis = {allOfIt:txtInRaw, fragments:storeAsFragments, issues:IssueGetTotal() - oldNumIssues}
 				
 				if (bIgnoreFragments)
 				{

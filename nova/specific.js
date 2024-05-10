@@ -175,11 +175,11 @@ function SettingsLoad()
 	{
 		if (savedVersion == kCurrentSaveFormatVersion)
 		{
-			NovaLog("SETTINGS: Reading settings (v" + savedVersion + ".0)")
+			NovaLog("SETTINGS", "Reading settings (v" + savedVersion + ".0)")
 		}
 		else
 		{
-			NovaLog("SETTINGS: Reading and resaving settings (from v" + savedVersion + ".0 to v" + kCurrentSaveFormatVersion + ".0)")
+			NovaLog("SETTINGS", "Reading and resaving settings (from v" + savedVersion + ".0 to v" + kCurrentSaveFormatVersion + ".0)")
 			window.localStorage.setItem("nova_saveVersion", kCurrentSaveFormatVersion)
 		}
 
@@ -206,7 +206,7 @@ function SettingsLoad()
 	for (var [settingName, customFunc] of Object.entries(kSettingFunctions))
 	{
 		const param = g_tweakableSettings[settingName]
-		NovaLog("SETTINGS: Initialised '" + settingName + "' so calling " + DescribeFunction(customFunc) + " with " + GetDataTypeVerbose(param) + " '" + param + "'")
+		NovaLog("SETTINGS", "Initialised '" + settingName + "' so calling " + DescribeFunction(customFunc) + " with " + GetDataTypeVerbose(param) + " '" + param + "'")
 		customFunc(g_tweakableSettings[settingName])
 	}
 
@@ -216,7 +216,7 @@ function SettingsLoad()
 function SettingSave(name)
 {
 	var newValue = g_tweakableSettings[name]
-	NovaLog("SETTINGS: Saving " + GetDataTypeVerbose(newValue) + " '" + name + "'")
+	NovaLog("SETTINGS", "Saving " + GetDataTypeVerbose(newValue) + " '" + name + "'")
 	
 	// Some special case fun to save things in the right format...
 	if (Array.isArray(newValue))
@@ -381,8 +381,8 @@ function UserChangedSetting(name)
 	if (customFunc)
 	{
 		const param = g_tweakableSettings[name]
-		NovaLog("User changed setting '" + name + "' so calling " + DescribeFunction(customFunc) + " with " + GetDataTypeVerbose(param) + " '" + param + "'")
-		customFunc(g_tweakableSettings[name])
+		const reply = customFunc(g_tweakableSettings[name])
+		NovaLog("SETTINGS", "User changed setting '" + name + "' to " + GetDataTypeVerbose(param) + " '" + param + "' - callback returned " + GetDataTypeVerbose(reply) + " '" + reply + "'")
 	}
 	else if (name == "language")
 	{

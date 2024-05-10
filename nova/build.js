@@ -72,7 +72,7 @@ function RenderBarFor(val, scale, dp, suffix)
 	const num = val * scale
 	const greenness = num * 2
 	const col = "rgb(" + Math.floor(300 - greenness) + ", " + Math.floor(greenness) + ", " + Math.floor(255 - greenness) + ")"
-	return '<DIV STYLE="width:' + Math.floor(num) + 'px;background:' + col + '" CLASS="colourBar"><B><SMALL>' + ((dp === undefined) ? val : val.toFixed(dp)) + (suffix ?? '') + '</SMALL></B></DIV>'
+	return '<DIV STYLE="width:' + Math.floor(num) + 'px;background:' + col + '" CLASS="colourBar"><b>' + ((dp === undefined) ? val : val.toFixed(dp)) + "</b><small>" + (suffix ?? '') + '</small></DIV>'
 }
 
 function MakeUpdatingArea(toHere, name, extra)

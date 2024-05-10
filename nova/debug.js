@@ -5,14 +5,14 @@
 
 var g_canShowError = true
 
-function NovaLog(message)
+function NovaLog(type, message)
 {
-	console.log(message)
+	console.log(type + ": " + message)
 	const elem = document.getElementById("debugLog")
 
 	if (elem)
 	{
-		elem.innerHTML += "<div>" + message + "</div>"
+		elem.innerHTML += '<div><NOBR class="issueType" style="background:#FFFFFF"><BIG>' + type + '</BIG></NOBR> ' + message + "</div>"
 	}
 }
 

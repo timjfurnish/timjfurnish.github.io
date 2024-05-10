@@ -90,7 +90,7 @@ function ClearEarlyIssues()
 		}
 	}
 
-//	NovaLog("Reset disabled warnings to defaults: " + Object.keys(g_disabledWarnings))
+//	NovaLog("ISSUES", "Reset disabled warnings to defaults: " + Object.keys(g_disabledWarnings))
 }
 
 OnEvent("clear", false, ClearEarlyIssues)

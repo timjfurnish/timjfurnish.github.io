@@ -15,6 +15,8 @@ var g_metaDataSeenValues
 
 const kMetaDataDefaultDisplay = MakeSet("Words", "Estimated final words", "Percent done")
 const kMetaDataDefaultGroup = MakeSet("PART")
+const kCanDisplayAsTimeToRead = MakeSet("Words", "Estimated final words")
+const kWordsPerSecond = (210 / 60) // Average WPM apparently 183 out loud, 238 in head
 
 function MakeClearTally(createMentions)
 {
@@ -43,7 +45,7 @@ function MetaDataCombine(container, name, addThisValue)
 
 	if (! (name in container))
 	{
-		NovaLog("Adding " + name + " data '" + addThisValue + "' of type " + addThisType + " to container that only contains this data: [" + Object.keys(container).join(", ") + "]")
+		NovaLog("STATS", "Adding " + name + " data '" + addThisValue + "' of type " + addThisType + " to container that only contains this data: [" + Object.keys(container).join(", ") + "]")
 		container[name] = (addThisType == "number") ? 0 : {}
 	}
 
@@ -315,7 +317,7 @@ function MetaDataDrawTable()
 		
 		for (var colName of selectedColumns)
 		{
-			deets += "<TD CLASS=cellNoWrap>" + elem.info[colName] + "</TD>"
+			deets += "<TD CLASS=cellNoWrap><B>" + elem.info[colName] + "</B></TD>"
 			
 			seenThings[colName][elem.info[colName]] = true
 		}
@@ -367,7 +369,6 @@ function MetaDataDrawTable()
 	AddLastDeets()
 
 	// Now work out which of the visible metadata types has the fewest entries
-//	console.log(seenThings)
 
 	var colourBasedOn
 	var lowestSize
@@ -415,6 +416,16 @@ function MetaDataDrawTable()
 			selectedDisplay.push(name)
 		}
 	}
+	
+	function ExtraDeets(num, name)
+	{
+		if (name in kCanDisplayAsTimeToRead)
+		{
+			return ' &#x2022; ' + UtilFormatTime(num / kWordsPerSecond)
+		}
+		
+		return ""
+	}
 
 	for (var data of dataToDisplay)
 	{
@@ -447,14 +458,12 @@ function MetaDataDrawTable()
 			}
 			else
 			{
-				contents = RenderBarFor(value, 200.0 / maximums[name], 0, ' (' + (100 * value / g_metaDataTotals[name]).toFixed(2) + '%)')
+				var extra = value ? ' <B>(' + (100 * value / g_metaDataTotals[name]).toFixed(2) + '%)</B>' : ''
+				contents = RenderBarFor(value, 200.0 / maximums[name], 0, extra + ExtraDeets(value, name))
 			}
 
 			reply.push("<TD CLASS=cell>" + contents + "</TD>")
 		}
-
-		// DEBUG
-//		reply.push("<TD CLASS=cell>" + Object.entries(data.metaData).join(" ") + "</TD>")
 	}
 
 	// Only need to display total if we had any columns selected...
@@ -464,9 +473,10 @@ function MetaDataDrawTable()
 
 		for (var name of selectedDisplay)
 		{
-			if (g_metaDataTotals[name])
+			const value = g_metaDataTotals[name]
+			if (value)
 			{
-				reply.push('<TD CLASS="cell">' + Math.round(g_metaDataTotals[name]) + '</TD>')				
+				reply.push('<TD CLASS="cell"><B>' + Math.round(value) + "</B><SMALL>" + ExtraDeets(value, name) + '</SMALL></TD>')				
 			}
 			else
 			{
@@ -485,6 +495,8 @@ function TabFunctionStats(reply, thenCall)
 {
 	var options = []
 	var optionsDisplay = []
+	var optionsTextRow = []
+
 	const selectedColumns = Object.keys(g_metaDataAvailableColumns)
 
 	for (var colName of selectedColumns)
@@ -507,10 +519,11 @@ function TabFunctionStats(reply, thenCall)
 	
 //	console.log(sortData)
 
-	OptionsMakeSelect(options, "MetaDataDrawTable()", "Sort", "sort", sortData, "none")
+	OptionsMakeSelect(optionsTextRow, "MetaDataDrawTable()", "Sort", "sort", sortData, "none")
 
 	reply.push(OptionsConcat(options))
 	reply.push(OptionsConcat(optionsDisplay))
+	reply.push(OptionsConcat(optionsTextRow))
 	
 	MakeUpdatingArea(reply, "metaDataOutput")
 	thenCall.push(MetaDataDrawTable)
