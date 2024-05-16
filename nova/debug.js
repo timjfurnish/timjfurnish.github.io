@@ -4,6 +4,7 @@
 //==============================================
 
 var g_canShowError = true
+var g_baseTime = Date.now()
 
 function NovaLog(type, message)
 {
@@ -12,7 +13,7 @@ function NovaLog(type, message)
 
 	if (elem)
 	{
-		elem.innerHTML += '<div><NOBR class="issueType" style="background:#FFFFFF"><BIG>' + type + '</BIG></NOBR> ' + message + "</div>"
+		elem.innerHTML += '<div><b>' + (Date.now() - g_baseTime) + '&nbsp;</b><NOBR class="issueType" style="background:#FFFFFF"><BIG>' + type + '</BIG></NOBR> ' + message + "</div>"
 	}
 }
 
@@ -29,6 +30,7 @@ function NovaWarn(message)
 
 function NovaLogClear(message)
 {
+	g_baseTime = Date.now()
 	document.getElementById("debugLog").innerHTML = "<b>" + message + "</b>"
 }
 

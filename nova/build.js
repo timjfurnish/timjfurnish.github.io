@@ -191,6 +191,11 @@ function OptionsCommon(id, funcName, callFuncLate)
 	return 'onChange="' + onChange + '" id="' + id + '"'
 }
 
+function OptionsMakeLineHeading(options, txt)
+{
+	options.push('<B>' + txt + ':</B>&nbsp;')
+}
+
 function OptionsMakeCheckbox(options, funcName, idIn, label, defaultVal, callFuncLate)
 {
 	const id = OptionsMakeKey(g_selectedTabName, idIn, defaultVal ? true : false)

@@ -6,21 +6,40 @@
 var g_readSentenceNum = 0
 var g_voiceLookUp = {}
 var g_voiceLanguages = []
+var g_currentSpeaky
+
+function OnReaderError()
+{
+	NovaLog("SPEECH", "error")
+}
+
+function OnReaderPause()
+{
+	NovaLog("SPEECH", "pause")
+}
+
+function OnReaderBoundary()
+{
+	NovaLog("SPEECH", "boundary")
+}
 
 function SpeakUsingVoice(thingToSay, voiceType, onEnd)
 {
-	var speaky = new SpeechSynthesisUtterance(thingToSay)
+	g_currentSpeaky = new SpeechSynthesisUtterance(thingToSay)
 
-	console.log("[" + voiceType + "] " + thingToSay)
+	NovaLog("SPEECH", "[" + voiceType + "] " + thingToSay)
 
 	if (onEnd)
 	{
-		speaky.onend = onEnd
+		g_currentSpeaky.onend = onEnd
 	}
 
-	speaky.voice = g_voiceLookUp[g_tweakableSettings[voiceType]]
+	g_currentSpeaky.onerror = OnReaderError
+	g_currentSpeaky.onboundary = OnReaderBoundary
+	g_currentSpeaky.onpause = OnReaderPause
+	g_currentSpeaky.voice = g_voiceLookUp[g_tweakableSettings[voiceType]]
 	speechSynthesis.cancel()
-	speechSynthesis.speak(speaky)
+	speechSynthesis.speak(g_currentSpeaky)
 }
 
 function ReadVoices()

@@ -44,12 +44,20 @@ const kSettingsWhichProvideNames = MakeColourLookUpTable(["names", "names_places
 var g_tweakableSettings = {}
 var g_openTextAreas = {}
 
-function CopyToSetting([key, val])
+function InitSetting([key, val])
 {
-	g_tweakableSettings[key] = Array.isArray(val) ? [...val] : val
+	if (Array.isArray(val))
+	{
+		g_tweakableSettings[key] = OnlyKeepValid([...val]).sort()
+		NovaLog("SETTINGS", "Initialised setting '" + key + "' to " + g_tweakableSettings[key])
+	}
+	else
+	{
+		g_tweakableSettings[key] = val
+	}
 }
 
-Object.entries(kTweakableDefaults).forEach(CopyToSetting)
+Object.entries(kTweakableDefaults).forEach(InitSetting)
 
 const kSettingNames =
 {
@@ -142,7 +150,7 @@ function UpdateSettingFromText(name, type, savedSetting, loadingVersion)
 	if (type == 'array')
 	{
 		const splitCharacter = (loadingVersion == 1) ? ',' : '\n'
-		SettingUpdate(name, OnlyKeepValid(savedSetting.split(splitCharacter)), isLoading)
+		SettingUpdate(name, OnlyKeepValid(savedSetting.split(splitCharacter)).sort(), isLoading)
 	}
 	else if (type == 'number')
 	{
@@ -257,7 +265,7 @@ function SettingsGetNamesArrays()
 		for (var n of g_tweakableSettings[key])
 		{
 			var inner = []
-			for (var name of n.split(' '))
+			for (var name of OnlyKeepValid(n.split(' ')))
 			{
 				inner.push(name)
 			}
@@ -454,7 +462,7 @@ function SettingAskRevert(whichOne)
 {
 	if (confirm("Do you really want to revert '" + kSettingNames[g_currentOptions.settings.page][whichOne].split('|', 1)[0] + "' to its default value?"))
 	{
-		CopyToSetting([whichOne, kTweakableDefaults[whichOne]])
+		InitSetting([whichOne, kTweakableDefaults[whichOne]])
 		FillInSetting(whichOne)
 		UserChangedSetting(whichOne)
 	}

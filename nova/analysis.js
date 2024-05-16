@@ -258,6 +258,23 @@ function SplitIntoFragments(thisBunch)
 	}
 }
 
+function MakeRegexForSplittingIntoWords()
+{
+	var allowedInWords = kCharacterEmDash + "-.%#'&0123456789"
+
+	for (var chr of g_tweakableSettings.allowedCharacters)
+	{
+		if (! allowedInWords.includes(chr))
+		{
+			if (chr.toLowerCase() != chr.toUpperCase())
+			{
+				allowedInWords += chr
+			}
+		}
+	}
+	return new RegExp('[^' + EscapeRegExSpecialChars(allowedInWords) + ']+', 'i')
+}
+
 function ProcessInput()
 {
 	DoEvent("clear")
@@ -269,7 +286,8 @@ function ProcessInput()
 		badWords:MakeSet(...OnlyKeepValid(g_tweakableSettings.badWords.toLowerCase().split(" "))),
 		replaceRules:SettingsGetReplacementRegularExpressionsArray(),
 		regexForRemovingValidChars:new RegExp('[' + EscapeRegExSpecialChars(g_tweakableSettings.allowedCharacters) + ']', 'g'),
-		treatNextParagraphAsSpeech:false
+		treatNextParagraphAsSpeech:false,
+		regexForSplittingIntoWords:MakeRegexForSplittingIntoWords()
 	}
 
 	for (var txtInRaw of GetInputText())
@@ -439,7 +457,7 @@ function ProcessInput()
 							}
 							
 							s = s.replace(/^['\u2026]+/, "").replace(/[,'\u2026]+$/, "")
-							const myListOfWords = OnlyKeepValid(s.split(/[^\u2014\-\.%#'a-zA-Z0-9\&]+/))
+							const myListOfWords = OnlyKeepValid(s.split(workspace.regexForSplittingIntoWords))
 
 							if (myListOfWords.length)
 							{

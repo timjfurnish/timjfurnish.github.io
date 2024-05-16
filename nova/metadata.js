@@ -155,6 +155,7 @@ function MetaDataSet(key, val)
 
 	g_metaDataCurrent[key] = val
 	g_metaDataCurrentContainsToDo = false
+	g_metaDataCurrentCompleteness = 100
 }
 
 function MetaDataInformFoundToDo(foundInText)
@@ -190,6 +191,10 @@ SetMarkupFunction('%', valueTxt =>
 	else if (g_metaDataTally.Sentences)
 	{
 		IssueAdd("Ignoring badly placed completeness value " + value + " after already reading " + g_metaDataTally.Sentences + " sentences", "IGNORED COMPLETENESS")
+	}
+	else if (g_metaDataCurrentCompleteness == value)
+	{
+		IssueAdd("Completeness is already " + value + "%")
 	}
 	else
 	{
@@ -246,7 +251,7 @@ function MetaDataDrawTable()
 	const estimatedSize = g_metaDataTotals["Estimated final words"]
 	if (estimatedSize)
 	{
-		reply.push("<H4>Complete: " + (100 * g_metaDataTotals.Words / estimatedSize).toFixed(2) + "%</H4>")
+		reply.push("<H4>Complete: " + (100 * g_metaDataTotals.Words / estimatedSize).toFixed(2) + "<SMALL>%</SMALL></H4>")
 	}
 
 	TableOpen(reply)
@@ -458,7 +463,7 @@ function MetaDataDrawTable()
 			}
 			else
 			{
-				var extra = value ? ' <B>(' + (100 * value / g_metaDataTotals[name]).toFixed(2) + '%)</B>' : ''
+				var extra = value ? ' <B>(' + (100 * value / g_metaDataTotals[name]).toFixed(2) + '<SMALL>%</SMALL>)</B>' : ''
 				contents = RenderBarFor(value, 200.0 / maximums[name], 0, extra + ExtraDeets(value, name))
 			}
 
@@ -521,8 +526,10 @@ function TabFunctionStats(reply, thenCall)
 
 	OptionsMakeSelect(optionsTextRow, "MetaDataDrawTable()", "Sort", "sort", sortData, "none")
 
-	reply.push(OptionsConcat(options))
-	reply.push(OptionsConcat(optionsDisplay))
+	reply.push("<B>Split into rows using:</B><BR>")
+	reply.push(OptionsConcat(options) + "<BR>")
+	reply.push("<B>Show data columns:</B><BR>")
+	reply.push(OptionsConcat(optionsDisplay) + "<BR>")
 	reply.push(OptionsConcat(optionsTextRow))
 	
 	MakeUpdatingArea(reply, "metaDataOutput")
