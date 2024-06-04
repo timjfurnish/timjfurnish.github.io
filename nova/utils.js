@@ -77,7 +77,7 @@ function FixStringHTML(stringIn)
 
 function AddEscapeChars(stringIn)
 {
-	return stringIn.replace(/\&/g, '&amp;').replace(/\[/g, '&lt;').replace(/\]/g, '&gt;')
+	return stringIn.replace(/\&/g, '&amp;').replace(/\[/g, '&lt;').replace(/\]/g, '&gt;').replace(/\'/g, '&apos;').replace(/\"/g, '&quot;')
 }
 
 function Highlighter(matched)
@@ -244,7 +244,7 @@ function CallNextQueuedFunction()
 	const queue = DescribeFunctions(g_functionsStillToCall)
 
 	const func = g_functionsStillToCall.shift()
-//	NovaLog("QUEUE", "Calling queued " + DescribeFunction(func))
+//	NovaLog("Calling queued " + DescribeFunction(func))
 
 	UpdateDebugListOfRunningFunctions()
 
@@ -264,7 +264,7 @@ function CallNextQueuedFunction()
 
 	if (g_functionsStillToCall.length == 0)
 	{
-		NovaLog("QUEUE", "Function queue changed from '" + queue + "' to empty")
+		NovaLog("Function queue changed from '" + queue + "' to empty")
 		CallTheseFunctionsNow(...g_onQueueEmpty)
 		g_onQueueEmpty = []
 	}
@@ -274,7 +274,7 @@ function CallNextQueuedFunction()
 
 		if (newQueue != queue)
 		{
-			NovaLog("QUEUE", "Function queue changed from '" + queue + "' to '" + newQueue + "'")
+			NovaLog("Function queue changed from '" + queue + "' to '" + newQueue + "'")
 		}
 	}
 }
@@ -287,7 +287,7 @@ function QueueFunction(func)
 	}
 	else if (g_functionsStillToCall.includes(func))
 	{
-//		NovaLog("QUEUE", "Not queueing " + DescribeFunction(func) + " at it's already in the queue")
+//		NovaLog("Not queueing " + DescribeFunction(func) + " at it's already in the queue")
 		return
 	}
 	
@@ -305,7 +305,7 @@ function CallTheseFunctionsNow(...list)
 {
 	if (list?.length)
 	{
-		NovaLog("QUEUE", "Calling these functions immediately: " + DescribeFunctions(list))
+		NovaLog("Calling these functions immediately: " + DescribeFunctions(list))
 		
 		for (var func of list)
 		{
@@ -331,14 +331,14 @@ function OnEvent(eventName, late, call)
 {
 	(eventName in g_eventFuncs) ? late ? g_eventFuncs[eventName].push(call) : g_eventFuncs[eventName].unshift(call) : (g_eventFuncs[eventName] = [call])
 	
-	NovaLog("EVENTS", "On " + eventName + " (late=" + late + ") call " + DescribeFunction(call))
+	NovaLog("On " + eventName + " (late=" + late + ") call " + DescribeFunction(call))
 }
 
 function DoEvent(eventName)
 {
 	if (eventName in g_eventFuncs)
 	{
-		NovaLog("EVENTS", "Calling " + g_eventFuncs[eventName].length + " '" + eventName + "' callbacks")
+		NovaLog("Calling " + g_eventFuncs[eventName].length + " '" + eventName + "' callbacks")
 		CallTheseFunctionsNow(...g_eventFuncs[eventName])
 	}
 }

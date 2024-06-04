@@ -6,14 +6,26 @@
 var g_canShowError = true
 var g_baseTime = Date.now()
 
-function NovaLog(type, message)
+function NovaLog(message)
 {
-	console.log(type + ": " + message)
+	const caller = NovaLog.caller?.name
+	
+	if (caller)
+	{
+		console.log(caller + " - " + message)
+		message = '<NOBR class="issueType" style="background:#FFFFFF"><BIG>' + caller + '</BIG></NOBR> ' + AddEscapeChars(message)
+	}
+	else
+	{
+		console.log(message)
+		message = AddEscapeChars(message)
+	}
+	
 	const elem = document.getElementById("debugLog")
 
 	if (elem)
 	{
-		elem.innerHTML += '<div><b>' + (Date.now() - g_baseTime) + '&nbsp;</b><NOBR class="issueType" style="background:#FFFFFF"><BIG>' + type + '</BIG></NOBR> ' + message + "</div>"
+		elem.innerHTML += '<div><b>' + (Date.now() - g_baseTime) + '</b> ' + message + "</div>"
 	}
 }
 
@@ -48,6 +60,6 @@ function Assert(condition, err)
 {
 	if (! condition)
 	{
-		ShowError("Assert failed!")
+		ShowError("Assert failed! " + (err ?? "No additional details provided"))
 	}
 }

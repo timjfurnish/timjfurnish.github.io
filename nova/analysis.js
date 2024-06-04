@@ -98,9 +98,11 @@ function CheckStringForEvenBraces(txtIn)
 
 function CheckParagraphForIssues(txtIn)
 {
-	if (! g_tweakableSettings.allowedStartCharacters.includes(txtIn[0].toUpperCase()))
+	const firstCharacter = txtIn[0].toUpperCase()
+	
+	if (! g_tweakableSettings.allowedStartCharacters.includes(firstCharacter))
 	{
-		IssueAdd("First character of " + FixStringHTML(txtIn) + " is not an allowed start character " + FixStringHTML(g_tweakableSettings.allowedStartCharacters), "ILLEGAL START CHARACTER")
+		IssueAdd("First character " + FixStringHTML(firstCharacter) + " of " + FixStringHTML(txtIn) + " is not an allowed start character " + FixStringHTML(g_tweakableSettings.allowedStartCharacters), "ILLEGAL START CHARACTER", firstCharacter)
 	}		
 
 	const braceError = CheckStringForEvenBraces(txtIn)
@@ -192,10 +194,15 @@ function HandleNewHeading(workspace, txtInRaw, displayThis)
 {
 	for (var [k,v,allowFunc] of kIllegalSubstrings)
 	{
-		const changed = txtInRaw.replace(v, matched => (allowFunc?.(matched)) ? matched : HighlighterWithDots(matched))
+		var grabEmHere = {}
+		const changed = txtInRaw.replace(v, matched => (allowFunc?.(matched)) ? matched : (grabEmHere[matched] = HighlighterWithDots(matched)))
+
 		if (changed != txtInRaw)
 		{
-			IssueAdd("Found " + k + " in " + FixStringHTML(changed), k.toUpperCase())
+			for (laa of Object.keys(grabEmHere))
+			{
+				IssueAdd("Found " + FixStringHTML(laa) + " in " + FixStringHTML(changed), k.toUpperCase(), laa)
+			}
 		}
 	}
 
@@ -409,12 +416,12 @@ function ProcessInput()
 
 							if (! g_tweakableSettings.endOfSpeech.includes(finalCharacter))
 							{
-								IssueAdd("Final character of dialogue " + FixStringHTML(eachIn) + " is " + FixStringHTML(finalCharacter) + " (valid characters are " + FixStringHTML(g_tweakableSettings.endOfSpeech.split('').join(' ')) + ")", "INVALID SPEECH CHARACTER")
+								IssueAdd("Final character of dialogue " + FixStringHTML(eachIn) + " is " + FixStringHTML(finalCharacter) + " (valid characters are " + FixStringHTML(g_tweakableSettings.endOfSpeech.split('').join(' ')) + ")", "INVALID FINAL SPEECH CHARACTER", finalCharacter)
 							}
 
 							if (! g_tweakableSettings.startOfSpeech.includes(firstCharacter))
 							{
-								IssueAdd("First character of dialogue " + FixStringHTML(eachIn) + " is " + FixStringHTML(firstCharacter) + " (valid characters are " + FixStringHTML(g_tweakableSettings.startOfSpeech.split('').join(' ')) + ")", "INVALID SPEECH CHARACTER")
+								IssueAdd("First character of dialogue " + FixStringHTML(eachIn) + " is " + FixStringHTML(firstCharacter) + " (valid characters are " + FixStringHTML(g_tweakableSettings.startOfSpeech.split('').join(' ')) + ")", "INVALID FIRST SPEECH CHARACTER", firstCharacter)
 							}
 						}
 					}
@@ -453,7 +460,7 @@ function ProcessInput()
 							const remains = s.replace(workspace.regexForRemovingValidChars, '')
 							if (remains != '')
 							{
-								IssueAdd("Characters " + FixStringHTML(remains) + " found in " + FixStringHTML(s), "ILLEGAL CHARACTERS")
+								IssueAdd("Characters " + FixStringHTML(remains) + " found in " + FixStringHTML(s), "ILLEGAL CHARACTERS", remains)
 							}
 							
 							s = s.replace(/^['\u2026]+/, "").replace(/[,'\u2026]+$/, "")

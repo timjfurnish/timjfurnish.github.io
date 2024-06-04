@@ -43,7 +43,7 @@ function RedrawMentions()
 			const theString = "\\b(?:" + TurnNovaShorthandIntoRegex(entityNames) + ")\\b"
 			const exp = new RegExp(theString, "ig");
 
-			NovaLog("SEARCH", "Searching for " + theString)
+			NovaLog("Searching for " + theString)
 
 			for (var metadata of g_metaDataInOrder)
 			{

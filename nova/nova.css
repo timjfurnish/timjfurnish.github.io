@@ -7,6 +7,10 @@ td
 {
 	font-family:Arial, Helvetica, sans-serif;
 }
+li
+{
+	margin-bottom:2px;
+}
 body
 {
 	font-size:15px;
@@ -95,7 +99,7 @@ input[type=text]
 	width:75%;
 	height:100px;
 }
-.issueType
+.issueType, .fixMe
 {
 	border:1px solid rgba(0, 0, 0, 0.2);
 	border-radius:4px;
@@ -103,6 +107,20 @@ input[type=text]
 	padding:1px 2px 1px 2px;
 	font-size:70%;
 	font-family:Arial, Helvetica, sans-serif;
+}
+.fixMe
+{
+	border:1px solid rgba(100, 127, 100, 0.85);
+	border-radius:7px;
+	padding:0px 4px 0px 4px;
+	font-weight:1000;
+	cursor:pointer;
+	font-size:80%;
+	background-color:rgba(200, 255, 200, 0.85);
+}
+.fixMe:hover
+{
+	background-color:rgba(230, 255, 230, 1);
 }
 .tabSelected, .tabDeselected
 {

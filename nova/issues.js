@@ -18,7 +18,7 @@ function BuildWarningNamesList()
 		// Start on
 		'NUMBERS', 'TODO', 'DISALLOWED WORD', 'ILLEGAL CHARACTERS',
 		'LEADING OR TRAILING SPACE', 'PUNCTUATION COMBO', 'BRACKETS',
-		'INVALID SPEECH CHARACTER', 'INVALID FINAL CHARACTER', 'IGNORED COMPLETENESS',
+		'INVALID FINAL SPEECH CHARACTER', 'INVALID FIRST SPEECH CHARACTER', 'INVALID FINAL CHARACTER', 'IGNORED COMPLETENESS',
 		'SPLIT INFINITIVE', 'CHAPTER NAME IN CHAPTER', 'ILLEGAL MOVE BETWEEN LOCATIONS',
 		'UNFINISHED QUOTE', 'CAPITALS', 'SPACE BEFORE PUNCTUATION',
 		'MARKUP ERROR', 'SPACE IN SPEECH', 'EMPTY SPEECH', 'SETTINGS',
@@ -33,7 +33,15 @@ function BuildWarningNamesList()
 	return MakeColourLookUpTable(list)
 }
 
+var g_autoFixIssues = {}
 var g_warningNames = BuildWarningNamesList()
+
+function IssueAutoFixDefine(type, func)
+{
+	Assert(type in g_warningNames, type + " is not in warning name list")
+	Assert(! (type in g_autoFixIssues), type + " already has an auto-fix function")
+	g_autoFixIssues[type] = func
+}
 
 TabDefine("issues", function(reply, thenCall)
 {
@@ -90,7 +98,7 @@ function ClearEarlyIssues()
 		}
 	}
 
-//	NovaLog("ISSUES", "Reset disabled warnings to defaults: " + Object.keys(g_disabledWarnings))
+//	NovaLog("Reset disabled warnings to defaults: " + Object.keys(g_disabledWarnings))
 }
 
 OnEvent("clear", false, ClearEarlyIssues)
@@ -100,7 +108,13 @@ function IssueGetTotal()
 	return g_issueCount
 }
 
-function IssueAdd(addThis, theType, overrideIssueHeading)
+function AutoFix(theType, param)
+{
+	NovaLog("Auto-fixing " + theType + " issue, param=" + param + " by calling " + g_autoFixIssues[theType])
+	g_autoFixIssues[theType]?.(param)
+}
+
+function IssueAdd(addThis, theType, fixMeParam, overrideIssueHeading)
 {
 	//	NovaWarn(issueHeading + " - " + addThis)
 
@@ -120,6 +134,13 @@ function IssueAdd(addThis, theType, overrideIssueHeading)
 		}
 		
 		addThis = '<NOBR class="issueType" style="background:' + col + '">' + theType + '</NOBR> ' + addThis
+		
+		if (fixMeParam && (theType in g_autoFixIssues))
+		{
+			const callThis = 'AutoFix(\'' + theType + '\', \'' + AddEscapeChars(fixMeParam.replace("'", "\\'")) + '\')'
+			NovaLog("Adding FIX ME button which calls " + callThis)
+			addThis += ' <NOBR class="fixMe" onClick="' + callThis + '">FIX ME</NOBR>'
+		}
 	}
 
 	Tally(g_issueStats, theType ?? "NO TYPE")
@@ -146,7 +167,7 @@ OnEvent("processingDone", false, () =>
 		{
 			if (val.seen == 0)
 			{
-				IssueAdd("Name " + FixStringHTML(key) + " not present in text", "UNSEEN NAMES", "Entire text")
+				IssueAdd("Name " + FixStringHTML(key) + " not present in text", "UNSEEN NAMES", undefined, "Entire text")
 			}
 		}
 	}

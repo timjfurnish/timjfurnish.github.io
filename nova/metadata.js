@@ -45,7 +45,7 @@ function MetaDataCombine(container, name, addThisValue)
 
 	if (! (name in container))
 	{
-		NovaLog("STATS", "Adding " + name + " data '" + addThisValue + "' of type " + addThisType + " to container that only contains this data: [" + Object.keys(container).join(", ") + "]")
+		NovaLog("Adding " + name + " data '" + addThisValue + "' of type " + addThisType + " to container that only contains this data: [" + Object.keys(container).join(", ") + "]")
 		container[name] = (addThisType == "number") ? 0 : {}
 	}
 

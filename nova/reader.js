@@ -10,24 +10,24 @@ var g_currentSpeaky
 
 function OnReaderError()
 {
-	NovaLog("SPEECH", "error")
+	NovaLog("error")
 }
 
 function OnReaderPause()
 {
-	NovaLog("SPEECH", "pause")
+	NovaLog("pause")
 }
 
 function OnReaderBoundary()
 {
-	NovaLog("SPEECH", "boundary")
+	NovaLog("boundary")
 }
 
 function SpeakUsingVoice(thingToSay, voiceType, onEnd)
 {
 	g_currentSpeaky = new SpeechSynthesisUtterance(thingToSay)
 
-	NovaLog("SPEECH", "[" + voiceType + "] " + thingToSay)
+	NovaLog("[" + voiceType + "] " + thingToSay)
 
 	if (onEnd)
 	{
@@ -68,7 +68,7 @@ function ReadVoices()
 			}
 		}
 		g_voiceLanguages = Object.keys(languages).sort()
-		NovaLog("VOICE", "Of " + voices.length + " total voices, " + Object.keys(g_voiceLookUp).length + " '" + wantLang + "' voices added to look-up table (" + g_voiceLanguages.length + " languages)")
+		NovaLog("Of " + voices.length + " total voices, " + Object.keys(g_voiceLookUp).length + " '" + wantLang + "' voices added to look-up table (" + g_voiceLanguages.length + " languages)")
 	}
 	catch (error)
 	{

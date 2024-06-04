@@ -25,7 +25,7 @@ function TabDefine(tabName, myFunction, displayNameOverride, tooltip)
 
 function SetTabTitle(tabName, text)
 {
-	NovaLog("TABS", "Setting extra text for tab " + tabName + " to " + text)
+	NovaLog("Setting extra text for tab " + tabName + " to " + text)
 	var tabby = document.getElementById("tabText_" + tabName)
 	tabby.innerHTML = BuildTabDisplayText(tabName, text)
 }
@@ -116,11 +116,11 @@ function ShowContentForSelectedTab()
 	const page = g_currentOptions[g_selectedTabName]?.page
 	if (page === undefined)
 	{
-		NovaLog("TABS", "Showing contents for '" + g_selectedTabName + "' tab")
+		NovaLog("Showing contents for '" + g_selectedTabName + "' tab")
 	}
 	else
 	{
-		NovaLog("TABS", "Showing contents for '" + g_selectedTabName + "' tab, page '" + page + "'")
+		NovaLog("Showing contents for '" + g_selectedTabName + "' tab, page '" + page + "'")
 	}
 
 	g_tabFunctions[g_selectedTabName].func(displayThis, thenCall)

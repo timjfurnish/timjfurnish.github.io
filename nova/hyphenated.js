@@ -128,7 +128,7 @@ function TimeSlicedCallFuncForAllKeys(container, markerName, thisFunction, numPe
 
 	if (countDone >= entries.length)
 	{
-		NovaLog("HYPHEN CHECK", "Finished " + countDone + " calls to " + DescribeFunction(thisFunction) + " (" + markerName + ")")
+		NovaLog("Finished " + countDone + " calls to " + DescribeFunction(thisFunction) + " (" + markerName + ")")
 		return true
 	}
 	
@@ -168,7 +168,7 @@ function HyphenCheckAddCustom(beforeHyphen, afterHyphen, wildcardCollection)
 			for (var splitAfter of afterHyphenSplit)
 			{
 				const key = splitBefore + "-" + splitAfter
-//				NovaLog("HYPHEN CHECK", "Adding '" + key + "'")
+//				NovaLog("Adding '" + key + "'")
 				g_hyphenCheckWIP[key] = {}
 				if (key.includes("*"))
 				{
@@ -198,7 +198,7 @@ function HyphenCheckFirstPass()
 	// Find things with hyphens in document
 	var countEm = {}
 	HuntFor(/\b\w+[\w'\-]*-[\w']\w+\b/g, matched => Tally(countEm, matched.toLowerCase()), true)
-	NovaLog("HYPHEN CHECK", "Doing HyphenCheckFirstPass: countEm contains " + Object.keys(countEm).length + " entries")
+	NovaLog("Doing HyphenCheckFirstPass: countEm contains " + Object.keys(countEm).length + " entries")
 
 	// Build full data structure
 	g_hyphenCheckWIP = {}
@@ -210,7 +210,7 @@ function HyphenCheckFirstPass()
 		HyphenCheckAddCustom(...custom.split('-', 2), checksWithWildcard)
 	}
 	
-	NovaLog("HYPHEN CHECK", "g_hyphenCheckWIP contains " + Object.keys(g_hyphenCheckWIP).length + " entries")
+	NovaLog("g_hyphenCheckWIP contains " + Object.keys(g_hyphenCheckWIP).length + " entries")
 	
 	for (var [key, value] of Object.entries(countEm))
 	{
@@ -220,7 +220,7 @@ function HyphenCheckFirstPass()
 	}
 	
 	QueueFunction(HyphenCheckFindWithSpaces)
-	NovaLog("HYPHEN CHECK", "HyphenCheckFirstPass ending")
+	NovaLog("HyphenCheckFirstPass ending")
 }
 
 function HyphenCheckShowGoButton()
