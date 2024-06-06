@@ -72,7 +72,7 @@ function MakeParamsString(...theParams)
 
 function FixStringHTML(stringIn)
 {
-	return "<B ID=issueText>" + AddEscapeChars(stringIn) + "</B>"
+	return "<B ID=issueText>" + AddEscapeChars(stringIn + "") + "</B>"
 }
 
 function AddEscapeChars(stringIn)
@@ -82,12 +82,12 @@ function AddEscapeChars(stringIn)
 
 function Highlighter(matched)
 {
-	return '<span class="highlighter">' + matched + '</span>'
+	return '<span class=highlighter>' + matched + '</span>'
 }
 
 function HighlighterWithDots(matched)
 {
-	return '<span class="highlighterWithDots">' + matched + '</span>'
+	return '<span class=highlighterWithDots>' + matched + '</span>'
 }
 
 function TurnNovaShorthandIntoRegex(txt)
@@ -187,8 +187,9 @@ function Tally(toHere, key, num)
 		num = 1
 	}
 
-
 	(key in toHere) ? toHere[key] += num : (toHere[key] = num)
+	
+	return toHere[key]
 }
 
 //---------------------------

@@ -58,6 +58,34 @@ function TableClose(reply)
 	reply.push("</TABLE>")	
 }
 
+function TableShowTally(tally)
+{
+	var reply = []
+	const keysInOrder = Object.keys(tally).sort((p1, p2) => (tally[p2] - tally[p1]))
+	var total = 0
+
+	TableOpen(reply)
+	TableAddHeading(reply, "Text")
+	TableAddHeading(reply, "Count")
+	
+	for (var key of keysInOrder)
+	{
+		TableNewRow(reply)
+		reply.push('<td class=cellNoWrap>' + key + '</td><td align=right class=cell>' + tally[key] + '</td>')
+		total += tally[key]
+	}
+
+	if (keysInOrder.length > 1)
+	{
+		TableNewRow(reply)
+		reply.push('<td class=cellNoWrap><b>TOTAL</b></td><td align=right class=cell>' + total + '</td>')
+	}
+	
+	TableClose(reply)
+
+	return reply.join('')
+}
+
 //=======================
 // HTML BITS
 //=======================

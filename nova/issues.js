@@ -19,7 +19,7 @@ function BuildWarningNamesList()
 		'NUMBERS', 'TODO', 'DISALLOWED WORD', 'ILLEGAL CHARACTERS',
 		'LEADING OR TRAILING SPACE', 'PUNCTUATION COMBO', 'BRACKETS',
 		'INVALID FINAL SPEECH CHARACTER', 'INVALID FIRST SPEECH CHARACTER', 'INVALID FINAL CHARACTER', 'IGNORED COMPLETENESS',
-		'SPLIT INFINITIVE', 'CHAPTER NAME IN CHAPTER', 'ILLEGAL MOVE BETWEEN LOCATIONS',
+		'SPLIT INFINITIVE', 'ADVERB WITH HYPHEN', 'CHAPTER NAME IN CHAPTER', 'ILLEGAL MOVE BETWEEN LOCATIONS',
 		'UNFINISHED QUOTE', 'CAPITALS', 'SPACE BEFORE PUNCTUATION',
 		'MARKUP ERROR', 'SPACE IN SPEECH', 'EMPTY SPEECH', 'SETTINGS',
 		'PUNCTUATION WITHOUT SPACE', 'ILLEGAL START CHARACTER', 'EMPTY WORD'
@@ -163,11 +163,11 @@ OnEvent("processingDone", false, () =>
 {
 	if (! g_disabledWarnings["UNSEEN NAMES"])
 	{
-		for (var [key, val] of Object.entries(g_nameLookup))
+		for (var data of g_nameLookup)
 		{
-			if (val.seen == 0)
+			if (data.grandTotal == 0)
 			{
-				IssueAdd("Name " + FixStringHTML(key) + " not present in text", "UNSEEN NAMES", undefined, "Entire text")
+				IssueAdd("Name " + FixStringHTML(data.means) + " not present in text", "UNSEEN NAMES", undefined, "Entire text")
 			}
 		}
 	}

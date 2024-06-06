@@ -45,7 +45,8 @@ const kIllegalSubstrings =
 	["double space", "  "],
 	["dubious punctuation combo", /[;:\-,\.\!\?][;:\-,\.\!\?]/g, txt => txt == "!?"],
 	["space before punctuation", / [;:,\.\!\?]/g],
-	["split infinitive", /\bto [a-z][a-z]+ly [a-z]+/gi, txt => g_tweakableSettings.splitInfinitiveIgnoreList.includes(txt)]
+	["split infinitive", /\bto [a-z][a-z]+ly [a-z]+/gi, txt => g_tweakableSettings.splitInfinitiveIgnoreList.includes(txt)],
+	["adverb with hyphen", /\b[a-z]+ly\-[a-z]+\b/gi, txt => g_tweakableSettings.adverbHyphenIgnoreList.includes(txt)]
 ]
 
 function SetUp()
@@ -137,20 +138,6 @@ function CheckEachWord(word, s, workspace)
 	{
 		MetaDataInformFoundToDo(s)
 	}
-
-	const name = g_nameLookup[wordLower]
-
-	if (name)
-	{
-		++ name.seen
-
-		if (! (word in g_permittedNameCapitalisations))
-		{
-			IssueAdd("Check capitalisation of " + FixStringHTML(word) + " in "  + FixStringHTML(s), "CAPITALS")			
-		}
-		
-		MetaDataIncreaseCount(name.means)
-	}
 	
 	const lastApostrophe = word.lastIndexOf("'")
 	if (lastApostrophe > 0)
@@ -195,7 +182,7 @@ function HandleNewHeading(workspace, txtInRaw, displayThis)
 	for (var [k,v,allowFunc] of kIllegalSubstrings)
 	{
 		var grabEmHere = {}
-		const changed = txtInRaw.replace(v, matched => (allowFunc?.(matched)) ? matched : (grabEmHere[matched] = HighlighterWithDots(matched)))
+		const changed = txtInRaw.replace(v, matched => (allowFunc?.(matched)) ? matched : (grabEmHere[matched] = true, HighlighterWithDots(matched)))
 
 		if (changed != txtInRaw)
 		{
@@ -540,6 +527,10 @@ function ProcessInput()
 				{
 					pushThis.ignoreFragments = true
 				}
+				else
+				{
+					HuntForEntities(txtInRaw)
+				}
 
 				g_metaDataGatherParagraphs.push(pushThis)
 			}
@@ -552,6 +543,21 @@ function ProcessInput()
 
 	DoEndOfChapterChecks(workspace)
 	CallTheseFunctions(AfterProcessInput)
+}
+
+function HuntForEntities(allOfIt)
+{
+	for (var eachEntity of g_nameLookup)
+	{
+		function FoundAMention(matched)
+		{
+			++ eachEntity.grandTotal
+			MetaDataIncreaseCount(eachEntity.means)
+			return ""
+		}
+
+		allOfIt.replace(eachEntity.regex, FoundAMention)
+	}
 }
 
 function AfterProcessInput()
