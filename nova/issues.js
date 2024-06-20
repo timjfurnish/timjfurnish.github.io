@@ -138,7 +138,6 @@ function IssueAdd(addThis, theType, fixMeParam, overrideIssueHeading)
 		if (fixMeParam && (theType in g_autoFixIssues))
 		{
 			const callThis = 'AutoFix(\'' + theType + '\', \'' + AddEscapeChars(fixMeParam.replace("'", "\\'")) + '\')'
-			NovaLog("Adding FIX ME button which calls " + callThis)
 			addThis += ' <NOBR class="fixMe" onClick="' + callThis + '">FIX ME</NOBR>'
 		}
 	}

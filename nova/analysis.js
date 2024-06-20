@@ -129,8 +129,8 @@ function CheckParagraphForIssues(txtIn)
 function CheckEachWord(word, s, workspace)
 {
 	const wordLower = word.toLowerCase()
-
-	if (wordLower in workspace.badWords)
+	
+	if (wordLower in workspace.plainBadWords)
 	{
 		IssueAdd("Found disallowed word " + FixStringHTML(word) + " in " + FixStringHTML(s), "DISALLOWED WORD")
 	}
@@ -138,6 +138,22 @@ function CheckEachWord(word, s, workspace)
 	{
 		MetaDataInformFoundToDo(s)
 	}
+	else if (! (wordLower in workspace.checkedWords))
+	{
+		for (var badWordRegEx of workspace.badWordRegExpressions)
+		{
+			if (wordLower.match(badWordRegEx))
+			{
+				IssueAdd("Found (regex " + badWordRegEx + ") disallowed word " + FixStringHTML(word) + " in " + FixStringHTML(s), "DISALLOWED WORD")
+				workspace.plainBadWords[wordLower] = true
+			}
+		}
+	}
+
+// optimisation!
+//	workspace.checkedWords[wordLower] = true
+	
+//	CheckForInternationalTally(wordLower)
 	
 	const lastApostrophe = word.lastIndexOf("'")
 	if (lastApostrophe > 0)
@@ -277,12 +293,48 @@ function ProcessInput()
 	var workspace =
 	{
 		stillLookingForChapterNameInChapter:null,
-		badWords:MakeSet(...OnlyKeepValid(g_tweakableSettings.badWords.toLowerCase().split(" "))),
+		checkedWords:[],
+		plainBadWords:{},
+		badWordRegExpressions:[],
 		replaceRules:SettingsGetReplacementRegularExpressionsArray(),
 		regexForRemovingValidChars:new RegExp('[' + EscapeRegExSpecialChars(g_tweakableSettings.allowedCharacters) + ']', 'g'),
 		treatNextParagraphAsSpeech:false,
 		regexForSplittingIntoWords:MakeRegexForSplittingIntoWords()
 	}
+
+	for (var badWord of OnlyKeepValid(g_tweakableSettings.badWords.toLowerCase().split(" ")))
+	{
+		if (badWord.includes('*'))
+		{
+			var useInRegEx = (badWord[0] == '*') ? badWord.substring(1) : ("^" + badWord)
+
+			if (useInRegEx.endsWith('*'))
+			{
+				useInRegEx = useInRegEx.slice(0, -1)
+			}
+			else
+			{
+				useInRegEx += "$"
+			}
+			
+			const myRegEx = new RegExp(useInRegEx)
+			if (myRegEx)
+			{
+//				NovaLog("Turned " + badWord + " into '" + useInRegEx + "' making " + myRegEx)
+				workspace.badWordRegExpressions.push(myRegEx)
+			}
+			else
+			{
+				IssueAdd("Failed to turn bad word string '" + badWord + "' into regular expression", "SETTINGS")
+			}
+		}
+		else
+		{
+			workspace.plainBadWords[badWord] = true
+		}
+	}
+	
+//	console.log(workspace)
 
 	for (var txtInRaw of GetInputText())
 	{
@@ -514,6 +566,10 @@ function ProcessInput()
 							}
 						}
 					}
+					else
+					{
+						NovaLog("No sentences in " + eachIn)
+					}
 				}
 				
 				if (bCanCheckFinalCharacter)
@@ -532,7 +588,7 @@ function ProcessInput()
 					HuntForEntities(txtInRaw)
 				}
 
-				g_metaDataGatherParagraphs.push(pushThis)
+				MetaDataDoneParagraph(pushThis)
 			}
 		}
 		catch(error)

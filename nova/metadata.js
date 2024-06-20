@@ -12,6 +12,9 @@ var g_metaDataCurrentCompleteness
 var g_metaDataGatherParagraphs
 var g_metaDataCurrentContainsToDo
 var g_metaDataSeenValues
+var g_totalParagraphs
+var g_metaDataMaxValues
+var g_metaDataLongestParagraphLength
 
 const kMetaDataDefaultDisplay = MakeSet("Words", "Estimated final words", "Percent done")
 const kMetaDataDefaultGroup = MakeSet("PART")
@@ -80,6 +83,8 @@ function MetaDataEndProcess()
 {
 	if (g_metaDataTally.Sentences)
 	{
+		g_totalParagraphs += g_metaDataTally.Paragraphs
+
 		if (g_metaDataCurrentCompleteness < 100 && ! g_metaDataCurrentContainsToDo)
 		{
 			IssueAdd("Completeness is " + g_metaDataCurrentCompleteness + " but there's no TODO in this section", "TODO")
@@ -102,6 +107,7 @@ function MetaDataEndProcess()
 		}
 		
 		var storeThis = {info:info, myParagraphs:g_metaDataGatherParagraphs}
+		Assert(g_metaDataGatherParagraphs.length == g_metaDataTally.Paragraphs, g_metaDataGatherParagraphs.length + " != " + g_metaDataTally.Paragraphs)
 
 		g_metaDataTally["Estimated final words"] = (g_metaDataTally.Words * 100) / g_metaDataCurrentCompleteness
 	
@@ -118,7 +124,6 @@ function MetaDataEndProcess()
 				
 				for (var [k, v] of Object.entries(val))
 				{
-//					console.log(key + ": " + k + "=" + v)
 					Tally(storeThis[key], k, v)
 				}
 			}
@@ -213,6 +218,9 @@ function MetaDataClear()
 	g_metaDataGatherParagraphs = []
 	g_metaDataCurrentContainsToDo = false
 	g_metaDataSeenValues = {}
+	g_totalParagraphs = 0
+	g_metaDataMaxValues = undefined
+	g_metaDataLongestParagraphLength = 0
 }
 
 OnEvent("processingDone", false, MetaDataEndProcess)
@@ -221,7 +229,17 @@ OnEvent("clear", false, MetaDataClear)
 function MetaDataProcessParagraph(numSentences)
 {
 	g_metaDataTally.Sentences += numSentences
-	++ g_metaDataTally.Paragraphs
+}
+
+function MetaDataDoneParagraph(pushThis)
+{
+	g_metaDataGatherParagraphs.push(pushThis)
+	g_metaDataTally.Paragraphs ++
+	
+	if (pushThis.allOfIt.length > g_metaDataLongestParagraphLength)
+	{
+		g_metaDataLongestParagraphLength = pushThis.allOfIt.length
+	}
 }
 
 function MetaDataAddWordCount(words, isSpeech)
@@ -406,7 +424,7 @@ function MetaDataDrawTable()
 			}
 		}
 	}
-
+	
 	// Sort
 	if (sort in maximums)
 	{
@@ -522,8 +540,6 @@ function TabFunctionStats(reply, thenCall)
 		OptionsMakeCheckbox(optionsDisplay, "MetaDataDrawTable()", "display_" + name, name, kMetaDataDefaultDisplay[name], true)
 	}
 	
-//	console.log(sortData)
-
 	OptionsMakeSelect(optionsTextRow, "MetaDataDrawTable()", "Sort", "sort", sortData, "none")
 
 	reply.push("<B>Split into rows using:</B><BR>")
@@ -535,3 +551,103 @@ function TabFunctionStats(reply, thenCall)
 	MakeUpdatingArea(reply, "metaDataOutput")
 	thenCall.push(MetaDataDrawTable)
 }
+
+TabDefine("graph", TabFunctionGraph, "&#x1F4C8;")
+
+function MetaDataDrawGraph()
+{
+	const canvas = document.getElementById("graphCanvas")
+	const drawToHere = canvas?.getContext("2d")
+	
+	if (drawToHere)
+	{
+		drawToHere.clearRect(0, 0, canvas.width, canvas.height)
+		
+		// Draw bg
+		var countParagraphs = 0
+		var lastX = 0
+
+		const colourUsing = g_currentOptions.graph.colourUsing
+		const colours = MakeColourLookUpTable(Object.keys(g_metaDataSeenValues[colourUsing]))
+
+		for (var elem of g_metaDataInOrder)
+		{
+			countParagraphs += elem.Paragraphs
+			const x = (countParagraphs / g_totalParagraphs) * canvas.width
+
+			drawToHere.beginPath()
+			drawToHere.fillStyle = colours[elem.info[colourUsing]]
+			drawToHere.rect(lastX, 0, x - lastX + 1, canvas.height)
+			drawToHere.fill()
+			lastX = x
+		}
+
+		// Draw lines
+		countParagraphs = 0
+		lastX = 0
+
+		drawToHere.fillStyle = "#00000040"
+
+		for (var elem of g_metaDataInOrder)
+		{
+			Assert(elem.Paragraphs == elem.myParagraphs.length, "Paragraph count mismatch, " + elem.Paragraphs + " != " + elem.myParagraphs.length + ": " + Object.values(elem.info).join('|'))
+
+			for (var para of elem.myParagraphs)
+			{
+				++ countParagraphs
+				
+				const val = para.allOfIt.length
+				
+				const x = (countParagraphs / g_totalParagraphs) * canvas.width
+				const y = (1 - val / g_metaDataLongestParagraphLength) * canvas.height
+
+				drawToHere.beginPath()
+				drawToHere.rect(lastX - 1, y, x - lastX + 2, canvas.height - y)
+				drawToHere.fill()
+
+				lastX = x
+			}
+		}
+
+		drawToHere.beginPath()
+		drawToHere.strokeStyle = "#000000"
+		drawToHere.moveTo(0, 0)
+		drawToHere.lineTo(0, canvas.height)
+		drawToHere.lineTo(canvas.width, canvas.height)
+		drawToHere.lineTo(canvas.width, 0)
+		drawToHere.lineTo(0, 0)
+		drawToHere.stroke()
+	}
+}
+
+function CalcGraphCanvasWidth()
+{
+	return Math.max(window.innerWidth - 125, 870)
+}
+
+function TabFunctionGraph(reply, thenCall)
+{
+	var nameData = {}
+
+	for (var eachCol of Object.keys(g_metaDataAvailableColumns))
+	{
+		nameData[eachCol] = eachCol
+	}
+
+	var options = []
+	OptionsMakeSelect(options, "MetaDataDrawGraph()", "Colour using", "colourUsing", nameData, "CHAPTER", true)
+	reply.push(OptionsConcat(options))
+	reply.push("<BR><CANVAS WIDTH=" + CalcGraphCanvasWidth() + " HEIGHT=300 ID=graphCanvas></CANVAS>")
+	thenCall.push(MetaDataDrawGraph)
+}
+
+window.addEventListener('resize', function(theEvent)
+{
+	const elem = document.getElementById("graphCanvas")
+	
+	if (elem)
+	{
+		elem.width = CalcGraphCanvasWidth()
+		MetaDataDrawGraph()
+	}
+}, true);

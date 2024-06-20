@@ -94,6 +94,13 @@ input[type=text]
   ) 100% 50% / 100% 100% repeat-x;
 	max-height: 80px
 }
+.textFadeOut
+{
+	mask: linear-gradient(to bottom, 
+      rgba(0,0,0, 1) 0,   rgba(0,0,0, 1) 20%, 
+      rgba(0,0,0, 0) 95%, rgba(0,0,0, 0) 0
+  ) 100% 50% / 100% 100% repeat-x;
+}
 .docIn
 {
 	width:75%;

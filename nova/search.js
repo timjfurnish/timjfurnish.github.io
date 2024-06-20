@@ -41,7 +41,6 @@ function RedrawSearchResults()
 		{
 			var output = []
 			var grabEmHere = {}
-			var aBreak = ""
 			const theString = "\\b(?:" + TurnNovaShorthandIntoRegex(entityNames) + ")\\b"
 			const exp = new RegExp(theString, "ig");
 
@@ -49,32 +48,62 @@ function RedrawSearchResults()
 
 			for (var metadata of g_metaDataInOrder)
 			{
-				var showHeading = "<H3>" + MetaDataMakeFragmentDescription(metadata.info) + "</H3>"
-				var before = ""
+				var addAfterSkippedLines = "<H3>" + MetaDataMakeFragmentDescription(metadata.info) + "</H3>"
+				var keepShowingCountdown = 0
+				var showThisToo = null
+				var skippedLines = true
 
 				for (var para of metadata.myParagraphs)
 				{
-					var nextBefore = aBreak
-
 					if (! para.ignoreFragments)
 					{
 						var s2 = para.allOfIt.replace(exp, matched => Tally(grabEmHere, matched) && Highlighter(matched))
-
-						if (para.allOfIt != s2)
+						const foundTextHere = (para.allOfIt != s2)
+						
+						if (foundTextHere || keepShowingCountdown)
 						{
-							if (showHeading)
+							var before = ""
+
+							if (foundTextHere)
 							{
-								before = showHeading
-								showHeading = false
+								keepShowingCountdown = 1
+							}
+							else
+							{
+								-- keepShowingCountdown
+							}
+							
+							if (skippedLines)
+							{
+								before = addAfterSkippedLines
+								skippedLines = false
+								addAfterSkippedLines = "<br>"
 							}
 
+							if (showThisToo)
+							{
+								output.push(before + kIndent + showThisToo)
+								before = ""
+							}
 							output.push(before + kIndent + TurnRedIf(s2, para.issues))
-							nextBefore = ""
-							aBreak = "<br>"
+							showThisToo = null
 						}
+						else
+						{
+							if (showThisToo)
+							{
+								skippedLines = true
+							}
+
+							showThisToo = s2
+						}						
 					}
-					
-					before = nextBefore
+					else
+					{
+						keepShowingCountdown = 0
+						showThisToo = null
+						skippedLines = true
+					}
 				}
 			}
 			

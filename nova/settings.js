@@ -635,7 +635,6 @@ TabDefine("settings", function(reply, thenCall)
 			}
 		
 			const tagBits = theType + ' onChange="UserChangedSetting(\'' + k + '\')" ' + (classList.length ? 'class="' + classList.join(' ') + '" ' : '') + 'id="setting_' + k + '"'
-			console.log(tagBits)
 			SettingsAdd(reply, displayName, '<nobr><' + tagBits + '>' + theMiddle + '</' + theType.split(' ', 1)[0] + '>' + revert + "</nobr>", "cellNoWrap", expandId)
 		}
 		else

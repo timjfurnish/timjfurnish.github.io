@@ -40,6 +40,14 @@ function NovaWarn(message)
 	}
 }
 
+function Assert(condition, msg)
+{
+	if (! condition)
+	{
+		NovaWarn((typeof(msg) == "function") ? msg() : msg)
+	}
+}
+
 function NovaLogClear(message)
 {
 	g_baseTime = Date.now()
