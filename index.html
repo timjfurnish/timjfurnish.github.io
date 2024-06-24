@@ -71,8 +71,9 @@ function SetUp()
 	section.push(BuildText("This website is about the first few things in the above paragraph.", "p"))
 	section.push("</BIG></I>")
 	EndSection(collection, section)
-	EndSection(collection, ["<HR>"])
-	EndSection(collection, [BuildText('SECTION 1:&nbsp; CURRENT / RECENT / ONGOING', 'h4')])
+	
+	EndSection(collection, ["<HR>", BuildText('SECTION 1:&nbsp; CURRENT / RECENT / ONGOING', 'h4')])
+
 	section = []
 	section.push("<DIV>")
 	section.push(BuildText("<big>THE FLYWHEEL</big><br>(<small>2020</small>)", "h3"))
@@ -88,9 +89,21 @@ function SetUp()
     section.push(bigGap + BuildButton('pottery/', "READ"))
 	section.push("</DIV>")
 	EndSection(collection, section)
-	EndSection(collection, ["<HR>"])
-	EndSection(collection, [BuildText('CLUSTER 2:&nbsp; DETRITUS / RELICS / MEMORIES', 'h4')])
 	
+	EndSection(collection, ["<HR>", BuildText('CLUSTER 2:&nbsp; DETRITUS / RELICS / MEMORIES', 'h4')])
+	
+	section = []
+	section.push("<DIV>")
+	section.push(BuildText("<big>CAPTAIN FLOTMAN</big><br>(<small>2015-2018</small>)", "h3"))
+	section.push("Proof that sometimes the total is more than the sum of its parts. But often, it's less.")
+    section.push(gap)
+	section.push("Captain Flotman is the name under which I snuck my mash-ups onto the internet. If you've ever wanted to hear Coolio, Adele and the Beach Boys collaborate on a song you're (a) odd and (b) in a whole heap of luck.")
+    section.push(bigGap)
+    section.push(BuildButton('https://hearthis.at/captain-flotman/', 'HEARTHIS', true))
+    section.push(BuildButton('https://soundcloud.com/captain-flotman', 'SOUNDCLOUD', true))
+	section.push("</DIV>")
+	EndSection(collection, section)
+
 	section = []
 	section.push("<DIV>")
 	section.push(BuildText("<big>OUT OF ORDER</big><br>(<small>2003</small>)", "h3"))
@@ -114,8 +127,9 @@ function SetUp()
     section.push(BuildButton('https://wiki.scummvm.org/index.php/SLUDGE', 'SCUMMVM', true))
 	section.push("</DIV>")
 	EndSection(collection, section)
-	EndSection(collection, ["<HR>"])
-	EndSection(collection, [BuildText('SEGMENT 3:&nbsp; MISCELLANEOUS / REFERENCES / APPENDICES', 'h4')])
+	
+	EndSection(collection, ["<HR>", BuildText('SEGMENT 3:&nbsp; MISCELLANEOUS / REFERENCES / APPENDICES', 'h4')])
+
 	section = []
 	section.push("<DIV>")
 	section.push(BuildText("<big>FURTHER READING</big>", "h3"))
@@ -125,6 +139,7 @@ function SetUp()
     section.push(BuildButton('https://www.instagram.com/timjfurnish/', 'INSTAGRAM', true))
     section.push("</DIV>")
 	EndSection(collection, section)
+	
 	EndSection(collection, ["<HR>"])
 	EndSection(collection, [BuildText("&copy; Tim Furnish " + (new Date().getUTCFullYear()), "small|p")])
 	
