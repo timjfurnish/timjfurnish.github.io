@@ -61,7 +61,7 @@ wt_addProgress('letter', 'stop', "The flywheel only spins for a while - eventual
 wt_addProgress('letter', 'done')
 
 wt_addProgress('diary', 'out', "You found a diary in the bedroom and put it on the desk.")
-wt_addProgress('diary', 'read', "You read in the diary that the machine in bedroom is invention " + s_correctCode + ".")
+wt_addProgress('diary', 'read', "You read in the diary that the machine in the bedroom is invention " + s_correctCode + ".")
 wt_addProgress('diary', 'used', "You successfully entered the code " + s_correctCode + " into the console in the crashed drop-pod.")
 wt_addProgress('diary', 'done')
 
