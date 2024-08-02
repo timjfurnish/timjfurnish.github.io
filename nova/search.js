@@ -4,6 +4,7 @@
 //==============================================
 
 var g_threadSections = []
+var g_searchDataForGraph = {colours:{}, data:{}}
 var g_threadSectionSelected = 0
 var g_threadSectionFragment = 0
 
@@ -16,15 +17,21 @@ function TurnRedIf(input, condition)
 
 function RedrawSearchResults()
 {
+	const gapValue = +g_currentOptions.search.smoothing * 4 + 2
+	const compress = g_currentOptions.search.compress
+
 	var searchResultsHere = document.getElementById("searchResultsHere")
 	var customTextBox = document.getElementById("search.custom")
-
 	var lastHeading = ""
+	var countdownUntilNoAdd = gapValue
 
 	if (searchResultsHere && customTextBox)
 	{
 		var displayThis = "<center><B>No results found</B></center>"
+		var graphVisible = false
 		var entityNames = document.getElementById("search.entity")?.value
+		
+		g_searchDataForGraph = {colours:{}, data:[]}
 
 		if (entityNames)
 		{
@@ -44,8 +51,6 @@ function RedrawSearchResults()
 			const theString = "\\b(?:" + TurnNovaShorthandIntoRegex(entityNames) + ")\\b"
 			const exp = new RegExp(theString, "ig");
 
-			NovaLog("Searching for " + theString)
-
 			for (var metadata of g_metaDataInOrder)
 			{
 				var addAfterSkippedLines = "<H3>" + MetaDataMakeFragmentDescription(metadata.info) + "</H3>"
@@ -57,8 +62,32 @@ function RedrawSearchResults()
 				{
 					if (! para.ignoreFragments)
 					{
-						var s2 = para.allOfIt.replace(exp, matched => Tally(grabEmHere, matched) && Highlighter(matched))
+						function GotAMatch(matched)
+						{
+							const upper = matched.toUpperCase()
+							Tally(grabEmHere, upper)
+							Tally(grabForPara, upper)
+							return Highlighter(matched, undefined, 'highlightFor="' + upper + '"')
+						}
+						
+						var grabForPara = {}
+						var s2 = para.allOfIt.replace(exp, GotAMatch)
 						const foundTextHere = (para.allOfIt != s2)
+						var allowedToAdd = true
+
+						if (foundTextHere)
+						{
+							countdownUntilNoAdd = gapValue
+						}
+						else if (countdownUntilNoAdd && compress)
+						{
+							-- countdownUntilNoAdd
+						}
+						
+						if (countdownUntilNoAdd)
+						{
+							g_searchDataForGraph.data.push(grabForPara)
+						}
 						
 						if (foundTextHere || keepShowingCountdown)
 						{
@@ -106,15 +135,51 @@ function RedrawSearchResults()
 					}
 				}
 			}
-			
+
 			if (output.length)
 			{
-				console.log(grabEmHere)
-				displayThis = "<center>" + TableShowTally(grabEmHere) + "</center>" + output.join('<BR>')
+				const upperKeys = Object.keys(grabEmHere)
+				const colours = MakeColourLookUpTable(upperKeys, 0.3, PickColourOffsetForString(entityNames))
+
+				var realOutput = []
+				var recolour = []
+
+				g_searchDataForGraph.colours = colours
+
+				for (var key of upperKeys)
+				{
+					recolour.push(['highlightFor="' + key + '"', 'style="background-color:' + g_searchDataForGraph.colours[key] + '"'])
+				}
+
+				for (var eachLine of output)
+				{
+					for (var [searchFor, becomes] of recolour)
+					{
+						eachLine = eachLine.replaceAll(searchFor, becomes)
+					}
+					realOutput.push(eachLine)
+				}
+
+				displayThis = "<center>" + TableShowTally(grabEmHere, g_searchDataForGraph.colours) + "</center>" + realOutput.join('<BR>')
+				graphVisible = true
 			}
 		}
-
+		
 		searchResultsHere.innerHTML = displayThis
+		
+		const graph = document.getElementById("graphCanvas")
+		if (graph)
+		{
+			if (graphVisible)
+			{
+				graph.style.display = "block"
+				SearchDrawGraph()
+			}
+			else
+			{
+				graph.style.display = "none"
+			}
+		}
 	}
 }
 
@@ -131,11 +196,127 @@ TabDefine("search", function(reply, thenCall)
 	var options = []
 	OptionsMakeSelect(options, "RedrawSearchResults()", "Entity", "entity", nameData, "")
 	OptionsMakeTextBox(options, "RedrawSearchResults()", "Search for", "custom")
+	OptionsMakeNumberBox(options, "RedrawSearchResults", "Smoothing", "smoothing", 75)
+	OptionsMakeCheckbox(options, "RedrawSearchResults()", "compress", "Compress empty areas", false, true)
+
 	reply.push(OptionsConcat(options))
-	MakeUpdatingArea(reply, "searchResultsHere", 'align="left"')
+	reply.push("<BR><CANVAS WIDTH=" + CalcGraphCanvasWidth() + " HEIGHT=200 ID=graphCanvas></CANVAS>")
+	MakeUpdatingArea(reply, "searchResultsHere", 'align="left" style="user-select:text"')
 	
 	thenCall.push(RedrawSearchResults)
-}, kIconSearch)
+}, {icon:kIconSearch})
+
+function Smoother(arr)
+{
+	var total = 0
+
+	const len = arr.length
+	const midIndex = (len + 1) / 2
+	const div = midIndex * midIndex
+
+	for (var t in arr)
+	{
+		const frac = (+t + 1) * (len - t) / (div)
+		total += arr[t] * frac * frac
+	}
+
+	return total
+}
+
+function SearchDrawGraph()
+{
+	// WORK OUT WHAT TO DRAW
+	const colourEntries = Object.keys(g_searchDataForGraph.colours)
+	const drawData = {}
+	const smoothingCount = +g_currentOptions.search.smoothing
+
+	var biggestVal = 0
+
+	for (var spelling of colourEntries)
+	{
+		drawData[spelling] = {smoothing:[0], drawThis:[]}
+
+		for (var i = 0; i < smoothingCount; ++ i)
+		{
+			drawData[spelling].smoothing.push(0, 0)
+		}
+	}
+	
+	for (var t of g_searchDataForGraph.data)
+	{
+		var totalHere = 0
+
+		for (var spelling of colourEntries)
+		{
+			drawData[spelling].smoothing.push(t[spelling] ?? 0)				
+			drawData[spelling].smoothing.shift()
+
+			const myVal = Smoother(drawData[spelling].smoothing)
+			totalHere += myVal
+
+			drawData[spelling].drawThis.push(totalHere)
+		}
+		
+		if (biggestVal < totalHere)
+		{
+			biggestVal = totalHere
+		}
+	}
+
+	for (var i = 0; i < smoothingCount * 2; ++ i)
+	{
+		var totalHere = 0
+
+		for (var spelling of colourEntries)
+		{
+			drawData[spelling].smoothing.push(0)
+			drawData[spelling].smoothing.shift()
+
+			const myVal = Smoother(drawData[spelling].smoothing)
+			totalHere += myVal
+
+			drawData[spelling].drawThis.push(totalHere)
+		}
+		
+		if (biggestVal < totalHere)
+		{
+			biggestVal = totalHere
+		}
+	}
+
+	colourEntries.reverse()
+
+	// DONE GATHERING DATA
+	
+	const canvas = document.getElementById("graphCanvas")
+	const drawToHere = canvas?.getContext("2d")
+	
+	if (drawToHere)
+	{
+		drawToHere.fillStyle = "#444444"
+		drawToHere.fillRect(0, 0, canvas.width, canvas.height)
+		
+		for (var spelling of colourEntries)
+		{
+			var numDone = 0
+			const scaleX = canvas.width / (drawData[spelling].drawThis.length + 1)
+			const scaleY = canvas.height * 0.95 / biggestVal
+
+			drawToHere.fillStyle = g_searchDataForGraph.colours[spelling]
+			drawToHere.beginPath()
+			drawToHere.moveTo(0, canvas.height)
+		
+			for (var t of drawData[spelling].drawThis)
+			{
+				++ numDone
+				drawToHere.lineTo(numDone * scaleX, canvas.height - t * scaleY)
+			}
+
+			drawToHere.lineTo(canvas.width, canvas.height)
+			drawToHere.fill()
+		}
+	}
+}
 
 function HighlightThreadSection(num, bCanScroll)
 {
@@ -250,8 +431,11 @@ TabDefine("voice", function(reply, thenCall)
 
 		for (var metadata of g_metaDataInOrder)
 		{
-			const txt = metadata.info[g_currentOptions.voice.page]
-			nameData[txt] = txt
+			if (g_currentOptions.voice.page in metadata.info)
+			{
+				const txt = metadata.info[g_currentOptions.voice.page]
+				nameData[txt] = txt
+			}
 		}
 		
 		var options = []
@@ -264,13 +448,13 @@ TabDefine("voice", function(reply, thenCall)
 		hoverOptions.push('<BUTTON ONCLICK="window.scrollTo(0,0)">' + MakeIconWithTooltip(kIconToTop, 20, "Scroll to top") + '</BUTTON>')
 
 		reply.push(OptionsConcat(options))
-		MakeUpdatingArea(reply, "threadsGoHere", 'align="left"')
+		MakeUpdatingArea(reply, "threadsGoHere", 'align="left" style="user-select:text"')
 		
 		ShowHoverControls(hoverOptions)
 		
 		thenCall.push(RedrawThread)
 	}
-}, kIconBooks, "Read")
+}, {icon:kIconBooks, tooltipText:"Read"})
 
 //---------------------------------------
 // Switch to here from another tab

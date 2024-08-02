@@ -71,7 +71,7 @@ TabDefine("issues", function(reply, thenCall)
 	{
 		reply.push("No issues found")
 	}
-}, kIconIssues)
+}, {icon:kIconIssues, canSelect:true})
 
 function ClearEarlyIssues()
 {

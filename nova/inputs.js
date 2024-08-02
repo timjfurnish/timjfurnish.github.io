@@ -83,7 +83,7 @@ function GetInputText()
 
 	reply = reply.replace(/[\u201C\u201D]/g, '"')
 	reply = reply.replace(/[\u2018\u2019]/g, "'")
-	reply = reply.replace(/([0-9]+:)\n([^\n])/g, '$1: $2')
+	reply = reply.replace(/([0-9]+:)\n([^\n])/g, '$1 $2')
 	
 	return reply.split(/[\n]+/)
 }

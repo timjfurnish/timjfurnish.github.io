@@ -9,6 +9,7 @@ var g_metaDataAvailableColumns
 var g_metaDataTally
 var g_metaDataTotals
 var g_metaDataCurrentCompleteness
+var g_metaDataNextCompleteness
 var g_metaDataGatherParagraphs
 var g_metaDataCurrentContainsToDo
 var g_metaDataSeenValues
@@ -158,9 +159,16 @@ function MetaDataSet(key, val)
 		g_metaDataCurrent['WORLD'] = world
 	}
 
-	g_metaDataCurrent[key] = val
+	if (val === undefined)
+	{
+		delete g_metaDataCurrent[key]
+	}
+	else
+	{
+		g_metaDataCurrent[key] = val
+	}
+
 	g_metaDataCurrentContainsToDo = false
-	g_metaDataCurrentCompleteness = 100
 }
 
 function MetaDataInformFoundToDo(foundInText)
@@ -195,7 +203,7 @@ SetMarkupFunction('%', valueTxt =>
 	}
 	else if (g_metaDataTally.Sentences)
 	{
-		IssueAdd("Ignoring badly placed completeness value " + value + " after already reading " + g_metaDataTally.Sentences + " sentences", "IGNORED COMPLETENESS")
+		g_metaDataNextCompleteness = value
 	}
 	else if (g_metaDataCurrentCompleteness == value)
 	{
@@ -215,6 +223,7 @@ function MetaDataClear()
 	g_metaDataTally = MakeClearTally(true)
 	g_metaDataTotals = MakeClearTally()
 	g_metaDataCurrentCompleteness = 100
+	g_metaDataNextCompleteness = 100
 	g_metaDataGatherParagraphs = []
 	g_metaDataCurrentContainsToDo = false
 	g_metaDataSeenValues = {}
@@ -228,7 +237,17 @@ OnEvent("clear", false, MetaDataClear)
 
 function MetaDataProcessParagraph(numSentences)
 {
-	g_metaDataTally.Sentences += numSentences
+	if (g_metaDataTally.Sentences)
+	{
+		g_metaDataTally.Sentences += numSentences
+	}
+	else
+	{
+//		console.log("Starting new section {" + Object.entries(g_metaDataCurrent).join(' ') + "} so changing currentCompleteness from " + g_metaDataCurrentCompleteness + " to " + g_metaDataNextCompleteness + " and resetting nextCompleteness to 100")
+		g_metaDataTally.Sentences = numSentences
+		g_metaDataCurrentCompleteness = g_metaDataNextCompleteness
+		g_metaDataNextCompleteness = 100
+	}
 }
 
 function MetaDataDoneParagraph(pushThis)
@@ -340,7 +359,14 @@ function MetaDataDrawTable()
 		
 		for (var colName of selectedColumns)
 		{
-			deets += "<TD CLASS=cellNoWrap><B>" + elem.info[colName] + "</B></TD>"
+			if (colName in elem.info)
+			{
+				deets += "<TD CLASS=cellNoWrap><B>" + elem.info[colName] + "</B></TD>"
+			}
+			else
+			{
+				deets += "<TD></TD>"
+			}
 			
 			seenThings[colName][elem.info[colName]] = true
 		}
@@ -454,7 +480,7 @@ function MetaDataDrawTable()
 	{
 		if (colourBasedOn)
 		{
-			TableNewRow(reply, 'BGCOLOR="' + colourLookUp[data.metaData[colourBasedOn]] + '"')
+			TableNewRow(reply, colourLookUp[data.metaData[colourBasedOn]])
 		}
 		else
 		{
@@ -492,7 +518,8 @@ function MetaDataDrawTable()
 	// Only need to display total if we had any columns selected...
 	if (selectedColumns.length)
 	{
-		reply.push('<TR><TD COLSPAN="' + selectedColumns.length + '" CLASS="cellNoWrap"><B><SMALL>TOTAL:</SMALL></B></TD>')
+		TableNewRow(reply)
+		reply.push('<TD COLSPAN="' + selectedColumns.length + '" CLASS="cellNoWrap"><B><SMALL>TOTAL:</SMALL></B></TD>')
 
 		for (var name of selectedDisplay)
 		{
@@ -512,7 +539,7 @@ function MetaDataDrawTable()
 	document.getElementById("metaDataOutput").innerHTML = reply.join("")
 }
 
-TabDefine("stats", TabFunctionStats, "&#128202;")
+TabDefine("stats", TabFunctionStats, {icon:"&#128202;"})
 
 function TabFunctionStats(reply, thenCall)
 {
@@ -552,7 +579,7 @@ function TabFunctionStats(reply, thenCall)
 	thenCall.push(MetaDataDrawTable)
 }
 
-TabDefine("graph", TabFunctionGraph, "&#x1F4C8;")
+TabDefine("graph", TabFunctionGraph, {icon:"&#x1F4C8;"})
 
 function MetaDataDrawGraph()
 {
@@ -576,7 +603,7 @@ function MetaDataDrawGraph()
 			const x = (countParagraphs / g_totalParagraphs) * canvas.width
 
 			drawToHere.beginPath()
-			drawToHere.fillStyle = colours[elem.info[colourUsing]]
+			drawToHere.fillStyle = colours[elem.info[colourUsing]] ?? "#666666"
 			drawToHere.rect(lastX, 0, x - lastX + 1, canvas.height)
 			drawToHere.fill()
 			lastX = x
@@ -608,15 +635,6 @@ function MetaDataDrawGraph()
 				lastX = x
 			}
 		}
-
-		drawToHere.beginPath()
-		drawToHere.strokeStyle = "#000000"
-		drawToHere.moveTo(0, 0)
-		drawToHere.lineTo(0, canvas.height)
-		drawToHere.lineTo(canvas.width, canvas.height)
-		drawToHere.lineTo(canvas.width, 0)
-		drawToHere.lineTo(0, 0)
-		drawToHere.stroke()
 	}
 }
 
@@ -648,6 +666,6 @@ window.addEventListener('resize', function(theEvent)
 	if (elem)
 	{
 		elem.width = CalcGraphCanvasWidth()
-		MetaDataDrawGraph()
+		TabRedrawGraph()
 	}
 }, true);

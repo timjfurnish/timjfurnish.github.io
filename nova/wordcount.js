@@ -19,7 +19,7 @@ TabDefine("words", function(reply, thenCall)
 	MakeUpdatingArea(reply, "wordTableHere")
 
 	thenCall.push(RedrawWordTable)
-})
+}, {})
 
 function RedrawWordTable()
 {

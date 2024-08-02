@@ -6,19 +6,22 @@
 var g_canShowError = true
 var g_baseTime = Date.now()
 
-function NovaLog(message)
+function NovaLogWithCaller(message, caller, type)
 {
-	const caller = NovaLog.caller?.name
-	
 	if (caller)
 	{
-		console.log(caller + " - " + message)
+		console[type]("[" + caller + "] " + message)
 		message = '<NOBR class="issueType" style="background:#FFFFFF"><BIG>' + caller + '</BIG></NOBR> ' + AddEscapeChars(message)
 	}
 	else
 	{
-		console.log(message)
+		console[type](message)
 		message = AddEscapeChars(message)
+	}
+	
+	if (type == "warn")
+	{
+		message = "<font color=#663300>" + message + "</font>"
 	}
 	
 	const elem = document.getElementById("debugLog")
@@ -29,15 +32,14 @@ function NovaLog(message)
 	}
 }
 
+function NovaLog(message)
+{
+	NovaLogWithCaller(message, NovaLog.caller?.name, "log")
+}
+
 function NovaWarn(message)
 {
-	console.warn(message)
-	const elem = document.getElementById("debugLog")
-
-	if (elem)
-	{
-		elem.innerHTML += "<br><font color=#663300>" + message + "</font>"
-	}
+	NovaLogWithCaller(message, NovaWarn.caller?.name, "warn")
 }
 
 function Assert(condition, msg)

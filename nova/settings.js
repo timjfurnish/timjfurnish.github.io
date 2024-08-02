@@ -3,6 +3,15 @@
 // (c) Tim Furnish, 2023-2024
 //==============================================
 
+// TODO: would be good to put this into settings, but let's get it working first...
+const kAutoTagStuff =
+{
+	["T-minus-"]:{tag:"TMINUS"},
+	["Document #"]:{ignoreLine:true, tag:"PART"}
+}
+
+const kAutoTagKeys = Object.keys(kAutoTagStuff)
+
 const kTweakableDefaults =
 {
 	language:"EN",
@@ -86,7 +95,12 @@ function InitSetting([key, val])
 	{
 		g_tweakableSettings[key] = OnlyKeepValid([...val])
 		SettingPerformMaintenance(key)
-		NovaLog("Initialised setting '" + key + "' to " + g_tweakableSettings[key])
+//		NovaLog("Initialised setting '" + key + "' to " + g_tweakableSettings[key])
+	}
+	else if (typeof val == "object")
+	{
+		Assert(Object.keys(val).length == 0, key + " is an object with keys, InitSetting only supports empty objects");
+		g_tweakableSettings[key] = {}
 	}
 	else
 	{
@@ -152,7 +166,7 @@ const kOptionCustomNames =
 	["UNSEEN NAMES"]:"Check for unseen names",
 }
 
-const kHasNoEffect = ["voiceDefault", "voiceSpeech", "voiceHeading"]
+const kHasNoEffect = ["voiceDefault", "voiceSpeech"]
 
 var g_nameLookup
 
@@ -264,7 +278,7 @@ function SettingPerformMaintenance(whichOne)
 {
 	if (whichOne in kMaintenanceFunctions)
 	{
-		NovaLog("Calling " + DescribeFunction(kMaintenanceFunctions[whichOne]) + " for " + g_tweakableSettings[whichOne])
+//		NovaLog("Calling " + DescribeFunction(kMaintenanceFunctions[whichOne]) + " for " + g_tweakableSettings[whichOne])
 		g_tweakableSettings[whichOne] = kMaintenanceFunctions[whichOne](g_tweakableSettings[whichOne])
 	}
 }
@@ -632,6 +646,10 @@ TabDefine("settings", function(reply, thenCall)
 						revert += MakeIconWithTooltip(kIconFix, 0, "Repair", "SettingFixArray('" + k + "')")
 					}
 				}
+				else if (typeof g_tweakableSettings[k] == "object")
+				{
+					revert += " <B>OBJECT</B>";
+				}
 			}
 		
 			const tagBits = theType + ' onChange="UserChangedSetting(\'' + k + '\')" ' + (classList.length ? 'class="' + classList.join(' ') + '" ' : '') + 'id="setting_' + k + '"'
@@ -646,4 +664,4 @@ TabDefine("settings", function(reply, thenCall)
 	TableClose(reply)
 	
 	thenCall.push(FillInSettings)
-}, kIconSettings)
+}, {icon:kIconSettings})

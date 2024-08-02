@@ -17,22 +17,35 @@ function InitTabs()
 	g_hoverControls = document.getElementById('hoverControls')
 }
 
-function TabDefine(tabName, myFunction, displayNameOverride, tooltip)
+function SetIfMissing(container, name, value)
+{
+	if (! (name in container))
+	{
+		container[name] = value
+	}
+}
+
+function TabDefine(tabName, myFunction, settings)
 {
 	const readableName = CapitaliseFirstLetter(tabName).replace(/_/g, " ")
-	g_tabFunctions[tabName] = {func:myFunction, tooltipText:tooltip ?? readableName, displayName:displayNameOverride ?? readableName}
+
+	var storeThis = settings ?? {}
+
+	SetIfMissing(storeThis, "func", myFunction)
+	SetIfMissing(storeThis, "tooltipText", readableName)
+	SetIfMissing(storeThis, "icon", readableName)
+
+	g_tabFunctions[tabName] = storeThis
 }
 
 function SetTabTitle(tabName, text)
 {
-	NovaLog("Setting extra text for tab " + tabName + " to " + text)
-	var tabby = document.getElementById("tabText_" + tabName)
-	tabby.innerHTML = BuildTabDisplayText(tabName, text)
+	document.getElementById("tabText_" + tabName).innerHTML = BuildTabDisplayText(tabName, text)
 }
 
 function BuildTabDisplayText(tabName, extra)
 {
-	var main = '&nbsp;' + g_tabFunctions[tabName].displayName + '&nbsp;'
+	var main = '&nbsp;' + g_tabFunctions[tabName].icon + '&nbsp;'
 
 	if (extra != undefined)
 	{
@@ -68,6 +81,8 @@ function BuildTabs()
 	var endCell = '<TD STYLE="border-bottom:' + kTabLine + '">&nbsp;&nbsp;&nbsp;&nbsp;</TD>'
 	var joiner = endCell
 	var tilty = -1
+	
+//	console.log(g_tabFunctions)
 	
 	for (var tabName of Object.keys(g_tabFunctions))
 	{
@@ -123,10 +138,14 @@ function ShowContentForSelectedTab()
 		NovaLog("Showing contents for '" + g_selectedTabName + "' tab, page '" + page + "'")
 	}
 
-	g_tabFunctions[g_selectedTabName].func(displayThis, thenCall)
-		
-	document.getElementById('tabContents').innerHTML = displayThis.join('')
+	const {func, canSelect} = g_tabFunctions[g_selectedTabName]
 	
+	func(displayThis, thenCall)
+	
+	const elem = document.getElementById('tabContents')
+	elem.innerHTML = displayThis.join('')
+	elem.style.userSelect = canSelect ? "text" : "none"
+
 	speechSynthesis.cancel()
 
 	SetOptions()
@@ -159,6 +178,18 @@ function SetTab(name)
 			console.log("Changing from '" + g_selectedTabName + "' tab to '" + name + "' tab...")
 			ShowTab(name)
 		}
+	}
+}
+
+function TabRedrawGraph()
+{
+	if (g_selectedTabName == "graph")
+	{
+		MetaDataDrawGraph()
+	}
+	else if (g_selectedTabName == "search")
+	{
+		SearchDrawGraph()
 	}
 }
 
@@ -195,7 +226,10 @@ function TabBuildButtonsBar(toHere, array, theDefault)
 		}
 
 		toHere.push("<br><br>")
+		return true
 	}
+	
+	return false
 }
 
 function RethinkEnabledTabs()

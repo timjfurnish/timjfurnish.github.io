@@ -2,6 +2,7 @@ html
 {
 	margin:0px;
     overflow-y:scroll;
+	user-select: none;
 }
 td
 {
@@ -29,6 +30,11 @@ input, label, select, .clicky, button
 input[type=text]
 {
 	cursor:text
+}
+canvas
+{
+	border:1px solid #000000;
+	box-shadow: 0px 0px 3px rgba(0, 0, 0, 0.75);
 }
 #issueText
 {
@@ -81,6 +87,7 @@ input[type=text]
 	background:#DDDDEE;
 	text-indent:-25px;
 	font-size:75%;
+	user-select:text;
 }
 #hoverControls button
 {

@@ -67,4 +67,4 @@ TabDefine("phrases", function(reply, thenCall)
 	MakeUpdatingArea(reply, "phrasesGoHere")
 
 	thenCall.push(PhrasesDisplay)
-}, kIconPhrase)
+}, {icon:kIconPhrase})

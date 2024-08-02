@@ -62,4 +62,4 @@ TabDefine("international", function(reply, thenCall)
 
 	TableOpen(reply)
 	TableClose(reply)
-}, "US_UK")
+}, {icon:"US_UK"})

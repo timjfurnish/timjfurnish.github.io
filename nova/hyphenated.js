@@ -52,7 +52,7 @@ function HyphenCheckDrawTable()
 			continue
 		}
 
-		TableNewRow(reply, bDisc ? 'BGCOLOR="#FFDDDD"' : undefined)
+		TableNewRow(reply, bDisc ? '#FFDDDD' : undefined)
 		const searchFor = phrase + "|" + phrase.replaceAll('-', '') + "|" + phrase.replaceAll('-', ' ')
 		reply.push('<TD CLASS="cell">' + phrase + '&nbsp;' + CreateClickableText(kIconSearch, "SwitchToMentionsAndSearch(" + MakeParamsString(searchFor) + ")") + '</TD>')
 		reply.push('<TD CLASS="cell">' + data.total + '</TD>')
@@ -242,4 +242,4 @@ TabDefine("hyphen_check", function(reply, thenCall)
 	reply.push(OptionsConcat(options))
 	MakeUpdatingArea(reply, "hyphenCheckOutput")
 	thenCall.push(HyphenCheckShowGoButton)
-}, kIconHyphen)
+}, {icon:kIconHyphen})

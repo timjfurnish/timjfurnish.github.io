@@ -8,19 +8,9 @@ var g_voiceLookUp = {}
 var g_voiceLanguages = []
 var g_currentSpeaky
 
-function OnReaderError()
+function OnReaderError(e)
 {
-	NovaLog("error")
-}
-
-function OnReaderPause()
-{
-	NovaLog("pause")
-}
-
-function OnReaderBoundary()
-{
-	NovaLog("boundary")
+	NovaWarn("Speech synthesis error: " + e.error + " after time=" + e.elapsedTime)
 }
 
 function SpeakUsingVoice(thingToSay, voiceType, onEnd)
@@ -35,8 +25,6 @@ function SpeakUsingVoice(thingToSay, voiceType, onEnd)
 	}
 
 	g_currentSpeaky.onerror = OnReaderError
-	g_currentSpeaky.onboundary = OnReaderBoundary
-	g_currentSpeaky.onpause = OnReaderPause
 	g_currentSpeaky.voice = g_voiceLookUp[g_tweakableSettings[voiceType]]
 	speechSynthesis.cancel()
 	speechSynthesis.speak(g_currentSpeaky)

@@ -147,4 +147,4 @@ TabDefine("entities", function(reply, thenCall)
 	}
 	
 	TableClose(reply)
-}, kIconEntities)
+}, {icon:kIconEntities})

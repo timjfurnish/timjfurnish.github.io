@@ -80,9 +80,21 @@ function AddEscapeChars(stringIn)
 	return stringIn.replace(/\&/g, '&amp;').replace(/\[/g, '&lt;').replace(/\]/g, '&gt;').replace(/\'/g, '&apos;').replace(/\"/g, '&quot;')
 }
 
-function Highlighter(matched)
+function Highlighter(matched, colour, extra)
 {
-	return '<span class=highlighter>' + matched + '</span>'
+	var bits = ["span", 'class=highlighter']
+	
+	if (colour)
+	{
+		bits.push('style="background-color:' + colour + '"')
+	}
+
+	if (extra)
+	{
+		bits.push(extra)
+	}
+	
+	return '<' + bits.join(' ') + '>' + matched + '</span>'
 }
 
 function HighlighterWithDots(matched)
@@ -133,19 +145,33 @@ function rgbToHex(rIn, gIn, bIn)
 	return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
-function MakeColourLookUpTable(arr)
+function PickColourOffsetForString(str)
+{
+	var total = 0
+	
+	for (var t in str)
+	{
+		total += str.charCodeAt(t)
+	}
+	
+	return total
+}
+
+function MakeColourLookUpTable(arr, forceMult, offset)
 {
 	var reply = {}
 	var count = 0
 	var total = arr.length
+	
+	offset = offset ?? 0
 
 	for (var each of arr)
 	{
-		var colourWheelAngle = Math.PI * 2 * count / total
+		var colourWheelAngle = Math.PI * 2 * count / total + offset
 		++ count
-		var mult = (count & 1) ? (count & 2) ? 0.05 : 0.08 : 0.15
+		var mult = forceMult ?? ((count & 1) ? (count & 2) ? 0.05 : 0.08 : 0.15)
 		var add = 1 - mult
-		reply[each] = rgbToHex(add + Math.sin(colourWheelAngle) * mult, add + Math.sin(colourWheelAngle + 2) * mult, add + Math.sin(colourWheelAngle + 4) * mult)
+		reply[each] = rgbToHex(Math.sqrt(add + Math.sin(colourWheelAngle) * mult), add + Math.sin(colourWheelAngle + 2) * mult, Math.sqrt(add + Math.sin(colourWheelAngle + 4) * mult))
 	}
 	
 	return reply
@@ -192,6 +218,11 @@ function Tally(toHere, key, num)
 	return toHere[key]
 }
 
+function SetBit(toHere, key, bit)
+{
+	(key in toHere) ? toHere[key] |= bit : (toHere[key] = bit)
+}
+
 //---------------------------
 // Function-calling fun
 //---------------------------
@@ -217,7 +248,11 @@ function UpdateDebugListOfRunningFunctions()
 		{
 			info.push(DescribeFunction(f))
 		}
-		document.getElementById("debugOut").innerHTML = info.join("<BR>")
+		const newList = info.join("<BR>")
+		if (document.getElementById("debugOut").innerHTML != newList)
+		{
+			document.getElementById("debugOut").innerHTML = newList
+		}
 	}
 }
 
@@ -265,7 +300,7 @@ function CallNextQueuedFunction()
 
 	if (g_functionsStillToCall.length == 0)
 	{
-		NovaLog("Function queue changed from '" + queue + "' to empty")
+//		NovaLog("Function queue changed from '" + queue + "' to empty")
 		CallTheseFunctionsNow(...g_onQueueEmpty)
 		g_onQueueEmpty = []
 	}
@@ -273,10 +308,10 @@ function CallNextQueuedFunction()
 	{
 		const newQueue = DescribeFunctions(g_functionsStillToCall)
 
-		if (newQueue != queue)
-		{
-			NovaLog("Function queue changed from '" + queue + "' to '" + newQueue + "'")
-		}
+		// if (newQueue != queue)
+		// {
+			// NovaLog("Function queue changed from '" + queue + "' to '" + newQueue + "'")
+		// }
 	}
 }
 
@@ -306,7 +341,7 @@ function CallTheseFunctionsNow(...list)
 {
 	if (list?.length)
 	{
-		NovaLog("Calling these functions immediately: " + DescribeFunctions(list))
+//		NovaLog("Calling these functions immediately: " + DescribeFunctions(list))
 		
 		for (var func of list)
 		{
@@ -331,8 +366,6 @@ var g_eventFuncs = {}
 function OnEvent(eventName, late, call)
 {
 	(eventName in g_eventFuncs) ? late ? g_eventFuncs[eventName].push(call) : g_eventFuncs[eventName].unshift(call) : (g_eventFuncs[eventName] = [call])
-	
-	NovaLog("On " + eventName + " (late=" + late + ") call " + DescribeFunction(call))
 }
 
 function DoEvent(eventName)

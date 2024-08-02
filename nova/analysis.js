@@ -4,6 +4,7 @@
 //==============================================
 
 var g_markupFunctions = {}
+// var g_uniqueWords = []
 
 function SetMarkupFunction(character, func)
 {
@@ -26,8 +27,11 @@ function ShouldIgnoreNumberFoundInText(number)
 {
 	for (var eachIgnoreRule of g_tweakableSettings.numberIgnoreList)
 	{
-		if (eachIgnoreRule === number)
+		const myReg = new RegExp('^' + eachIgnoreRule + '$', 'i')
+		
+		if (number.match(myReg))
 		{
+//			NovaLog("Ignore " + number + " because it matches " + eachIgnoreRule)
 			return true
 		}
 	}
@@ -45,7 +49,7 @@ const kIllegalSubstrings =
 	["double space", "  "],
 	["dubious punctuation combo", /[;:\-,\.\!\?][;:\-,\.\!\?]/g, txt => txt == "!?"],
 	["space before punctuation", / [;:,\.\!\?]/g],
-	["split infinitive", /\bto [a-z][a-z]+ly [a-z]+/gi, txt => g_tweakableSettings.splitInfinitiveIgnoreList.includes(txt)],
+	["split infinitive", /\bto (not|never|always|almost|[a-z][a-z]+ly) [a-z]+/gi, txt => g_tweakableSettings.splitInfinitiveIgnoreList.includes(txt)],
 	["adverb with hyphen", /\b[a-z]+ly\-[a-z]+\b/gi, txt => g_tweakableSettings.adverbHyphenIgnoreList.includes(txt)]
 ]
 
@@ -115,7 +119,7 @@ function CheckParagraphForIssues(txtIn)
 	
 	txtIn = txtIn.replace(/[\(\)]/g, '')
 
-	const splittyFun = txtIn.split(/[\.,!\?]+["\)]?/)
+	const splittyFun = txtIn.split(/[\.,;:!\?]+["\)]?/)
 	splittyFun.shift()
 	for (var each of splittyFun)
 	{
@@ -145,14 +149,10 @@ function CheckEachWord(word, s, workspace)
 			if (wordLower.match(badWordRegEx))
 			{
 				IssueAdd("Found (regex " + badWordRegEx + ") disallowed word " + FixStringHTML(word) + " in " + FixStringHTML(s), "DISALLOWED WORD")
-				workspace.plainBadWords[wordLower] = true
 			}
 		}
 	}
 
-// optimisation!
-//	workspace.checkedWords[wordLower] = true
-	
 //	CheckForInternationalTally(wordLower)
 	
 	const lastApostrophe = word.lastIndexOf("'")
@@ -161,7 +161,9 @@ function CheckEachWord(word, s, workspace)
 		CheckEachWord(word.substr(0, lastApostrophe), s, workspace)
 		return false
 	}
-	
+
+	Tally (workspace.checkedWords, wordLower)
+		
 	return ["mr.", "dr.", "mrs."].includes(wordLower)
 }
 
@@ -178,6 +180,23 @@ function ShouldIgnorePara(txtInProcessed)
 	{
 		markupFunc(txtInProcessed.substring(1))
 		return true
+	}
+
+	for (var t of kAutoTagKeys)
+	{
+		if (txtInProcessed.startsWith(t))
+		{
+			const settings = kAutoTagStuff[t]
+			const storeAs = txtInProcessed.replace(t, '').trim()
+			
+//			NovaLog("AutoTag: " + settings.tag + " (" + txtInProcessed + ") " + storeAs)
+			MetaDataSet(settings.tag, storeAs)
+
+			if (settings.ignoreLine)
+			{
+				return true
+			}
+		}
 	}
 	
 	return false
@@ -288,6 +307,8 @@ function MakeRegexForSplittingIntoWords()
 function ProcessInput()
 {
 	DoEvent("clear")
+
+//	g_uniqueWords = []
 
 	// TODO: move more local variables into here
 	var workspace =
@@ -589,6 +610,7 @@ function ProcessInput()
 				}
 
 				MetaDataDoneParagraph(pushThis)
+				PairDoneParagraph(pushThis)
 			}
 		}
 		catch(error)
@@ -598,6 +620,17 @@ function ProcessInput()
 	}
 
 	DoEndOfChapterChecks(workspace)
+	
+	/*
+	for (var [word, count] of Object.entries(workspace.checkedWords))
+	{
+		if (count == 1)
+		{
+			g_uniqueWords.push(word)
+		}
+	}
+	*/
+	
 	CallTheseFunctions(AfterProcessInput)
 }
 
@@ -660,6 +693,8 @@ function CheckFinalCharacter(txtIn, endsWithSpeech)
 
 function DoEndOfChapterChecks(workspace)
 {
+	MetaDataSet("TMINUS")
+
 	if (workspace.stillLookingForChapterNameInChapter && workspace.foundTextBetweenHeadings)
 	{
 		IssueAdd("Didn't find chapter name in chapter '" + workspace.stillLookingForChapterNameInChapter + "'", "CHAPTER NAME IN CHAPTER")

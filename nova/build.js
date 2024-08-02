@@ -19,10 +19,12 @@ const kIconIssues = "&#9888;&#65039;"
 const kIconEntities = "&#129333;"
 const kIconHyphen = "&#127846;"
 const kIconBooks = "&#128218;"
-const kIconMute = "&#128263;"
+const kIconMute = "&#x274C;" // "&#128263;"
 const kIconOpen = "&#x1f53d;"
 const kIconClosed = "&#x25B6;&#xFE0F;"
 const kIconText = "&#128263;"
+const kIconUnicorn = "&#x1F984;"
+const kIconPair = "&#x1F46C;&#x1F3FC;"
 
 const kCharacterElipsis = "\u2026"
 const kCharacterEmDash = "\u2014"
@@ -36,21 +38,26 @@ function TableOpen(reply)
 	reply.push("<TABLE CELLPADDING=2 CELLSPACING=0 BORDER=1><TR>")
 }
 
-function TableNewRow(reply, extra)
+function TableNewRow(reply, colour, extra)
 {
+	var bits = ['tr', 'bgColor="' + (colour ?? "#FEFEFE") + '"']
+
 	if (extra)
 	{
-		reply.push("</TR><TR " + extra + ">")
+		bits.push(extra)
 	}
-	else
-	{
-		reply.push("</TR><TR>")
-	}
+
+	reply.push("</TR><" + bits.join(' ') + ">")
 }
 
-function TableAddHeading(reply, h)
+function TableAddHeading(reply, txt)
 {
-	reply.push('<td bgcolor=#DDDDDD CLASS=cell><B>' + h + '</B>')
+	reply.push('<td bgcolor=#DDDDDD CLASS=cell><B>' + txt + '</B></td>')
+}
+
+function TableAddCell(reply, txt, canWrap)
+{
+	reply.push('<td CLASS="' + (canWrap ? 'cell' : 'cellNoWrap') + '">' + txt + '</td>')
 }
 
 function TableClose(reply)
@@ -58,7 +65,7 @@ function TableClose(reply)
 	reply.push("</TABLE>")	
 }
 
-function TableShowTally(tally)
+function TableShowTally(tally, colourColumn)
 {
 	var reply = []
 	const keysInOrder = Object.keys(tally).sort((p1, p2) => (tally[p2] - tally[p1]))
@@ -67,11 +74,23 @@ function TableShowTally(tally)
 	TableOpen(reply)
 	TableAddHeading(reply, "Text")
 	TableAddHeading(reply, "Count")
+
+	if (colourColumn)
+	{
+		TableAddHeading(reply, "Colour")
+	}
 	
 	for (var key of keysInOrder)
 	{
 		TableNewRow(reply)
-		reply.push('<td class=cellNoWrap>' + key + '</td><td align=right class=cell>' + tally[key] + '</td>')
+		TableAddCell(reply, key)
+		reply.push('<td align=right class=cell>' + tally[key] + '</td>')
+		
+		if (colourColumn)
+		{
+			reply.push('<td class=cell bgcolor="' + colourColumn[key] + '" width=30></td>')
+		}
+		
 		total += tally[key]
 	}
 
@@ -79,6 +98,11 @@ function TableShowTally(tally)
 	{
 		TableNewRow(reply)
 		reply.push('<td class=cellNoWrap><b>TOTAL</b></td><td align=right class=cell>' + total + '</td>')
+		
+		if (colourColumn)
+		{
+			reply.push('<td class=cellNoWrap></td>')
+		}
 	}
 	
 	TableClose(reply)
@@ -248,8 +272,31 @@ function OptionsMakeSelect(toHere, funcName, heading, id, options, defaultVal, c
 	toHere.push(reply.join('') + '</select>')
 }
 
-function OptionsMakeTextBox(toHere, funcName, heading, id)
+function OptionsMakeTextBox(toHere, funcName, heading, id, defVal)
 {
-	id = OptionsMakeKey(g_selectedTabName, id, "")
+	id = OptionsMakeKey(g_selectedTabName, id, defVal ?? "")
 	toHere.push(heading + ': <input type=text ' + OptionsCommon(id, funcName) + '></input>')
+}
+
+function OptionsMakeNumberBox(toHere, funcName, heading, id, defVal)
+{
+	const muchSmallerButton = '<button onClick="OptionModifyNumber(\'' + id + '\', -5, ' + funcName + ')">&lt;&lt;</button>'
+	const smallerButton = '<button onClick="OptionModifyNumber(\'' + id + '\', -1, ' + funcName + ')">&lt;</button>'
+	const biggerButton = '<button onClick="OptionModifyNumber(\'' + id + '\', 1, ' + funcName + ')">&gt;</button>'
+	const muchBiggerButton = '<button onClick="OptionModifyNumber(\'' + id + '\', 5, ' + funcName + ')">&gt;&gt;</button>'
+	id = OptionsMakeKey(g_selectedTabName, id, defVal ?? "")
+	toHere.push(heading + ': ' + muchSmallerButton + smallerButton + '<input id="' + id + '" style="text-align:center;" readOnly=true size=1 type=text></input>' + biggerButton + muchBiggerButton)
+}
+
+function OptionModifyNumber(myId, change, func)
+{
+	const oldValue = +g_currentOptions[g_selectedTabName][myId]
+	const newValue = Math.max(0, oldValue + change)
+
+	if (newValue != oldValue)
+	{
+		document.getElementById(g_selectedTabName + "." + myId).value = newValue
+		g_currentOptions[g_selectedTabName][myId] = newValue
+		func()
+	}
 }
