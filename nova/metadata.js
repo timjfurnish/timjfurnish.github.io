@@ -314,7 +314,7 @@ function MetaDataDrawTable()
 	{
 		if (lastTally.Paragraphs && lastDeets)
 		{
-			console.log("  > " + lastDeets + ": " + Object.entries(lastTally.Mentions).join(' '))
+//			console.log("  > " + lastDeets + ": " + Object.entries(lastTally.Mentions).join(' '))
 
 			if (consolidate && lastDeets in consolidate)
 			{
