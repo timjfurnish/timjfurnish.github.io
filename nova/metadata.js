@@ -312,9 +312,9 @@ function MetaDataDrawTable()
 
 	function AddLastDeets()
 	{
-		if (lastTally.Paragraphs)
+		if (lastTally.Paragraphs && lastDeets)
 		{
-//			console.log("  > " + lastDeets + ": " + Object.entries(lastTally.Mentions).join(' '))
+			console.log("  > " + lastDeets + ": " + Object.entries(lastTally.Mentions).join(' '))
 
 			if (consolidate && lastDeets in consolidate)
 			{
@@ -356,6 +356,7 @@ function MetaDataDrawTable()
 	for (var elem of g_metaDataInOrder)
 	{
 		var deets = ''
+		var ignoreMe = false
 		
 		for (var colName of selectedColumns)
 		{
@@ -366,12 +367,18 @@ function MetaDataDrawTable()
 			else
 			{
 				deets += "<TD></TD>"
+				ignoreMe = true
 			}
 			
 			seenThings[colName][elem.info[colName]] = true
 		}
 
 //		console.log("[D] " + Object.entries(elem.Mentions).join(' '))
+
+		if (ignoreMe)
+		{
+			deets = undefined
+		}
 		
 		if (deets != lastDeets)
 		{
