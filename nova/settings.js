@@ -3,18 +3,239 @@
 // (c) Tim Furnish, 2023-2024
 //==============================================
 
+//=======================================================================
+// Automatic tag stuff!
+//=======================================================================
+
 // TODO: would be good to put this into settings, but let's get it working first...
 const kAutoTagStuff =
 {
-	["T-minus-"]:{tag:"TMINUS"},
-	["Document #"]:{ignoreLine:true, tag:"PART"}
+	["T minus "]:{tag:"TMINUS", numericalCheck:"descend", characters:",.", clearTags:"", unique:true},
+	["Document #"]:{tag:"PART", numericalCheck:"ascend", characters:"", clearTags:"", global:true, unique:true},
+	["*"]:{tag:"CHAPTER", numericalCheck:"none", mustInclude:true, clearTags:"TMINUS", global:true, unique:true},
+
+//	["BOOK "]:{tag:"BOOK", numericalCheck:"", includeLineInText:true, clearTags:""},
+//	["VOLUME "]:{tag:"VOLUME", numericalCheck:"", includeLineInText:true, clearTags:""},
+//	["CHAPTER "]:{tag:"CHAPTER", numericalCheck:"", includeLineInText:true, clearTags:""},
 }
 
-const kAutoTagKeys = Object.keys(kAutoTagStuff)
+const kAutoTagOptions = Object.entries(
+{
+	mustInclude:
+	{
+		tooltip:"Verify that the tag text appears in the document before the tag changes",
+		icon:kIconTextAppears,
+		func:(tag, value) => MakeOrAddToObject(window, "g_stillLookingForTagText", tag, value.split(/ *\(/, 1)[0].toLowerCase())
+	},
+	unique:
+	{
+		tooltip:"Verify that each instance of this tag is unique",
+		icon:kIconUnicorn,
+		func:function(tag, value)
+		{
+			if ((tag in g_metaDataSeenValues) && (value in g_metaDataSeenValues[tag]))
+			{
+				IssueAdd("Found multiple " + FixStringHTML(tag) + " tags set to " + FixStringHTML(value), "UNIQUE")
+			}
+		}
+	},
+	includeLineInText:
+	{
+		tooltip:"Include this text in the document",
+		icon:kIconWrite
+	},
+	global:
+	{
+		// TODO: implement!
+		tooltip:"Verify that this tag is set throughout",
+		icon:kIconGlobal
+	},
+})
+
+function CheckOrderOfValues(tag, value, isAscending)
+{
+	if (tag in g_metaDataSeenValues)
+	{
+		const valAsNumber = parseInt(value)
+		for (var known of Object.keys(g_metaDataSeenValues[tag]))
+		{
+			const knownAsNumber = parseInt(known)
+
+			if (isAscending ? (valAsNumber < knownAsNumber) : (valAsNumber > knownAsNumber))
+			{
+				IssueAdd("Expected " + valAsNumber + " (from '" + value + "') to be " + (isAscending ? ">=" : "<=") + " " + knownAsNumber + " (from '" + known + "')", "ORDER")
+			}
+		}
+	}	
+}
+
+const kAutoTagChecks =
+{
+	none:
+	{
+		icon:""
+	},
+	descend:
+	{
+		icon:kIconDescending,
+		func:(tag, value) => CheckOrderOfValues(tag, value, false)
+	},
+	ascend:
+	{
+		icon:kIconAscending,
+		func:(tag, value) => CheckOrderOfValues(tag, value, true)
+	}
+}
+
+var kAutoTagKeys = Object.keys(kAutoTagStuff).sort()
+
+function SettingsAddAutoTag()
+{
+	const newValue = prompt("Enter string to find in document")
+	
+	if (newValue && ! (newValue in kAutoTagStuff))
+	{
+		kAutoTagStuff[newValue] = {tag:"NEWTAG", numericalCheck:"none", characters:"", clearTags:""}
+		AutoTagUpdate()
+	}
+}
+
+function AutoTagOptionToggle(line, k)
+{
+	if (kAutoTagStuff[line][k])
+	{
+		delete kAutoTagStuff[line][k]
+	}
+	else
+	{
+		kAutoTagStuff[line][k] = true
+	}
+
+	AutoTagUpdate()
+}
+
+function AutoTagDelete(whichOne)
+{
+	delete kAutoTagStuff[whichOne]
+	AutoTagUpdate()
+}
+
+function AutoTagUpdate()
+{
+	kAutoTagKeys = Object.keys(kAutoTagStuff).sort()
+
+	const elem = document.getElementById("autoTagCell")
+	if (elem)
+	{
+		elem.innerHTML = BuildAutomaticTagsBox()
+	}
+	CallTheseFunctions(ProcessInput)
+}
+
+function MakeClickableTextBubble(txt, thePrompt, key)
+{
+	const extraParam = key ? ", '" + key + "'" : ""
+	const displayTxt = key ? kAutoTagStuff[txt][key] : txt
+	return '<B class="clickableTextBubble" ONCLICK="AutoTagEditText(\'' + txt + '\', \'' + thePrompt + '\'' + extraParam + ')">' + AddEscapeChars(displayTxt ?? "") + '</B>'
+}
+
+function AutoTagEditText(txt, thePrompt, key)
+{
+	const oldValue = key ? kAutoTagStuff[txt][key] : txt
+	const newValue = prompt(thePrompt + ":", oldValue)
+	
+	if (newValue != null && newValue != oldValue)
+	{
+		if (newValue == "" && key != 'characters' && key != 'clearTags')
+		{
+			NovaWarn("User tried to set " + (key ?? "text to find in document") + " to empty string - ignore")
+			return
+		}
+		else if (key)
+		{
+			kAutoTagStuff[txt][key] = newValue
+		}
+		else if (newValue in kAutoTagStuff)
+		{
+			NovaWarn("Can't have two entries which both search for '" + newValue + "' - ignore")
+			return
+		}
+		else
+		{
+			NovaLog("Changing search text from '" + oldValue + "' to '" + newValue + "'")
+			Assert(kAutoTagStuff[oldValue])
+			kAutoTagStuff[newValue] = kAutoTagStuff[oldValue]
+			Assert(kAutoTagStuff[newValue])
+			delete kAutoTagStuff[oldValue]
+			Assert(!kAutoTagStuff[oldValue])
+			console.log(kAutoTagStuff)
+		}
+		
+		AutoTagUpdate()
+	}
+}
+
+function AutoTagUpdateOrder()
+{
+	for (var k of kAutoTagKeys)
+	{
+		kAutoTagStuff[k].numericalCheck = document.getElementById(MakeElementID("AutoTagOrder", k)).value
+	}
+	
+	CallTheseFunctions(ProcessInput)
+}
+
+function BuildAutomaticTagsBox(moreOutput)
+{
+	var reply = []
+
+	TableOpen(reply)
+	TableAddHeading(reply, "Tag")
+	TableAddHeading(reply, "Text")
+	TableAddHeading(reply, "Remove") // "Process")
+	TableAddHeading(reply, "Clear")
+	TableAddHeading(reply, "Options")
+
+	for (var line of kAutoTagKeys)
+	{
+		const {keep, numericalCheck} = kAutoTagStuff[line]
+		var numericalCheckBits = ['<select id="' + MakeElementID("AutoTagOrder", line) + '" onchange="AutoTagUpdateOrder()">']
+		var optionBits = []
+
+		for (var [key, data] of Object.entries(kAutoTagChecks))
+		{
+			numericalCheckBits.push('<option value="' + key + '"' + ((numericalCheck == key) ? " selected" : "") + '>' + data.icon + '</option>')
+		}
+
+		for (var [k, data] of kAutoTagOptions)
+		{
+			const isOn = kAutoTagStuff[line][k]
+			optionBits.push(MakeIconWithTooltip(data.icon, 0, data.tooltip + (isOn ? ": ON" : ": OFF"), "AutoTagOptionToggle('" + line + "', '" + k + "')", undefined, isOn ? undefined : 0.15))
+		}
+		
+		TableNewRow(reply)
+		TableAddCell(reply, "<BIG>" + MakeIconWithTooltip(kIconTrash, 0, "Delete", "AutoTagDelete('" + line + "')") + "&nbsp;</BIG>" + MakeClickableTextBubble(line, "Enter the name for this tag", "tag"))
+		TableAddCell(reply, MakeClickableTextBubble(line, "Enter string to find in document"))
+		TableAddCell(reply, /* "<BIG>" + MakeIconWithTooltip(keep ? kIconGreenTick : kIconRedCross, 0, keep ? "Keep only these characters" : "Remove these characters", "AutoTagOptionToggle('" + line + "', 'keep')") + "&nbsp;</BIG>" + */ MakeClickableTextBubble(line, "Enter characters to remove from line before storing tag text", "characters"))
+		TableAddCell(reply, MakeClickableTextBubble(line, "Enter space-seperated list of tags to clear when this text is found", "clearTags"))
+		TableAddCell(reply, "<BIG>" + optionBits.join('') + "&nbsp;&nbsp;</BIG>" + numericalCheckBits.join('') + '</select>')
+	}
+
+	TableClose(reply)
+	
+	if (moreOutput)
+	{
+		moreOutput.customColumnCell = '<td valign="top" align="right" class="cellNoWrap">' + MakeIconWithTooltip(kIconNew, 0, "Add", "SettingsAddAutoTag()")
+		moreOutput.cellId = "autoTagCell"
+	}
+	
+	return reply.join("")
+}
 
 const kTweakableDefaults =
 {
 	language:"EN",
+	speakRate:1,
 	voiceDefault:"",
 	voiceSpeech:"",
 	badWords:"tge tgey",
@@ -34,9 +255,7 @@ const kTweakableDefaults =
 	splitInfinitiveIgnoreList:[],
 	adverbHyphenIgnoreList:[],
 	numberIgnoreList:[],
-	headingIdentifier:"",
-	removeHeadingIdentifier:false,
-	headingMaxCharacters:100,
+	suggestNameIfSeenThisManyTimes:5,
 	numTextBoxes:1,
 	debugListQueuedFunctions:false,
 	debugLog:false,
@@ -115,20 +334,20 @@ const kSettingNames =
 	INPUT:
 	{
 		replace:"Replace (regex)|mediumTextBox",
-		wordsContainingFullStops:"Valid words containing full stops|shortTextBox",
+		wordsContainingFullStops:"Words with full stops|shortTextBox",
 		skip:"Skip lines starting with|shortTextBox",
-		headingIdentifier:"Line is a heading if it includes|shortTextBox",
-		removeHeadingIdentifier:"Remove heading identifier",
-		headingMaxCharacters:"Max characters in a heading|shortTextBox",
+		["Automatic tags"]:BuildAutomaticTagsBox,
 	},
 	VOICE:
 	{
 		language:"Language|language",
 		voiceDefault:"Voice (narrative)|voice",
 		voiceSpeech:"Voice (speech)|voice",
+		speakRate:"Speed",
 	},
 	NAMES:
 	{
+		suggestNameIfSeenThisManyTimes:"Capitalised words seen^this many times are^suggested as names",
 		names:"Characters|mediumTextBox",
 		names_places:"Places|mediumTextBox",
 		names_other:"Other|mediumTextBox",
@@ -190,6 +409,10 @@ function UpdateSettingFromText(name, type, savedSetting, loadingVersion)
 	{
 		const splitCharacter = (loadingVersion == 1) ? ',' : '\n'
 		SettingUpdate(name, OnlyKeepValid(savedSetting.split(splitCharacter)).sort(), isLoading)
+	}
+	else if (name == 'speakRate')
+	{
+		SettingUpdate(name, parseFloat(savedSetting), isLoading)
 	}
 	else if (type == 'number')
 	{
@@ -253,8 +476,8 @@ function SettingsLoad()
 	for (var [settingName, customFunc] of Object.entries(kSettingFunctions))
 	{
 		const param = g_tweakableSettings[settingName]
-		NovaLog("Initialised '" + settingName + "' so calling " + DescribeFunction(customFunc) + " with " + GetDataTypeVerbose(param) + " '" + param + "'")
-		customFunc(g_tweakableSettings[settingName])
+//		NovaLog("Initialised '" + settingName + "' so calling " + DescribeFunction(customFunc) + " with " + GetDataTypeVerbose(param) + " '" + param + "'")
+		customFunc(param)
 	}
 
 	ReadVoices()
@@ -451,21 +674,26 @@ function UserChangedSetting(name)
 	}
 }
 
-function SettingsAdd(reply, txt, formBits, className, expandId)
-{	
-	reply.push('<tr><td valign="top" align="right" class="cellNoWrap">' + txt + '</td>')
-	
-	if (expandId)
+function SettingsMakeCustomColumn_Expand(expandId)
+{
+	return '<td id="expandButton_' + expandId + '" valign="top" align="right" class="cellNoWrap">' + MakeOpenCloseButton(expandId) + '</td>'
+}
+
+function SettingsMakeCustomColumn_Add(callThis)
+{
+	return '<td valign="top" align="right" class="cellNoWrap">ADD</td>'
+}
+
+function SettingsAdd(reply, txt, formBits, className, customColumnCell, id)
+{
+	var args = 'td class="' + className + '"'
+	if (id)
 	{
-		reply.push('<td id="expandButton_' + expandId + '" valign="top" align="right" class="cellNoWrap">')
-		reply.push(MakeOpenCloseButton(expandId))
+		args += ' id="' + id + '"'
 	}
-	else
-	{
-		reply.push('<td class="cellNoWrap">')
-	}
-	
-	reply.push('</td><td class="' + className + '">' + formBits + "</td></tr>")
+	reply.push('<tr><td valign="top" align="right" class="cellNoWrap">' + txt.replaceAll('^', "<BR>") + '</td>')
+	reply.push(customColumnCell ?? '<td class="cellNoWrap">')
+	reply.push('</td><' + args + '>' + formBits + "</td></tr>")
 }
 
 function MakeOpenCloseButton(k)
@@ -509,7 +737,7 @@ function SettingsOpenClose(whichOne)
 
 function SettingAskRevert(whichOne)
 {
-	if (confirm("Do you really want to revert '" + kSettingNames[g_currentOptions.settings.page][whichOne].split('|', 1)[0] + "' to its default value?"))
+	if (confirm("Do you really want to revert '" + kSettingNames[g_currentOptions.settings.page][whichOne].split('|', 1)[0].replaceAll('^', ' ') + "' to its default value?"))
 	{
 		InitSetting([whichOne, kTweakableDefaults[whichOne]])
 		FillInSetting(whichOne)
@@ -577,6 +805,11 @@ function AddToSetting(whichOne, addThis)
 
 function InitSettings()
 {
+	for (var val of Object.values(kAutoTagStuff))
+	{
+		val.tidyRegEx = val.removeCharacters ? new RegExp('[' + EscapeRegExSpecialChars(val.removeCharacters) + ']', 'g') : null
+	}
+	
 	Object.keys(g_warningNames).forEach(id => OptionsMakeKey("settings", id, ! (id in kOptionCustomNames)))
 	
 	IssueAutoFixDefine("ILLEGAL CHARACTERS", characters => AddToSetting("allowedCharacters", characters))
@@ -601,7 +834,7 @@ TabDefine("settings", function(reply, thenCall)
 			var theType = 'input type=text'
 			var theMiddle = ""
 			var revert = ""
-			var expandId = undefined
+			var customColumnCell = undefined
 			
 			classList = classList ? classList.split(' ') : []
 
@@ -624,6 +857,16 @@ TabDefine("settings", function(reply, thenCall)
 				}
 				classList = ''
 			}
+			else if (k == 'speakRate')
+			{
+				theType = 'select'
+				theMiddle += "<option value=0.8>Very slow</option>"
+				theMiddle += "<option value=0.9>Slow</option>"
+				theMiddle += "<option value=1>Normal</option>"
+				theMiddle += "<option value=1.1>Fast</option>"
+				theMiddle += "<option value=1.2>Very fast</option>"
+				classList = ''
+			}
 			else if (typeof g_tweakableSettings[k] === "boolean")
 			{
 				theType = 'input type="checkbox"'
@@ -634,7 +877,7 @@ TabDefine("settings", function(reply, thenCall)
 				if (Array.isArray(g_tweakableSettings[k]))
 				{
 					theType = 'textarea onFocus="CheckItsOpen(\'' + k + '\')"'
-					expandId = k
+					customColumnCell = SettingsMakeCustomColumn_Expand(k)
 					
 					if (! (k in g_openTextAreas))
 					{
@@ -653,11 +896,13 @@ TabDefine("settings", function(reply, thenCall)
 			}
 		
 			const tagBits = theType + ' onChange="UserChangedSetting(\'' + k + '\')" ' + (classList.length ? 'class="' + classList.join(' ') + '" ' : '') + 'id="setting_' + k + '"'
-			SettingsAdd(reply, displayName, '<nobr><' + tagBits + '>' + theMiddle + '</' + theType.split(' ', 1)[0] + '>' + revert + "</nobr>", "cellNoWrap", expandId)
+			SettingsAdd(reply, displayName, '<nobr><' + tagBits + '>' + theMiddle + '</' + theType.split(' ', 1)[0] + '>' + revert + "</nobr>", "cellNoWrap", customColumnCell)
 		}
 		else
 		{
-			SettingsAdd(reply, k, display(), "cell")
+			const moreOutput = {}
+			const showThisInCell = display(moreOutput)
+			SettingsAdd(reply, k, showThisInCell, "cell", moreOutput.customColumnCell, moreOutput.cellId)
 		}
 	}
 	

@@ -25,6 +25,7 @@ function SpeakUsingVoice(thingToSay, voiceType, onEnd)
 	}
 
 	g_currentSpeaky.onerror = OnReaderError
+	g_currentSpeaky.rate = g_tweakableSettings.speakRate
 	g_currentSpeaky.voice = g_voiceLookUp[g_tweakableSettings[voiceType]]
 	speechSynthesis.cancel()
 	speechSynthesis.speak(g_currentSpeaky)

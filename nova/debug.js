@@ -42,14 +42,6 @@ function NovaWarn(message)
 	NovaLogWithCaller(message, NovaWarn.caller?.name, "warn")
 }
 
-function Assert(condition, msg)
-{
-	if (! condition)
-	{
-		NovaWarn((typeof(msg) == "function") ? msg() : msg)
-	}
-}
-
 function NovaLogClear(message)
 {
 	g_baseTime = Date.now()
@@ -70,6 +62,7 @@ function Assert(condition, err)
 {
 	if (! condition)
 	{
-		ShowError("Assert failed! " + (err ?? "No additional details provided"))
+		err = err ? (typeof(err) == "function") ? err() : err : "No additional details provided"
+		ShowError("Assert failed! " + err)
 	}
 }

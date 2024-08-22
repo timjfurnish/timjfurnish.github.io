@@ -22,7 +22,6 @@ function RedrawSearchResults()
 
 	var searchResultsHere = document.getElementById("searchResultsHere")
 	var customTextBox = document.getElementById("search.custom")
-	var lastHeading = ""
 	var countdownUntilNoAdd = gapValue
 
 	if (searchResultsHere && customTextBox)
@@ -183,16 +182,24 @@ function RedrawSearchResults()
 	}
 }
 
-TabDefine("search", function(reply, thenCall)
+function SettingsGetMentionList(firstElementText, useNameAsKey)
 {
 	const specificNames = SettingsGetNamesArrays()
-	var nameData = {[""]:"Custom"}
+	var nameData = {[""]:firstElementText}
 
 	for (var name of specificNames)
 	{
-		nameData[name.arr.join('|')] = CapitaliseFirstLetter(name.arr[0])
+		const value = name.arr[0]
+		nameData[useNameAsKey ? value : name.arr.join('|')] = value
 	}
 	
+	return nameData
+}
+
+TabDefine("search", function(reply, thenCall)
+{
+	const nameData = SettingsGetMentionList("Custom")
+
 	var options = []
 	OptionsMakeSelect(options, "RedrawSearchResults()", "Entity", "entity", nameData, "")
 	OptionsMakeTextBox(options, "RedrawSearchResults()", "Search for", "custom")
@@ -206,116 +213,9 @@ TabDefine("search", function(reply, thenCall)
 	thenCall.push(RedrawSearchResults)
 }, {icon:kIconSearch})
 
-function Smoother(arr)
-{
-	var total = 0
-
-	const len = arr.length
-	const midIndex = (len + 1) / 2
-	const div = midIndex * midIndex
-
-	for (var t in arr)
-	{
-		const frac = (+t + 1) * (len - t) / (div)
-		total += arr[t] * frac * frac
-	}
-
-	return total
-}
-
 function SearchDrawGraph()
 {
-	// WORK OUT WHAT TO DRAW
-	const colourEntries = Object.keys(g_searchDataForGraph.colours)
-	const drawData = {}
-	const smoothingCount = +g_currentOptions.search.smoothing
-
-	var biggestVal = 0
-
-	for (var spelling of colourEntries)
-	{
-		drawData[spelling] = {smoothing:[0], drawThis:[]}
-
-		for (var i = 0; i < smoothingCount; ++ i)
-		{
-			drawData[spelling].smoothing.push(0, 0)
-		}
-	}
-	
-	for (var t of g_searchDataForGraph.data)
-	{
-		var totalHere = 0
-
-		for (var spelling of colourEntries)
-		{
-			drawData[spelling].smoothing.push(t[spelling] ?? 0)				
-			drawData[spelling].smoothing.shift()
-
-			const myVal = Smoother(drawData[spelling].smoothing)
-			totalHere += myVal
-
-			drawData[spelling].drawThis.push(totalHere)
-		}
-		
-		if (biggestVal < totalHere)
-		{
-			biggestVal = totalHere
-		}
-	}
-
-	for (var i = 0; i < smoothingCount * 2; ++ i)
-	{
-		var totalHere = 0
-
-		for (var spelling of colourEntries)
-		{
-			drawData[spelling].smoothing.push(0)
-			drawData[spelling].smoothing.shift()
-
-			const myVal = Smoother(drawData[spelling].smoothing)
-			totalHere += myVal
-
-			drawData[spelling].drawThis.push(totalHere)
-		}
-		
-		if (biggestVal < totalHere)
-		{
-			biggestVal = totalHere
-		}
-	}
-
-	colourEntries.reverse()
-
-	// DONE GATHERING DATA
-	
-	const canvas = document.getElementById("graphCanvas")
-	const drawToHere = canvas?.getContext("2d")
-	
-	if (drawToHere)
-	{
-		drawToHere.fillStyle = "#444444"
-		drawToHere.fillRect(0, 0, canvas.width, canvas.height)
-		
-		for (var spelling of colourEntries)
-		{
-			var numDone = 0
-			const scaleX = canvas.width / (drawData[spelling].drawThis.length + 1)
-			const scaleY = canvas.height * 0.95 / biggestVal
-
-			drawToHere.fillStyle = g_searchDataForGraph.colours[spelling]
-			drawToHere.beginPath()
-			drawToHere.moveTo(0, canvas.height)
-		
-			for (var t of drawData[spelling].drawThis)
-			{
-				++ numDone
-				drawToHere.lineTo(numDone * scaleX, canvas.height - t * scaleY)
-			}
-
-			drawToHere.lineTo(canvas.width, canvas.height)
-			drawToHere.fill()
-		}
-	}
+	DrawSmoothedGraph(g_searchDataForGraph, +g_currentOptions.search.smoothing)
 }
 
 function HighlightThreadSection(num, bCanScroll)
@@ -356,8 +256,6 @@ function HighlightThreadSection(num, bCanScroll)
 function RedrawThread()
 {
 	var threadsGoHere = document.getElementById("threadsGoHere")
-
-	var lastHeading = ""
 	
 	g_threadSections = []
 	g_threadSectionSelected = 0
@@ -365,28 +263,44 @@ function RedrawThread()
 	if (threadsGoHere)
 	{
 		var output = []
-		var mustMatch = g_currentOptions.voice.showThis
+		var addWhenSkipASection = ""
+		var skippedASection = false
 
-		for (var metadata of g_metaDataInOrder)
+		const {page, headings, summary} = g_currentOptions.voice
+		const showThis = g_currentOptions.voice["showThis_" + page]
+		
+		if (showThis || page == "ALL")
 		{
-			var showHeading = "<H3>" + MetaDataMakeFragmentDescription(metadata.info) + "</H3>"
-			var before = ""
-			
-			if (metadata.info[g_currentOptions.voice.page] == mustMatch)
+			NovaLog("Redrawing sections where " + page + "='" + showThis + "'")
+
+			for (var metadata of g_metaDataInOrder)
 			{
-				for (var para of metadata.myParagraphs)
+				const info = metadata.info
+				var showHeading = (skippedASection ? addWhenSkipASection : "") + (headings ? "<H3>" + MetaDataMakeFragmentDescription(info) + "</H3>" : addWhenSkipASection ? "<BR>" : "")
+				var before = ""
+
+				const matches = (page == "ALL") || ((page == "MENTIONS") ? metadata.Mentions[showThis] : (info[page] == showThis))
+
+				if (matches)
 				{
-					if (showHeading)
+					for (var para of summary ? metadata.mySummaries : metadata.myParagraphs)
 					{
-						before = showHeading
-						showHeading = false
+						if (showHeading)
+						{
+							before = showHeading
+							showHeading = false
+						}
+
+						output.push(before + kIndent + '<SPAN CLASS="clicky" ONCLICK="HighlightThreadSection(' + g_threadSections.length + ')" ID="threadSection' + g_threadSections.length + '">' + TurnRedIf(para.allOfIt, para.issues) + '</SPAN>')
+						g_threadSections.push(para)
+						
+						before = ""
 					}
 
-					output.push(before + kIndent + '<SPAN CLASS="clicky" ONCLICK="HighlightThreadSection(' + g_threadSections.length + ')" ID="threadSection' + g_threadSections.length + '">' + TurnRedIf(para.allOfIt, para.issues) + '</SPAN>')
-					g_threadSections.push(para)
-					
-					before = ""
+					addWhenSkipASection = "<BR><HR WIDTH=45%>"
 				}
+				
+				skippedASection = !matches
 			}
 		}
 
@@ -407,12 +321,24 @@ function ThreadRead()
 	const thingToSay = g_threadSections[g_threadSectionSelected]
 	if (thingToSay)
 	{
-		const fragment = thingToSay.fragments[g_threadSectionFragment]
-		if (fragment)
+		if (thingToSay.fragments)
 		{
-			SpeakUsingVoice(fragment.text + fragment.followedBy, fragment.isSpeech ? "voiceSpeech" : "voiceDefault", OnDoneThreadSpeakingFragment)
+			// When reading actual text
+			const fragment = thingToSay.fragments[g_threadSectionFragment]
+			if (fragment)
+			{
+				SpeakUsingVoice(fragment.text + fragment.followedBy, fragment.isSpeech ? "voiceSpeech" : "voiceDefault", OnDoneThreadSpeakingFragment)
+				return
+			}
 		}
-		else if (HighlightThreadSection(g_threadSectionSelected + 1, true))
+		else if (g_threadSectionFragment == 0)
+		{
+			// When reading summaries
+			SpeakUsingVoice(thingToSay.allOfIt, "voiceDefault", OnDoneThreadSpeakingFragment)
+			return
+		}
+
+		if (HighlightThreadSection(g_threadSectionSelected + 1, true))
 		{
 			CallTheseFunctions(ThreadRead)
 		}
@@ -421,39 +347,69 @@ function ThreadRead()
 
 TabDefine("voice", function(reply, thenCall)
 {
-	const columns = Object.keys(g_metaDataAvailableColumns)
-	
-	if (columns.length)
-	{
-		TabBuildButtonsBar(reply, columns)
-		
-		var nameData = {[""]:""}
+	var columns = Object.keys(g_metaDataAvailableColumns)
+	columns.push("MENTIONS", "ALL")
 
-		for (var metadata of g_metaDataInOrder)
+	TabBuildButtonsBar(reply, columns)
+
+	const page = g_currentOptions.voice.page
+
+	var options = []
+	
+	if (g_hasSummaries == undefined)
+	{
+		g_hasSummaries = false
+
+		for (var {mySummaries} of g_metaDataInOrder)
 		{
-			if (g_currentOptions.voice.page in metadata.info)
+			if (mySummaries.length)
 			{
-				const txt = metadata.info[g_currentOptions.voice.page]
-				nameData[txt] = txt
+				g_hasSummaries = true
+				break
 			}
 		}
 		
-		var options = []
-		var hoverOptions = []
-		OptionsMakeSelect(options, "RedrawThread()", "Only show text from " + g_currentOptions.voice.page.toLowerCase(), "showThis", nameData, "", true)
-//		hoverOptions.push('<button onclick="HighlightThreadSection(g_threadSectionSelected - 1, true)">&lt;</button>')
-//		hoverOptions.push('<button onclick="HighlightThreadSection(g_threadSectionSelected + 1, true)">&gt;</button>')
-		hoverOptions.push('<BUTTON ONCLICK="ThreadRead()">' + MakeIconWithTooltip(kIconSpeech, -15, "Speak") + '</BUTTON>')
-		hoverOptions.push('<BUTTON ONCLICK="speechSynthesis.cancel()">' + MakeIconWithTooltip(kIconMute, -4, "Stop") + '</BUTTON>')
-		hoverOptions.push('<BUTTON ONCLICK="window.scrollTo(0,0)">' + MakeIconWithTooltip(kIconToTop, 20, "Scroll to top") + '</BUTTON>')
-
-		reply.push(OptionsConcat(options))
-		MakeUpdatingArea(reply, "threadsGoHere", 'align="left" style="user-select:text"')
-		
-		ShowHoverControls(hoverOptions)
-		
-		thenCall.push(RedrawThread)
+		NovaLog("Does document have any summaries? " + (g_hasSummaries ? "Yes" : "No"))
 	}
+	
+	if (page == "MENTIONS")
+	{
+		const mentionData = SettingsGetMentionList("", true)
+		OptionsMakeSelect(options, "RedrawThread()", "Only show sections which mention", "showThis_" + page, mentionData, "", true)		
+	}
+	else if (page != "ALL")
+	{
+		var nameData = {[""]:""}
+
+		for (var {info} of g_metaDataInOrder)
+		{
+			if (page in info)
+			{
+				const txt = info[page]
+				nameData[txt] = txt
+			}
+		}
+	
+		OptionsMakeSelect(options, "RedrawThread()", "Only show text from " + page.toLowerCase(), "showThis_" + page, nameData, "", true)
+	}
+
+	OptionsMakeCheckbox(options, "RedrawThread()", "headings", "Show headings", true, true)
+	
+	if (g_hasSummaries)
+	{
+		OptionsMakeCheckbox(options, "RedrawThread()", "summary", "Show summary", false, true)
+	}
+
+	reply.push(OptionsConcat(options))
+
+	MakeUpdatingArea(reply, "threadsGoHere", 'align="left" style="user-select:text"')
+	
+	var hoverOptions = []
+	hoverOptions.push('<BUTTON ONCLICK="ThreadRead()">' + MakeIconWithTooltip(kIconSpeech, -15, "Speak") + '</BUTTON>')
+	hoverOptions.push('<BUTTON ONCLICK="speechSynthesis.cancel()">' + MakeIconWithTooltip(kIconMute, -4, "Stop") + '</BUTTON>')
+	ShowHoverControls(hoverOptions)
+	
+	thenCall.push(RedrawThread)
 }, {icon:kIconBooks, tooltipText:"Read"})
 
 //---------------------------------------

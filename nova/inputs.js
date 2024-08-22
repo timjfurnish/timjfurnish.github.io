@@ -51,7 +51,7 @@ async function pasteToInputBox()
 		g_numInputBoxes = 0
 		addInputBox(true)
 		document.getElementById("txtIn1").value = theText
-		ProcessInput()
+		CallTheseFunctions(ProcessInput)
 	}
 	catch (error)
 	{

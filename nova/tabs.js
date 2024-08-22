@@ -40,6 +40,7 @@ function TabDefine(tabName, myFunction, settings)
 
 function SetTabTitle(tabName, text)
 {
+//	console.log("Setting alert marker for tab '" + tabName + "' to " + text)
 	document.getElementById("tabText_" + tabName).innerHTML = BuildTabDisplayText(tabName, text)
 }
 
@@ -55,12 +56,16 @@ function BuildTabDisplayText(tabName, extra)
 	return main
 }
 
-function MakeIconWithTooltip(icon, angle, tooltipText, clickyFunc, id)
+function MakeIconWithTooltip(icon, angle, tooltipText, clickyFunc, id, alpha)
 {
 	var extraArgs = clickyFunc ? ' onClick="' + clickyFunc + '"' : ''
 	if (id)
 	{
 		extraArgs += ' id="' + id + '"'
+	}
+	if (alpha != undefined)
+	{
+		icon = '<nobr style="opacity:' + alpha + '">' + icon + '</nobr>'
 	}
 	return '<b CLASS="iconWithTooltip"' + extraArgs + '>' + icon + '<span class="tooltipBubble" STYLE="transform:rotate(' + angle + 'deg)">' + tooltipText + '</span></b>'
 }

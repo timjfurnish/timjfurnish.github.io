@@ -16,7 +16,7 @@ function BuildWarningNamesList()
 		'SCRIPT', 'ISSUE SUMMARY', 'UNSEEN NAMES',
 		
 		// Start on
-		'NUMBERS', 'TODO', 'DISALLOWED WORD', 'ILLEGAL CHARACTERS',
+		'NUMBERS', 'TODO', 'DISALLOWED WORD', 'ILLEGAL CHARACTERS', 'UNIQUE', 'ORDER',
 		'LEADING OR TRAILING SPACE', 'PUNCTUATION COMBO', 'BRACKETS',
 		'INVALID FINAL SPEECH CHARACTER', 'INVALID FIRST SPEECH CHARACTER', 'INVALID FINAL CHARACTER', 'IGNORED COMPLETENESS',
 		'SPLIT INFINITIVE', 'ADVERB WITH HYPHEN', 'CHAPTER NAME IN CHAPTER', 'ILLEGAL MOVE BETWEEN LOCATIONS',
@@ -54,6 +54,8 @@ TabDefine("issues", function(reply, thenCall)
 
 		if (! g_disabledWarnings["ISSUE SUMMARY"])
 		{
+			NovaLog("Displaying issue summary")
+			/*
 			TableOpen(reply)
 			TableAddHeading(reply, "Issue type")
 			TableAddHeading(reply, "Count")
@@ -64,7 +66,8 @@ TabDefine("issues", function(reply, thenCall)
 				reply.push("<TD CLASS=cell>" + k + "</TD><TD CLASS=cell>" + v + "</TD>")
 			}
 			
-			TableClose(reply)
+			TableClose(reply)*/
+			reply.push(TableShowTally(g_issueStats, g_warningNames, true))
 		}
 	}
 	else
@@ -79,6 +82,8 @@ function ClearEarlyIssues()
 	g_issues = {}
 	g_disabledWarnings = {}
 	g_issueStats = {}
+
+//	console.log("Reset issue count to " + g_issueCount)
 
 	function InitOneStat(theName)
 	{
@@ -103,11 +108,6 @@ function ClearEarlyIssues()
 
 OnEvent("clear", false, ClearEarlyIssues)
 
-function IssueGetTotal()
-{
-	return g_issueCount
-}
-
 function AutoFix(theType, param)
 {
 	NovaLog("Auto-fixing " + theType + " issue, param=" + param + " by calling " + g_autoFixIssues[theType])
@@ -116,16 +116,14 @@ function AutoFix(theType, param)
 
 function IssueAdd(addThis, theType, fixMeParam, overrideIssueHeading)
 {
-	//	NovaWarn(issueHeading + " - " + addThis)
-
 	if (theType)
 	{
-		const col = g_warningNames[theType]
+		var col = g_warningNames[theType]
 
 		if (! col)
 		{
 			ShowError("Please add " + theType + " to list of warning types")
-			g_warningNames[theType] = "#FF2222"
+			col = g_warningNames[theType] = "#FF2222"
 		}
 		
 		if (g_disabledWarnings[theType])
@@ -140,11 +138,16 @@ function IssueAdd(addThis, theType, fixMeParam, overrideIssueHeading)
 			const callThis = 'AutoFix(\'' + theType + '\', \'' + AddEscapeChars(fixMeParam.replace("'", "\\'")) + '\')'
 			addThis += ' <NOBR class="fixMe" onClick="' + callThis + '">FIX ME</NOBR>'
 		}
+		
+		addThis += ' <NOBR class="fixMe" onClick="DisableIssueCheck(\'' + theType + '\')">DISABLE</NOBR>'
 	}
+
+//	NovaLog(addThis)
 
 	Tally(g_issueStats, theType ?? "NO TYPE")
 
 	++ g_issueCount
+//	console.log("Increased issue count to " + g_issueCount)
 
 	const issueHeading = overrideIssueHeading ?? MetaDataMakeFragmentDescription()
 
@@ -156,6 +159,13 @@ function IssueAdd(addThis, theType, fixMeParam, overrideIssueHeading)
 	{
 		g_issues[issueHeading] = [addThis]
 	}
+}
+
+function DisableIssueCheck(theType)
+{
+	Assert(g_currentOptions.settings[theType])
+	g_currentOptions.settings[theType] = false
+	CallTheseFunctions(ProcessInput)
 }
 
 OnEvent("processingDone", false, () =>
@@ -170,9 +180,9 @@ OnEvent("processingDone", false, () =>
 			}
 		}
 	}
-	
-	SetTabTitle('issues', g_issueCount || undefined)
 })
+
+OnEvent("processingDone", true, () => SetTabTitle('issues', g_issueCount || undefined))
 
 SetMarkupFunction('@', strIn =>
 {

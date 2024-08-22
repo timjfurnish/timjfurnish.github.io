@@ -33,6 +33,16 @@ function TrySetElementClass(elemName, className, add)
 // String things
 //---------------------------
 
+function MakeElementID(name, stringIn)
+{
+	for (var i in stringIn)
+	{
+		name += "_" + stringIn.charCodeAt(i)
+	}
+	
+	return name
+}
+
 function UtilFormatTime(numSeconds)
 {
 	const numWholeSeconds = Math.ceil(numSeconds)
@@ -180,6 +190,20 @@ function MakeColourLookUpTable(arr, forceMult, offset)
 //---------------------------
 // Array/object utils
 //---------------------------
+
+function MakeOrAddToObject(container, objectName, theKey, theVal)
+{
+	if (container[objectName])
+	{
+//		console.log("Container has a member called '" + objectName + "' already, adding " + theKey + " to it (" + theVal + ")")
+		container[objectName][theKey] = theVal
+	}
+	else
+	{
+//		console.log("Container has no member called '" + objectName + "', creating it and adding " + theKey + " to it (" + theVal + ")")
+		container[objectName] = {[theKey]:theVal}
+	}
+}
 
 function MakeSet(...theBits)
 {
@@ -372,7 +396,7 @@ function DoEvent(eventName)
 {
 	if (eventName in g_eventFuncs)
 	{
-		NovaLog("Calling " + g_eventFuncs[eventName].length + " '" + eventName + "' callbacks")
+//		NovaLog("Calling " + g_eventFuncs[eventName].length + " '" + eventName + "' callbacks")
 		CallTheseFunctionsNow(...g_eventFuncs[eventName])
 	}
 }

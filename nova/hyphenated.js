@@ -139,7 +139,7 @@ function HyphenCheckFindWithNeither()
 {
 	function NoSpaceCallback(key, value)
 	{
-		HuntFor(new RegExp('\\b' + TurnNovaShorthandIntoRegex(key.replaceAll('-', '')) + '\\b', 'gi'), matched => (Tally(value, "countWithNeither"), SetMemberOfMember(g_hyphenFoundWords, key, matched, true)))
+		HuntFor(new RegExp('\\b' + TurnNovaShorthandIntoRegex(key.replaceAll('-', '')) + '\\b', 'gi'), matched => (Tally(value, "countWithNeither"), MakeOrAddToObject(g_hyphenFoundWords, key, matched, true)))
 	}
 	
 	const isDone = TimeSlicedCallFuncForAllKeys(g_hyphenCheckWIP, "doneNoSpaceCheck", NoSpaceCallback, 12, 0.5, 0.5)
@@ -150,7 +150,7 @@ function HyphenCheckFindWithSpaces()
 {
 	function SpaceCallback(key, value)
 	{
-		HuntFor(new RegExp('\\b' + TurnNovaShorthandIntoRegex(key.replaceAll('-', ' ')) + '\\b', 'gi'), matched => (Tally(value, "countWithSpaces"), SetMemberOfMember(g_hyphenFoundWords, key, matched, true)))
+		HuntFor(new RegExp('\\b' + TurnNovaShorthandIntoRegex(key.replaceAll('-', ' ')) + '\\b', 'gi'), matched => (Tally(value, "countWithSpaces"), MakeOrAddToObject(g_hyphenFoundWords, key, matched, true)))
 	}
 
 	const isDone = TimeSlicedCallFuncForAllKeys(g_hyphenCheckWIP, "doneSpaceCheck", SpaceCallback, 12, 0, 0.5)
@@ -179,18 +179,6 @@ function HyphenCheckAddCustom(beforeHyphen, afterHyphen, wildcardCollection)
 	}
 }
 
-function SetMemberOfMember(container, outerName, innerName, value)
-{
-	if (outerName in container)
-	{
-		container[outerName][innerName] = value
-	}
-	else
-	{
-		container[outerName] = {[innerName]: value}
-	}
-}
-
 function HyphenCheckFirstPass()
 {
 	UpdateAreaWithProgressBar('hyphenCheckOutput', 0)
@@ -216,7 +204,7 @@ function HyphenCheckFirstPass()
 	{
 		// TODO: see if it matches a wildcard, if so, use that as the key
 		g_hyphenCheckWIP[key] = {countWithHyphens:value}
-		SetMemberOfMember(g_hyphenFoundWords, key, key, true)
+		MakeOrAddToObject(g_hyphenFoundWords, key, key, true)
 	}
 	
 	QueueFunction(HyphenCheckFindWithSpaces)

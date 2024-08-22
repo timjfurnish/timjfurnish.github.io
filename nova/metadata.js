@@ -11,28 +11,27 @@ var g_metaDataTotals
 var g_metaDataCurrentCompleteness
 var g_metaDataNextCompleteness
 var g_metaDataGatherParagraphs
+var g_metaDataGatherSummaries
 var g_metaDataCurrentContainsToDo
 var g_metaDataSeenValues
-var g_totalParagraphs
+var g_hasSummaries
 var g_metaDataMaxValues
-var g_metaDataLongestParagraphLength
+var g_stillLookingForTagText
 
 const kMetaDataDefaultDisplay = MakeSet("Words", "Estimated final words", "Percent done")
 const kMetaDataDefaultGroup = MakeSet("PART")
 const kCanDisplayAsTimeToRead = MakeSet("Words", "Estimated final words")
 const kWordsPerSecond = (210 / 60) // Average WPM apparently 183 out loud, 238 in head
+const kTallyCheckboxes = ["Paragraphs", "Words", "Estimated final words", "Speech", "Percent done", "Percent speech"]
 
 function MakeClearTally(createMentions)
 {
 	var reply =
 	{
-		Sentences:0,
 		Paragraphs:0,
 		Words:0,
 		["Estimated final words"]:0,
-		["Speech"]:0,
-		["Percent speech"]:0,
-		["Percent done"]:0
+		["Speech"]:0
 	}
 	
 	if (createMentions)
@@ -77,16 +76,42 @@ function MetaDataCombine(container, name, addThisValue)
 
 function MetaDataMakeFragmentDescription(fromThis)
 {
-	return Object.values(fromThis ?? g_metaDataCurrent).join(" | ")
+	fromThis = fromThis ?? g_metaDataCurrent
+	var out = []
+	for (var [key, val] of Object.entries(fromThis))
+	{
+		if (key != 'CHAPTER' && key != 'WORLD')
+		{
+			out.push(val)
+		}
+	}
+	return "<BIG>" + fromThis.CHAPTER + "</BIG> &nbsp; <SMALL>(" + out.join(", ") + ")</SMALL>"
+}
+
+function MetaDataDoneProcessing()
+{
+	for (var v of Object.keys(g_metaDataCurrent))
+	{
+		MetaDataSet(v)
+	}
+
+	MetaDataEndProcess()
 }
 
 function MetaDataEndProcess()
 {
-	if (g_metaDataTally.Sentences)
+	if (g_metaDataGatherParagraphs.length)
 	{
-		g_totalParagraphs += g_metaDataTally.Paragraphs
+		g_metaDataTally.Paragraphs = g_metaDataGatherParagraphs.length
 
-		if (g_metaDataCurrentCompleteness < 100 && ! g_metaDataCurrentContainsToDo)
+		if (g_metaDataCurrentContainsToDo)
+		{
+			if (g_metaDataCurrentCompleteness >= 100)
+			{
+				IssueAdd("Completeness is " + g_metaDataCurrentCompleteness + " but there's a TODO here", "TODO")// " + FixStringHTML(foundInText), "TODO")
+			}
+		}
+		else if (g_metaDataCurrentCompleteness < 100)
 		{
 			IssueAdd("Completeness is " + g_metaDataCurrentCompleteness + " but there's no TODO in this section", "TODO")
 		}
@@ -97,18 +122,10 @@ function MetaDataEndProcess()
 			g_metaDataAvailableColumns[key] = true
 			info[key] = val
 			
-			if (key in g_metaDataSeenValues)
-			{
-				g_metaDataSeenValues[key][val] = true
-			}
-			else
-			{
-				g_metaDataSeenValues[key] = {[val]: true}
-			}
+			MakeOrAddToObject(g_metaDataSeenValues, key, val, true)
 		}
 		
-		var storeThis = {info:info, myParagraphs:g_metaDataGatherParagraphs}
-		Assert(g_metaDataGatherParagraphs.length == g_metaDataTally.Paragraphs, g_metaDataGatherParagraphs.length + " != " + g_metaDataTally.Paragraphs)
+		var storeThis = {info:info, myParagraphs:g_metaDataGatherParagraphs, mySummaries:g_metaDataGatherSummaries}
 
 		g_metaDataTally["Estimated final words"] = (g_metaDataTally.Words * 100) / g_metaDataCurrentCompleteness
 	
@@ -133,6 +150,7 @@ function MetaDataEndProcess()
 		g_metaDataTally = MakeClearTally(true)
 		g_metaDataInOrder.push(storeThis)
 		g_metaDataGatherParagraphs = []
+		g_metaDataGatherSummaries = []
 	}
 }
 
@@ -143,7 +161,7 @@ function MetaDataSet(key, val)
 	key = key.toUpperCase()
 
 	// TODO: custom callback
-	if (key == 'LOC')
+	if (key == 'LOC' && val)
 	{
 		const world = val.split('.', 1)[0]
 
@@ -159,6 +177,12 @@ function MetaDataSet(key, val)
 		g_metaDataCurrent['WORLD'] = world
 	}
 
+	if (g_stillLookingForTagText && (key in g_stillLookingForTagText))
+	{
+		IssueAdd("Didn't find the text " + FixStringHTML(g_stillLookingForTagText[key]) + " anywhere in this " + key.toLowerCase(), "CHAPTER NAME IN CHAPTER")
+		delete g_stillLookingForTagText[key]
+	}
+
 	if (val === undefined)
 	{
 		delete g_metaDataCurrent[key]
@@ -171,15 +195,7 @@ function MetaDataSet(key, val)
 	g_metaDataCurrentContainsToDo = false
 }
 
-function MetaDataInformFoundToDo(foundInText)
-{
-	if (g_metaDataCurrentCompleteness >= 100)
-	{
-		IssueAdd("Completeness is " + g_metaDataCurrentCompleteness + " but there's a TODO in " + FixStringHTML(foundInText), "TODO")
-	}
-
-	g_metaDataCurrentContainsToDo = true
-}
+SetMarkupFunction('~', txt => g_metaDataGatherSummaries.push({allOfIt:txt}))
 
 SetMarkupFunction('#', txt =>
 {
@@ -201,7 +217,7 @@ SetMarkupFunction('%', valueTxt =>
 	{
 		IssueAdd("Ignoring bad completeness value " + value + ", should be between 1 and 100 inclusive", "IGNORED COMPLETENESS")
 	}
-	else if (g_metaDataTally.Sentences)
+	else if (g_metaDataGatherParagraphs.length)
 	{
 		g_metaDataNextCompleteness = value
 	}
@@ -217,7 +233,7 @@ SetMarkupFunction('%', valueTxt =>
 
 function MetaDataClear()
 {
-	g_metaDataCurrent = {CHAPTER:"None"}
+	g_metaDataCurrent = {}
 	g_metaDataInOrder = []
 	g_metaDataAvailableColumns = {}
 	g_metaDataTally = MakeClearTally(true)
@@ -225,56 +241,16 @@ function MetaDataClear()
 	g_metaDataCurrentCompleteness = 100
 	g_metaDataNextCompleteness = 100
 	g_metaDataGatherParagraphs = []
+	g_metaDataGatherSummaries = []
 	g_metaDataCurrentContainsToDo = false
 	g_metaDataSeenValues = {}
-	g_totalParagraphs = 0
+	g_hasSummaries = undefined
 	g_metaDataMaxValues = undefined
-	g_metaDataLongestParagraphLength = 0
+	g_stillLookingForTagText = null
 }
 
-OnEvent("processingDone", false, MetaDataEndProcess)
+OnEvent("processingDone", false, MetaDataDoneProcessing)
 OnEvent("clear", false, MetaDataClear)
-
-function MetaDataProcessParagraph(numSentences)
-{
-	if (g_metaDataTally.Sentences)
-	{
-		g_metaDataTally.Sentences += numSentences
-	}
-	else
-	{
-//		console.log("Starting new section {" + Object.entries(g_metaDataCurrent).join(' ') + "} so changing currentCompleteness from " + g_metaDataCurrentCompleteness + " to " + g_metaDataNextCompleteness + " and resetting nextCompleteness to 100")
-		g_metaDataTally.Sentences = numSentences
-		g_metaDataCurrentCompleteness = g_metaDataNextCompleteness
-		g_metaDataNextCompleteness = 100
-	}
-}
-
-function MetaDataDoneParagraph(pushThis)
-{
-	g_metaDataGatherParagraphs.push(pushThis)
-	g_metaDataTally.Paragraphs ++
-	
-	if (pushThis.allOfIt.length > g_metaDataLongestParagraphLength)
-	{
-		g_metaDataLongestParagraphLength = pushThis.allOfIt.length
-	}
-}
-
-function MetaDataAddWordCount(words, isSpeech)
-{
-	g_metaDataTally.Words += words
-	
-	if (isSpeech)
-	{
-		g_metaDataTally.Speech += words
-	}
-}
-
-function MetaDataIncreaseCount(counterName)
-{
-	Tally(g_metaDataTally.Mentions, counterName)
-}
 
 function MetaDataDrawTable()
 {
@@ -284,6 +260,8 @@ function MetaDataDrawTable()
 	var selectedDisplay = []
 	var reply = []
 	var seenThings = {}
+	
+	NovaLog("Redrawing stats table sorted by " + sort)
 
 	const estimatedSize = g_metaDataTotals["Estimated final words"]
 	if (estimatedSize)
@@ -451,7 +429,7 @@ function MetaDataDrawTable()
 		
 		for (var [name, val] of Object.entries(data.tally))
 		{
-			if (val > maximums[name])
+			if (! (name in maximums) || val > maximums[name])
 			{
 				maximums[name] = val
 			}
@@ -562,18 +540,14 @@ function TabFunctionStats(reply, thenCall)
 	}
 
 	var sortData = {"":"Do not consolidate", none:"Chronological"}
-	var emptyTally = MakeClearTally(true)
 
-	for (var name of Object.keys(emptyTally))
+	for (var name of kTallyCheckboxes)
 	{
-		if (typeof emptyTally[name] == "number")
-		{
-			sortData[name] = name
-		}
-
+		sortData[name] = name
 		OptionsMakeCheckbox(optionsDisplay, "MetaDataDrawTable()", "display_" + name, name, kMetaDataDefaultDisplay[name], true)
 	}
-	
+
+	OptionsMakeCheckbox(optionsDisplay, "MetaDataDrawTable()", "display_Mentions", "Mentions", kMetaDataDefaultDisplay["Mentions"], true)
 	OptionsMakeSelect(optionsTextRow, "MetaDataDrawTable()", "Sort", "sort", sortData, "none")
 
 	reply.push("<B>Split into rows using:</B><BR>")
@@ -590,6 +564,7 @@ TabDefine("graph", TabFunctionGraph, {icon:"&#x1F4C8;"})
 
 function MetaDataDrawGraph()
 {
+	/*
 	const canvas = document.getElementById("graphCanvas")
 	const drawToHere = canvas?.getContext("2d")
 	
@@ -643,11 +618,29 @@ function MetaDataDrawGraph()
 			}
 		}
 	}
-}
+	*/
 
-function CalcGraphCanvasWidth()
-{
-	return Math.max(window.innerWidth - 125, 870)
+	const graphThis = {colours:{SPP:"#FF0000", WPP:"#00FF00"}, data:[]}
+	
+	for (var elem of g_metaDataInOrder)
+	{
+		if (0)
+		{
+			for (var para of elem.myParagraphs)
+			{
+				if (! para.ignoreFragments)
+				{
+					graphThis.data.push({PARA:para.allOfIt.length})
+				}
+			}
+		}
+		else
+		{
+			graphThis.data.push({SPP:elem.Speech / elem.Paragraphs, WPP:(elem.Words - elem.Speech) / elem.Paragraphs})
+		}
+	}
+
+	DrawSmoothedGraph(graphThis, 2)
 }
 
 function TabFunctionGraph(reply, thenCall)
@@ -665,14 +658,3 @@ function TabFunctionGraph(reply, thenCall)
 	reply.push("<BR><CANVAS WIDTH=" + CalcGraphCanvasWidth() + " HEIGHT=300 ID=graphCanvas></CANVAS>")
 	thenCall.push(MetaDataDrawGraph)
 }
-
-window.addEventListener('resize', function(theEvent)
-{
-	const elem = document.getElementById("graphCanvas")
-	
-	if (elem)
-	{
-		elem.width = CalcGraphCanvasWidth()
-		TabRedrawGraph()
-	}
-}, true);
