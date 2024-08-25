@@ -321,7 +321,7 @@ button:disabled, button[disabled]
 	}
 	#toTop
 	{
-		transform:scale(2) translate(-10px, -15px);
+		transform:scale(2) translate(-10px, 10px);
 	}
 }
 .iconWithTooltip
