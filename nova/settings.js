@@ -3,15 +3,25 @@
 // (c) Tim Furnish, 2023-2024
 //==============================================
 
+const kHasNoEffect = ["voiceDefault", "voiceSpeech", "speakRate"]
+const kCurrentSaveFormatVersion = 2
+const kSettingsWhichProvideNames = MakeColourLookUpTable(["names", "names_places", "names_other"])
+
+var g_tweakableSettings = {}
+var g_openTextAreas = {}
+var g_nameLookup
+var g_autoTagKeys
+var g_tagsExpectedInEverySection = []
+	
 //=======================================================================
 // Automatic tag stuff!
 //=======================================================================
 
-// TODO: would be good to put this into settings, but let's get it working first...
+// TO DO: would be good to put this into settings, but let's get it working first...
 const kAutoTagStuff =
 {
 	["T minus "]:{tag:"TMINUS", numericalCheck:"descend", characters:",.", clearTags:"", unique:true},
-	["Document #"]:{tag:"PART", numericalCheck:"ascend", characters:"", clearTags:"", global:true, unique:true},
+	["Document #"]:{tag:"PART", numericalCheck:"ascend", characters:"", clearTags:"", global:true, unique:true, joinNextLine:true},
 	["*"]:{tag:"CHAPTER", numericalCheck:"none", mustInclude:true, clearTags:"TMINUS", global:true, unique:true},
 
 //	["BOOK "]:{tag:"BOOK", numericalCheck:"", includeLineInText:true, clearTags:""},
@@ -23,15 +33,15 @@ const kAutoTagOptions = Object.entries(
 {
 	mustInclude:
 	{
-		tooltip:"Verify that the tag text appears in the document before the tag changes",
+		tooltip:"Verify that the tag text appears in the<BR>document before the tag changes",
 		icon:kIconTextAppears,
-		func:(tag, value) => MakeOrAddToObject(window, "g_stillLookingForTagText", tag, value.split(/ *\(/, 1)[0].toLowerCase())
+		onTagSetFunc:(tag, value) => MakeOrAddToObject(window, "g_stillLookingForTagText", tag, value.split(/ *\(/, 1)[0].toLowerCase())
 	},
 	unique:
 	{
-		tooltip:"Verify that each instance of this tag is unique",
+		tooltip:"Verify that each instance of<BR>this tag is unique",
 		icon:kIconUnicorn,
-		func:function(tag, value)
+		onTagSetFunc:function(tag, value)
 		{
 			if ((tag in g_metaDataSeenValues) && (value in g_metaDataSeenValues[tag]))
 			{
@@ -41,14 +51,18 @@ const kAutoTagOptions = Object.entries(
 	},
 	includeLineInText:
 	{
-		tooltip:"Include this text in the document",
+		tooltip:"Include this text in<BR>the document",
 		icon:kIconWrite
 	},
 	global:
 	{
-		// TODO: implement!
-		tooltip:"Verify that this tag is set throughout",
+		tooltip:"Verify that this tag is<BR>set throughout",
 		icon:kIconGlobal
+	},
+	joinNextLine:
+	{
+		tooltip:"Also consume the next line<BR>of the document",
+		icon:kIconJoin
 	},
 })
 
@@ -61,9 +75,9 @@ function CheckOrderOfValues(tag, value, isAscending)
 		{
 			const knownAsNumber = parseInt(known)
 
-			if (isAscending ? (valAsNumber < knownAsNumber) : (valAsNumber > knownAsNumber))
+			if (isAscending ? (valAsNumber <= knownAsNumber) : (valAsNumber >= knownAsNumber))
 			{
-				IssueAdd("Expected " + valAsNumber + " (from '" + value + "') to be " + (isAscending ? ">=" : "<=") + " " + knownAsNumber + " (from '" + known + "')", "ORDER")
+				IssueAdd("Expected " + valAsNumber + " (from '" + value + "') to be " + (isAscending ? ">" : "<") + " " + knownAsNumber + " (from '" + known + "')", "ORDER")
 			}
 		}
 	}	
@@ -78,16 +92,16 @@ const kAutoTagChecks =
 	descend:
 	{
 		icon:kIconDescending,
-		func:(tag, value) => CheckOrderOfValues(tag, value, false)
+		onTagSetFunc:(tag, value) => CheckOrderOfValues(tag, value, false)
 	},
 	ascend:
 	{
 		icon:kIconAscending,
-		func:(tag, value) => CheckOrderOfValues(tag, value, true)
+		onTagSetFunc:(tag, value) => CheckOrderOfValues(tag, value, true)
 	}
 }
 
-var kAutoTagKeys = Object.keys(kAutoTagStuff).sort()
+AutoTagFixData()
 
 function SettingsAddAutoTag()
 {
@@ -114,21 +128,33 @@ function AutoTagOptionToggle(line, k)
 	AutoTagUpdate()
 }
 
-function AutoTagDelete(whichOne)
+function AutoTagFixData()
 {
-	delete kAutoTagStuff[whichOne]
-	AutoTagUpdate()
+	g_autoTagKeys = Object.keys(kAutoTagStuff).sort()
+	g_tagsExpectedInEverySection = []
+	
+	for (var {tag, global} of Object.values(kAutoTagStuff))
+	{
+		if (global && !g_tagsExpectedInEverySection.includes(tag))
+		{
+			g_tagsExpectedInEverySection.push(tag)
+		}
+	}
+
+	// If there's anything else we can/should do to optimise analysis, do it here!
 }
 
 function AutoTagUpdate()
 {
-	kAutoTagKeys = Object.keys(kAutoTagStuff).sort()
-
+	AutoTagFixData()
+	
 	const elem = document.getElementById("autoTagCell")
+	
 	if (elem)
 	{
 		elem.innerHTML = BuildAutomaticTagsBox()
 	}
+	
 	CallTheseFunctions(ProcessInput)
 }
 
@@ -177,7 +203,7 @@ function AutoTagEditText(txt, thePrompt, key)
 
 function AutoTagUpdateOrder()
 {
-	for (var k of kAutoTagKeys)
+	for (var k of g_autoTagKeys)
 	{
 		kAutoTagStuff[k].numericalCheck = document.getElementById(MakeElementID("AutoTagOrder", k)).value
 	}
@@ -196,7 +222,7 @@ function BuildAutomaticTagsBox(moreOutput)
 	TableAddHeading(reply, "Clear")
 	TableAddHeading(reply, "Options")
 
-	for (var line of kAutoTagKeys)
+	for (var line of g_autoTagKeys)
 	{
 		const {keep, numericalCheck} = kAutoTagStuff[line]
 		var numericalCheckBits = ['<select id="' + MakeElementID("AutoTagOrder", line) + '" onchange="AutoTagUpdateOrder()">']
@@ -210,11 +236,11 @@ function BuildAutomaticTagsBox(moreOutput)
 		for (var [k, data] of kAutoTagOptions)
 		{
 			const isOn = kAutoTagStuff[line][k]
-			optionBits.push(MakeIconWithTooltip(data.icon, 0, data.tooltip + (isOn ? ": ON" : ": OFF"), "AutoTagOptionToggle('" + line + "', '" + k + "')", undefined, isOn ? undefined : 0.15))
+			optionBits.push(MakeIconWithTooltip(data.icon, -4, data.tooltip + (isOn ? ": ON" : ": OFF"), "AutoTagOptionToggle('" + line + "', '" + k + "')", undefined, isOn ? undefined : 0.15, data.tooltip.length * -1.5))
 		}
 		
 		TableNewRow(reply)
-		TableAddCell(reply, "<BIG>" + MakeIconWithTooltip(kIconTrash, 0, "Delete", "AutoTagDelete('" + line + "')") + "&nbsp;</BIG>" + MakeClickableTextBubble(line, "Enter the name for this tag", "tag"))
+		TableAddCell(reply, "<BIG>" + MakeIconWithTooltip(kIconTrash, 0, "Delete", "delete kAutoTagStuff['" + line + "']; AutoTagUpdate()") + "&nbsp;</BIG>" + MakeClickableTextBubble(line, "Enter the name for this tag", "tag"))
 		TableAddCell(reply, MakeClickableTextBubble(line, "Enter string to find in document"))
 		TableAddCell(reply, /* "<BIG>" + MakeIconWithTooltip(keep ? kIconGreenTick : kIconRedCross, 0, keep ? "Keep only these characters" : "Remove these characters", "AutoTagOptionToggle('" + line + "', 'keep')") + "&nbsp;</BIG>" + */ MakeClickableTextBubble(line, "Enter characters to remove from line before storing tag text", "characters"))
 		TableAddCell(reply, MakeClickableTextBubble(line, "Enter space-seperated list of tags to clear when this text is found", "clearTags"))
@@ -238,7 +264,7 @@ const kTweakableDefaults =
 	speakRate:1,
 	voiceDefault:"",
 	voiceSpeech:"",
-	badWords:"tge tgey",
+	badWords:"tg* vice-versa midair half-way part-way partway cliche* *cafes *cafe accomodation naive dance-floor dancefloor stage-show eon* *defense*",
 	allowedStartCharacters:'ABCDEFGHIJKLMNOPQRSTUVWXYZ"',
 	allowedCharacters:kCharacterElipsis + 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ()"\'?.,!',
 	startOfSpeech:kCharacterElipsis + "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'",
@@ -247,8 +273,8 @@ const kTweakableDefaults =
 	endOfParagraphNarrative:kCharacterElipsis + ".!?:",
 	skip:["Contents"],
 	wordsContainingFullStops:['etc.', 'Dr.', 'Mr.', 'Mrs.', 'i.e.', 'e.g.'],
-	replace:['\\bO\\.S\\./OFFSCREEN', '([0-9]+)\\.([0-9]+)/$1^$2', '^== (.*) ==$/$1.'],
-	hyphenCheckPairs:["sat-nav", "set-up", "under-cover", "self-reliance reliant control esteem respect awareness aware", "short-term", "left right-hand", "sand-timer", "back-stage", "stage-left right", "dance-floor", "slow-motion", "some-thing where how what body one", "heart-break breaking breaks breakingly broken", "car-park parks", "brain-wave waves", "mind lip-reading reader readers read reads", "twenty thirty forty fifty sixty seventy eighty ninety-one two three four five six seven eight nine", "one two three four five six seven eight nine ten-hundred thousand million billion trillion"],
+	replace:['\\bO\\.S\\./OFFSCREEN', '([0-9]+)\\.([0-9]+)/$1^$2', '^== (.*) ==$/$1.', "[!\?]'/'", "\bCONT'D\b/CONTINUED", "^EXT\./EXTERIOR", "^INT\./INTERIOR"],
+	hyphenCheckPairs:["sat-nav", "set-up", "under-cover", "self-reliance reliant control esteem respect awareness aware", "short-term", "left right-hand", "sand-timer", "back-stage", "stage-left right", "slow-motion", "some-thing where how what body one", "heart-break breaking breaks breakingly broken", "car-park parks", "brain-wave waves", "mind lip-reading reader readers read reads", "twenty thirty forty fifty sixty seventy eighty ninety-one two three four five six seven eight nine", "one two three four five six seven eight nine ten-hundred thousand million billion trillion"],
 	names:[],
 	names_places:[],
 	names_other:[],
@@ -267,12 +293,6 @@ const kSettingFunctions =
 	debugLog:val => document.getElementById("debugLog").style.display = val ? "block" : "none",
 }
 
-const kCurrentSaveFormatVersion = 2
-const kSettingsWhichProvideNames = MakeColourLookUpTable(["names", "names_places", "names_other"])
-
-var g_tweakableSettings = {}
-var g_openTextAreas = {}
-
 function SortCharactersAndRemoveDupes(inText)
 {
 	var set = {}
@@ -283,10 +303,7 @@ function SortCharactersAndRemoveDupes(inText)
 	return Object.keys(set).sort().join('')
 }
 
-function SortArray(inArray)
-{
-	return inArray.sort()
-}
+const SortArray = inArray => inArray.sort()
 
 const kMaintenanceFunctions =
 {
@@ -368,8 +385,8 @@ const kSettingNames =
 		splitInfinitiveIgnoreList:"Split infinitive check ignores|shortTextBox",
 		adverbHyphenIgnoreList:"Adverb hyphen check ignores|shortTextBox",
 		numberIgnoreList:"Number check ignores|shortTextBox",
-		["Enabled checks"]:() => BuildIssueDefaults(false),
-		["Additional settings"]:() => BuildIssueDefaults(true),
+		["Enabled checks"]:moreOutput => BuildIssueDefaults(false, moreOutput),
+		["Additional settings"]:moreOutput => BuildIssueDefaults(true, moreOutput),
 	},
 	DEBUG:
 	{
@@ -384,10 +401,6 @@ const kOptionCustomNames =
 	["ISSUE SUMMARY"]:"Display issue summary",
 	["UNSEEN NAMES"]:"Check for unseen names",
 }
-
-const kHasNoEffect = ["voiceDefault", "voiceSpeech"]
-
-var g_nameLookup
 
 OnEvent("clear", true, () =>
 {
@@ -475,18 +488,25 @@ function SettingsLoad()
 	
 	for (var [settingName, customFunc] of Object.entries(kSettingFunctions))
 	{
-		const param = g_tweakableSettings[settingName]
-//		NovaLog("Initialised '" + settingName + "' so calling " + DescribeFunction(customFunc) + " with " + GetDataTypeVerbose(param) + " '" + param + "'")
-		customFunc(param)
+		customFunc(g_tweakableSettings[settingName])
 	}
 
 	ReadVoices()
+	PickVoicesForCurrentLanguage()
 }
 
 function SettingSave(name)
 {
 	var newValue = g_tweakableSettings[name]
-	NovaLog("Saving " + GetDataTypeVerbose(newValue) + " '" + name + "'")
+	var details = ""
+	const dataType = GetDataTypeVerbose(newValue)
+	
+	if (dataType == "number" || dataType == "string" || dataType == "boolean")
+	{
+		details = " [" + newValue + "]"
+	}
+	
+	NovaLog("Saving " + dataType + " '" + name + "'" + details)
 	
 	// Some special case fun to save things in the right format...
 	if (Array.isArray(newValue))
@@ -603,17 +623,17 @@ function SettingsGetReplacementRegularExpressionsArray()
 	return reply
 }
 
-function SettingsSayShouldIgnore(txtIn)
+function SettingsSayShouldProcess(txtIn)
 {
 	for (var t of g_tweakableSettings.skip)
 	{
 		if (txtIn.startsWith(t))
 		{
-			return true
+			return false
 		}
 	}
 	
-	return false
+	return true
 }
 
 function FillInSetting(k)
@@ -660,17 +680,67 @@ function UserChangedSetting(name)
 	
 	if (customFunc)
 	{
-		const param = g_tweakableSettings[name]
-		const reply = customFunc(g_tweakableSettings[name])
-		NovaLog("User changed setting '" + name + "' to " + GetDataTypeVerbose(param) + " '" + param + "' - callback returned " + GetDataTypeVerbose(reply) + " '" + reply + "'")
+		customFunc(g_tweakableSettings[name])
 	}
 	else if (name == "language")
 	{
-		CallTheseFunctions(ReadVoices, ShowContentForSelectedTab)
+		CallTheseFunctions(ReadVoices, PickVoicesForCurrentLanguage, ShowContentForSelectedTab)
 	}
 	else if (! kHasNoEffect.includes(name))
 	{
 		CallTheseFunctions(ProcessInput)
+	}
+}
+
+function PickVoicesForCurrentLanguage()
+{
+	const fixThese = ['voiceSpeech', 'voiceDefault']
+	const usedVoices = {}
+
+	for (var v of fixThese)
+	{
+		const currentSelection = g_tweakableSettings[v]
+		if (currentSelection)
+		{
+			if (currentSelection in g_voiceLookUp)
+			{
+				usedVoices[currentSelection] = true
+			}
+			else
+			{
+				g_tweakableSettings[v] = ''
+			}
+		}
+	}
+	
+	const availableVoices = Object.keys(g_voiceLookUp)
+	const numAvailable = availableVoices.length
+
+	for (var v of fixThese)
+	{
+		if (! g_tweakableSettings[v])
+		{
+			const numUsed = Object.keys(usedVoices).length
+			
+			var bestScore = 0
+			for (var each of availableVoices)
+			{
+				const myScore = (each.includes("Google") ? 50 : 0) + (usedVoices[each] ? 0 : 100) + each.length
+				
+				if (myScore > bestScore)
+				{
+					g_tweakableSettings[v] = each
+					bestScore = myScore
+				}
+			}
+			
+			if (g_tweakableSettings[v])
+			{
+//				NovaLog("Need to pick a new " + v + ". Already using " + numUsed + "/" + numAvailable + " " + g_tweakableSettings.language + " voices... selected '" + g_tweakableSettings[v] + "'")
+				usedVoices[g_tweakableSettings[v]] = true
+				SettingSave(v)
+			}
+		}
 	}
 }
 
@@ -765,12 +835,35 @@ function SettingFixArray(whichOne)
 	}
 }
 
-function SettingTestSpeech(whichOne)
+function SettingsIssueToggleAll(doSettings)
 {
-	SpeakUsingVoice("Testing, one two three!", whichOne)
+	var turnThingsOn = false
+
+	for (var warningID of Object.keys(g_warningNames))
+	{
+		if ((warningID in kOptionCustomNames) == doSettings && !g_currentOptions.settings[warningID])
+		{
+			turnThingsOn = true
+			break
+		}
+	}
+
+	for (var warningID of Object.keys(g_warningNames))
+	{
+		if ((warningID in kOptionCustomNames) == doSettings && turnThingsOn == !g_currentOptions.settings[warningID])
+		{
+			const elem = document.getElementById("settings." + warningID)
+			Assert(elem)
+			elem.checked = turnThingsOn
+
+			g_currentOptions.settings[warningID] = turnThingsOn
+		}
+	}
+
+	CallTheseFunctions(ProcessInput)
 }
 
-function BuildIssueDefaults(doSettings)
+function BuildIssueDefaults(doSettings, moreOutput)
 {
 	var reply = []
 
@@ -780,6 +873,11 @@ function BuildIssueDefaults(doSettings)
 		{
 			OptionsMakeCheckbox(reply, "ProcessInput()", warningID, doSettings ? kOptionCustomNames[warningID] : ("Check for " + warningID.toLowerCase()), !doSettings, true)
 		}
+	}
+	
+	if (moreOutput)
+	{
+		moreOutput.customColumnCell = '<td valign="top" align="right" class="cellNoWrap">' + MakeIconWithTooltip(kIconCheckbox, 0, "Toggle all", "SettingsIssueToggleAll(" + doSettings + ")")
 	}
 
 	return OptionsConcat(reply)
@@ -812,13 +910,13 @@ function InitSettings()
 	
 	Object.keys(g_warningNames).forEach(id => OptionsMakeKey("settings", id, ! (id in kOptionCustomNames)))
 	
-	IssueAutoFixDefine("ILLEGAL CHARACTERS", characters => AddToSetting("allowedCharacters", characters))
-	IssueAutoFixDefine("ILLEGAL START CHARACTER", characters => AddToSetting("allowedStartCharacters", characters))
-	IssueAutoFixDefine("NUMBERS", characters => AddToSetting("numberIgnoreList", characters))
-	IssueAutoFixDefine("SPLIT INFINITIVE", characters => AddToSetting("splitInfinitiveIgnoreList", characters))
-	IssueAutoFixDefine("ADVERB WITH HYPHEN", characters => AddToSetting("adverbHyphenIgnoreList", characters))
-	IssueAutoFixDefine("INVALID FIRST SPEECH CHARACTER", characters => AddToSetting("startOfSpeech", characters))
-	IssueAutoFixDefine("INVALID FINAL SPEECH CHARACTER", characters => AddToSetting("endOfSpeech", characters))
+	IssueAutoFixDefine("ILLEGAL CHARACTERS", "Ignore characters", characters => AddToSetting("allowedCharacters", characters))
+	IssueAutoFixDefine("ILLEGAL START CHARACTER", "Ignore characters", characters => AddToSetting("allowedStartCharacters", characters))
+	IssueAutoFixDefine("NUMBERS", "Add to allow list", characters => AddToSetting("numberIgnoreList", characters))
+	IssueAutoFixDefine("SPLIT INFINITIVE", "Add to allow list", characters => AddToSetting("splitInfinitiveIgnoreList", characters))
+	IssueAutoFixDefine("ADVERB WITH HYPHEN", "Add to allow list", characters => AddToSetting("adverbHyphenIgnoreList", characters))
+	IssueAutoFixDefine("INVALID FIRST SPEECH CHARACTER", "Ignore characters", characters => AddToSetting("startOfSpeech", characters))
+	IssueAutoFixDefine("INVALID FINAL SPEECH CHARACTER", "Ignore characters", characters => AddToSetting("endOfSpeech", characters))
 }
 
 TabDefine("settings", function(reply, thenCall)
@@ -846,7 +944,7 @@ TabDefine("settings", function(reply, thenCall)
 					theMiddle += "<option>" + voice + "</option>"
 				}
 				classList = ''
-				revert = "&nbsp;" + MakeIconWithTooltip(kIconSpeech, 0, "Test", "SettingTestSpeech('" + k + "')")
+				revert = "&nbsp;" + MakeIconWithTooltip(kIconSpeech, 0, "Test", "SpeechTest('" + k + "')")
 			}
 			else if (classList == 'language')
 			{
@@ -860,11 +958,13 @@ TabDefine("settings", function(reply, thenCall)
 			else if (k == 'speakRate')
 			{
 				theType = 'select'
-				theMiddle += "<option value=0.8>Very slow</option>"
-				theMiddle += "<option value=0.9>Slow</option>"
-				theMiddle += "<option value=1>Normal</option>"
-				theMiddle += "<option value=1.1>Fast</option>"
-				theMiddle += "<option value=1.2>Very fast</option>"
+				theMiddle += "<option value=0.78>Super slow</option>"
+				theMiddle += "<option value=0.89>Very slow</option>"
+				theMiddle += "<option value=1>Slow</option>"
+				theMiddle += "<option value=1.11>Normal</option>"
+				theMiddle += "<option value=1.22>Fast</option>"
+				theMiddle += "<option value=1.33>Very fast</option>"
+				theMiddle += "<option value=1.44>Super fast</option>"
 				classList = ''
 			}
 			else if (typeof g_tweakableSettings[k] === "boolean")

@@ -19,8 +19,8 @@ function BuildWarningNamesList()
 		'NUMBERS', 'TODO', 'DISALLOWED WORD', 'ILLEGAL CHARACTERS', 'UNIQUE', 'ORDER',
 		'LEADING OR TRAILING SPACE', 'PUNCTUATION COMBO', 'BRACKETS',
 		'INVALID FINAL SPEECH CHARACTER', 'INVALID FIRST SPEECH CHARACTER', 'INVALID FINAL CHARACTER', 'IGNORED COMPLETENESS',
-		'SPLIT INFINITIVE', 'ADVERB WITH HYPHEN', 'CHAPTER NAME IN CHAPTER', 'ILLEGAL MOVE BETWEEN LOCATIONS',
-		'UNFINISHED QUOTE', 'CAPITALS', 'SPACE BEFORE PUNCTUATION',
+		'SPLIT INFINITIVE', 'ADVERB WITH HYPHEN', 'TAG TEXT IN SECTION', 'ILLEGAL MOVE BETWEEN LOCATIONS',
+		'UNFINISHED QUOTE', 'CAPITALS', 'SPACE BEFORE PUNCTUATION', 'MISSING TAG',
 		'MARKUP ERROR', 'SPACE IN SPEECH', 'EMPTY SPEECH', 'SETTINGS',
 		'PUNCTUATION WITHOUT SPACE', 'ILLEGAL START CHARACTER', 'EMPTY WORD'
 	]
@@ -36,11 +36,11 @@ function BuildWarningNamesList()
 var g_autoFixIssues = {}
 var g_warningNames = BuildWarningNamesList()
 
-function IssueAutoFixDefine(type, func)
+function IssueAutoFixDefine(type, msg, func)
 {
 	Assert(type in g_warningNames, type + " is not in warning name list")
 	Assert(! (type in g_autoFixIssues), type + " already has an auto-fix function")
-	g_autoFixIssues[type] = func
+	g_autoFixIssues[type] = {func:func, msg:msg}
 }
 
 TabDefine("issues", function(reply, thenCall)
@@ -54,20 +54,7 @@ TabDefine("issues", function(reply, thenCall)
 
 		if (! g_disabledWarnings["ISSUE SUMMARY"])
 		{
-			NovaLog("Displaying issue summary")
-			/*
-			TableOpen(reply)
-			TableAddHeading(reply, "Issue type")
-			TableAddHeading(reply, "Count")
-			
-			for (var [k, v] of Object.entries(g_issueStats))
-			{
-				TableNewRow(reply)
-				reply.push("<TD CLASS=cell>" + k + "</TD><TD CLASS=cell>" + v + "</TD>")
-			}
-			
-			TableClose(reply)*/
-			reply.push(TableShowTally(g_issueStats, g_warningNames, true))
+			reply.push(TableShowTally(g_issueStats, {colours:g_warningNames, colourEntireLine:true, showTotal:true}))
 		}
 	}
 	else
@@ -110,8 +97,8 @@ OnEvent("clear", false, ClearEarlyIssues)
 
 function AutoFix(theType, param)
 {
-	NovaLog("Auto-fixing " + theType + " issue, param=" + param + " by calling " + g_autoFixIssues[theType])
-	g_autoFixIssues[theType]?.(param)
+	NovaLog("Auto-fixing " + theType + " issue, param=" + param + " by calling " + (g_autoFixIssues[theType]?.func?.name ?? "???"))
+	g_autoFixIssues[theType]?.func?.(param)
 }
 
 function IssueAdd(addThis, theType, fixMeParam, overrideIssueHeading)
@@ -131,15 +118,19 @@ function IssueAdd(addThis, theType, fixMeParam, overrideIssueHeading)
 			return
 		}
 		
-		addThis = '<NOBR class="issueType" style="background:' + col + '">' + theType + '</NOBR> ' + addThis
+		addThis = '<SMALL>' + MakeIconWithTooltip(kIconRedCross, 0, "Disable " + theType + " check", "DisableIssueCheck('" + theType + "')") + '&nbsp;</SMALL><NOBR class="issueType" style="background:' + col + '">' + theType + '</NOBR> ' + addThis
 		
-		if (fixMeParam && (theType in g_autoFixIssues))
+		if (fixMeParam)
 		{
-			const callThis = 'AutoFix(\'' + theType + '\', \'' + AddEscapeChars(fixMeParam.replace("'", "\\'")) + '\')'
-			addThis += ' <NOBR class="fixMe" onClick="' + callThis + '">FIX ME</NOBR>'
+			const autoFix = g_autoFixIssues[theType]
+			if (autoFix)
+			{
+				const callThis = 'AutoFix(\'' + theType + '\', \'' + AddEscapeChars(fixMeParam.replace("'", "\\'")) + '\')'
+				addThis += ' <NOBR class="fixMe" onClick="' + callThis + '">' + autoFix.msg + '</NOBR>'
+			}
 		}
 		
-		addThis += ' <NOBR class="fixMe" onClick="DisableIssueCheck(\'' + theType + '\')">DISABLE</NOBR>'
+//		addThis += ' <NOBR class="fixMe" onClick="DisableIssueCheck(\'' + theType + '\')" STYLE="background:#FFDDDD">Disable ' + theType + ' check</NOBR>'
 	}
 
 //	NovaLog(addThis)

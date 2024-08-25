@@ -34,6 +34,8 @@ const kIconRedCross = "&#x274C;"
 const kIconTrash = "&#x1F5D1;&#xFE0F;"
 const kIconWrite = "&#x2712;&#xFE0F;"
 const kIconGlobal = "&#x1F30D;"
+const kIconJoin = "&#x1F9F7;"
+const kIconCheckbox = "&#x2611;&#xFE0F;"
 
 const kCharacterElipsis = "\u2026"
 const kCharacterEmDash = "\u2014"
@@ -74,16 +76,18 @@ function TableClose(reply)
 	reply.push("</TABLE>")	
 }
 
-function TableShowTally(tally, colourColumn, colourEntireLine)
+function TableShowTally(tally, options)
 {
 	var reply = []
-	const keysInOrder = Object.keys(tally).sort((p1, p2) => (tally[p2] - tally[p1]))
-	const addColourColumn = colourColumn && !colourEntireLine
 	var total = 0
 
+	const {colours, colourEntireLine, showTotal, keyHeading, valueHeading} = options ?? {}
+	const keysInOrder = Object.keys(tally).sort((p1, p2) => (tally[p2] - tally[p1]))
+	const addColourColumn = colours && !colourEntireLine
+
 	TableOpen(reply)
-	TableAddHeading(reply, "Text")
-	TableAddHeading(reply, "Count")
+	TableAddHeading(reply, keyHeading ?? "Text")
+	TableAddHeading(reply, valueHeading ?? "Count")
 
 	if (addColourColumn)
 	{
@@ -94,19 +98,19 @@ function TableShowTally(tally, colourColumn, colourEntireLine)
 
 	for (var key of keysInOrder)
 	{
-		TableNewRow(reply, colourEntireLine ? colourColumn[key] : undefined)
+		TableNewRow(reply, colourEntireLine ? colours[key] : undefined)
 		TableAddCell(reply, key)
 		reply.push('<td align=right class=cell>' + tally[key] + '</td>')
 		
 		if (addColourColumn)
 		{
-			reply.push('<td class=cell bgcolor="' + colourColumn[key] + '" width=30></td>')
+			reply.push('<td class=cell bgcolor="' + colours[key] + '" width=30></td>')
 		}
 		
 		total += tally[key]
 	}
 
-	if (keysInOrder.length > 1)
+	if (keysInOrder.length > 1 && showTotal)
 	{
 		TableNewRow(reply)
 		reply.push('<td class=cellNoWrap><b>TOTAL</b></td><td align=right class=cell>' + total + '</td>')
@@ -179,7 +183,7 @@ function AfterScroll()
 function InitToTop()
 {
 	g_toTopElem = document.getElementById("toTop")
-	g_toTopElem.innerHTML = '<BUTTON ONCLICK="window.scrollTo(0,0)">' + MakeIconWithTooltip(kIconToTop, 20, "Scroll to top") + '</BUTTON>'
+	g_toTopElem.innerHTML = '<BUTTON ONCLICK="window.scrollTo(0,0)">' + MakeIconWithTooltip(kIconToTop, -6, "Scroll to top", undefined, undefined, undefined, -70) + '</BUTTON>'
 
 	document.addEventListener("scroll", AfterScroll)
 	window.addEventListener("resize", AfterScroll)
@@ -323,13 +327,13 @@ function OptionsMakeNumberBox(toHere, funcName, heading, id, defVal)
 	const biggerButton = '<button onClick="OptionModifyNumber(\'' + id + '\', 1, ' + funcName + ')">&gt;</button>'
 	const muchBiggerButton = '<button onClick="OptionModifyNumber(\'' + id + '\', 5, ' + funcName + ')">&gt;&gt;</button>'
 	id = OptionsMakeKey(g_selectedTabName, id, defVal ?? "")
-	toHere.push(heading + ': ' + muchSmallerButton + smallerButton + '<input id="' + id + '" style="text-align:center;" readOnly=true size=3 type=text></input>' + biggerButton + muchBiggerButton)
+	toHere.push(heading + ': <SMALL>' + muchSmallerButton + smallerButton + '</SMALL><input id="' + id + '" style="text-align:center;" readOnly=true size=3 type=text></input><SMALL>' + biggerButton + muchBiggerButton + '</SMALL>')
 }
 
 function OptionModifyNumber(myId, change, func)
 {
 	const oldValue = +g_currentOptions[g_selectedTabName][myId]
-	const newValue = Math.max(0, oldValue + change)
+	const newValue = Math.max(1, oldValue + change)
 
 	if (newValue != oldValue)
 	{

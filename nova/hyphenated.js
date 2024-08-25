@@ -44,22 +44,28 @@ function HyphenCheckDrawTable()
 
 	for (var phrase of Object.keys(g_hyphenCheckWIP).sort((p1, p2) => (g_hyphenCheckWIP[p2].total - g_hyphenCheckWIP[p1].total)))
 	{
-		const data = g_hyphenCheckWIP[phrase]
-		const bDisc = (data.total != data.highest)
-		
-		if (g_currentOptions.hyphen_check.disc && !bDisc)
+		const {total, highest, countWithHyphens, countWithNeither, countWithSpaces} = g_hyphenCheckWIP[phrase]		
+
+		var colour = undefined
+
+		if (total != highest)
+		{
+			const badness = highest / total
+			colour = rgbToHex(1, badness, badness)
+		}
+		else if (g_currentOptions.hyphen_check.disc)
 		{
 			continue
 		}
 
-		TableNewRow(reply, bDisc ? '#FFDDDD' : undefined)
+		TableNewRow(reply, colour)
 		const searchFor = phrase + "|" + phrase.replaceAll('-', '') + "|" + phrase.replaceAll('-', ' ')
 		reply.push('<TD CLASS="cell">' + phrase + '&nbsp;' + CreateClickableText(kIconSearch, "SwitchToMentionsAndSearch(" + MakeParamsString(searchFor) + ")") + '</TD>')
-		reply.push('<TD CLASS="cell">' + data.total + '</TD>')
-		reply.push('<TD CLASS="cell">' + (data.countWithHyphens ?? "") + '</TD>')
-		reply.push('<TD CLASS="cell">' + (data.countWithSpaces ?? "") + '</TD>')
-		reply.push('<TD CLASS="cell">' + (data.countWithNeither ?? "") + '</TD>')
-//		reply.push('<TD CLASS="cell">' + (data.highest ?? "") + '</TD>')
+		reply.push('<TD CLASS="cell">' + total + '</TD>')
+		reply.push('<TD CLASS="cell">' + (countWithHyphens ?? "") + '</TD>')
+		reply.push('<TD CLASS="cell">' + (countWithSpaces ?? "") + '</TD>')
+		reply.push('<TD CLASS="cell">' + (countWithNeither ?? "") + '</TD>')
+//		reply.push('<TD CLASS="cell">' + (highest ?? "") + '</TD>')
 	}
 
 	TableClose(reply)
@@ -186,7 +192,6 @@ function HyphenCheckFirstPass()
 	// Find things with hyphens in document
 	var countEm = {}
 	HuntFor(/\b\w+[\w'\-]*-[\w']\w+\b/g, matched => Tally(countEm, matched.toLowerCase()), true)
-	NovaLog("Doing HyphenCheckFirstPass: countEm contains " + Object.keys(countEm).length + " entries")
 
 	// Build full data structure
 	g_hyphenCheckWIP = {}
@@ -198,17 +203,16 @@ function HyphenCheckFirstPass()
 		HyphenCheckAddCustom(...custom.split('-', 2), checksWithWildcard)
 	}
 	
-	NovaLog("g_hyphenCheckWIP contains " + Object.keys(g_hyphenCheckWIP).length + " entries")
-	
 	for (var [key, value] of Object.entries(countEm))
 	{
-		// TODO: see if it matches a wildcard, if so, use that as the key
+		// TO DO: see if it matches a wildcard, if so, use that as the key
 		g_hyphenCheckWIP[key] = {countWithHyphens:value}
 		MakeOrAddToObject(g_hyphenFoundWords, key, key, true)
 	}
-	
+
+	NovaLog("Found " + Object.keys(countEm).length + " words with hyphens in; adding in data from settings gives us " + Object.keys(g_hyphenCheckWIP).length + " hyphen check jobs")
+		
 	QueueFunction(HyphenCheckFindWithSpaces)
-	NovaLog("HyphenCheckFirstPass ending")
 }
 
 function HyphenCheckShowGoButton()

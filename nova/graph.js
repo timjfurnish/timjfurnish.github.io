@@ -20,16 +20,36 @@ function Smoother(arr)
 	return total
 }
 
-function DrawSmoothedGraph(graphData, smoothingCount)
+function GraphCreateStandardOptions(options, graphFuncName, addColourUsing)
+{
+	OptionsMakeNumberBox(options, graphFuncName, "Smoothing", "smoothing", 30)
+	
+	if (addColourUsing)
+	{
+		var nameData = {[""]:""}
+
+		for (var eachCol of Object.keys(g_metaDataAvailableColumns))
+		{
+			nameData[eachCol] = eachCol
+		}
+
+		OptionsMakeSelect(options, graphFuncName + "()", "Colour background using", "colourUsing", nameData, "", true)
+	}
+}
+
+function DrawSmoothedGraph(graphData, smoothingCount, backgroundData)
 {
 	const {colours, data} = graphData
 
 	// WORK OUT WHAT TO DRAW
 	const colourEntries = Object.keys(colours)
 	const drawData = {}
+	const sizeX = data.length
+
+	NovaLog("Drawing graph of width " + sizeX + " for " + colourEntries.length + " values [" + colourEntries.join(', ') + "] smoothing=" + smoothingCount)
 
 	var biggestVal = 0
-
+	
 	for (var spelling of colourEntries)
 	{
 		drawData[spelling] = {smoothing:[0], drawThis:[]}
@@ -39,15 +59,20 @@ function DrawSmoothedGraph(graphData, smoothingCount)
 			drawData[spelling].smoothing.push(0, 0)
 		}
 	}
+
+	const sanityCheckTotalData = {}
 	
 	for (var t of data)
 	{
 		var totalHere = 0
-
+		
 		for (var spelling of colourEntries)
 		{
-			drawData[spelling].smoothing.push(t[spelling] ?? 0)				
+			const incomingValue = t?.[spelling] ?? 0
+			drawData[spelling].smoothing.push(incomingValue)				
 			drawData[spelling].smoothing.shift()
+
+			Tally(sanityCheckTotalData, spelling, incomingValue)
 
 			const myVal = Smoother(drawData[spelling].smoothing)
 			totalHere += myVal
@@ -60,7 +85,7 @@ function DrawSmoothedGraph(graphData, smoothingCount)
 			biggestVal = totalHere
 		}
 	}
-
+	
 	for (var i = 0; i < smoothingCount * 2; ++ i)
 	{
 		var totalHere = 0
@@ -84,7 +109,7 @@ function DrawSmoothedGraph(graphData, smoothingCount)
 
 	colourEntries.reverse()
 
-	// DONE GATHERING DATA
+	// DONE GATHERING DATA! DRAW IT!
 	
 	const canvas = document.getElementById("graphCanvas")
 	const drawToHere = canvas?.getContext("2d")
@@ -93,6 +118,41 @@ function DrawSmoothedGraph(graphData, smoothingCount)
 	{
 		drawToHere.fillStyle = "#444444"
 		drawToHere.fillRect(0, 0, canvas.width, canvas.height)
+		
+		const colourUsing = backgroundData?.colourUsing
+
+		if (colourUsing)
+		{
+			if (colourUsing in g_metaDataSeenValues)
+			{
+				const colours = MakeColourLookUpTable(Object.keys(g_metaDataSeenValues[colourUsing]), 0.4)
+
+				var countParagraphs = 0
+				var lastX = 0
+
+				// TO DO: get this via backgroundData
+				for (var elem of g_metaDataInOrder)
+				{
+					countParagraphs += elem.Paragraphs
+					const x = (countParagraphs / sizeX) * canvas.width
+
+					drawToHere.beginPath()
+					drawToHere.fillStyle = colours[elem.info[colourUsing]] ?? "#666666"
+					drawToHere.rect(lastX, 0, x - lastX + 1, canvas.height)
+					drawToHere.fill()
+					lastX = x
+				}
+				
+				if (countParagraphs != sizeX)
+				{
+					NovaWarn("Counted " + countParagraphs + " paragraphs when drawing background but sizeX is " + sizeX)
+				}
+			}
+			else
+			{
+				NovaWarn("colourUsing='" + colourUsing + "' which isn't in [" + Object.keys(g_metaDataSeenValues) + "]")
+			}
+		}
 		
 		for (var spelling of colourEntries)
 		{
@@ -118,8 +178,6 @@ function DrawSmoothedGraph(graphData, smoothingCount)
 
 			drawToHere.lineTo(canvas.width, canvas.height)
 			drawToHere.fill()
-
-//			console.log(spelling + ": Input=" + data.length + " Drew=" + drawThis.length + " Difference=" + (drawThis.length - data.length))
 		}
 	}	
 }

@@ -56,18 +56,34 @@ function BuildTabDisplayText(tabName, extra)
 	return main
 }
 
-function MakeIconWithTooltip(icon, angle, tooltipText, clickyFunc, id, alpha)
+function MakeIconWithTooltip(icon, angle, tooltipText, clickyFunc, id, alpha, xOffset)
 {
 	var extraArgs = clickyFunc ? ' onClick="' + clickyFunc + '"' : ''
+
 	if (id)
 	{
 		extraArgs += ' id="' + id + '"'
 	}
+
 	if (alpha != undefined)
 	{
 		icon = '<nobr style="opacity:' + alpha + '">' + icon + '</nobr>'
 	}
-	return '<b CLASS="iconWithTooltip"' + extraArgs + '>' + icon + '<span class="tooltipBubble" STYLE="transform:rotate(' + angle + 'deg)">' + tooltipText + '</span></b>'
+
+	var transformBits = []
+
+	if (angle)
+	{
+		transformBits.push('rotate(' + angle + 'deg)')
+	}
+
+	if (xOffset)
+	{
+		transformBits.push('translate(' + xOffset + 'px, 0px)')
+	}
+
+	const style = transformBits.length ? ' STYLE="transform:' + transformBits.join(' ') + '"' : ''
+	return '<b CLASS="iconWithTooltip"' + extraArgs + '>' + icon + '<span class="tooltipBubble"' + style + '>' + tooltipText + '</span></b>'
 }
 
 function ShowTabs()

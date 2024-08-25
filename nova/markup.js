@@ -10,15 +10,15 @@ function SetMarkupFunction(character, func)
 	g_markupFunctions[character] = func
 }
 
-function MarkupProcessedLine(txtInProcessed)
+function MarkupSaysShouldProcess(txtInProcessed)
 {
 	const markupFunc = g_markupFunctions[txtInProcessed[0]]
 	
 	if (markupFunc)
 	{
 		markupFunc(txtInProcessed.substring(1))
-		return true
+		return false
 	}
 	
-	return false
+	return true
 }

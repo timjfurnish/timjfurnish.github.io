@@ -52,7 +52,7 @@ function RedrawSearchResults()
 
 			for (var metadata of g_metaDataInOrder)
 			{
-				var addAfterSkippedLines = "<H3>" + MetaDataMakeFragmentDescription(metadata.info) + "</H3>"
+				var addAfterSkippedLines = "<H3>" + MetaDataMakeFragmentDescription(metadata) + "</H3>"
 				var keepShowingCountdown = 0
 				var showThisToo = null
 				var skippedLines = true
@@ -159,7 +159,7 @@ function RedrawSearchResults()
 					realOutput.push(eachLine)
 				}
 
-				displayThis = "<center>" + TableShowTally(grabEmHere, g_searchDataForGraph.colours) + "</center>" + realOutput.join('<BR>')
+				displayThis = "<center>" + TableShowTally(grabEmHere, {colours:g_searchDataForGraph.colours, showTotal:true}) + "</center>" + realOutput.join('<BR>')
 				graphVisible = true
 			}
 		}
@@ -203,8 +203,8 @@ TabDefine("search", function(reply, thenCall)
 	var options = []
 	OptionsMakeSelect(options, "RedrawSearchResults()", "Entity", "entity", nameData, "")
 	OptionsMakeTextBox(options, "RedrawSearchResults()", "Search for", "custom")
-	OptionsMakeNumberBox(options, "RedrawSearchResults", "Smoothing", "smoothing", 75)
 	OptionsMakeCheckbox(options, "RedrawSearchResults()", "compress", "Compress empty areas", false, true)
+	GraphCreateStandardOptions(options, "SearchDrawGraph", true)
 
 	reply.push(OptionsConcat(options))
 	reply.push("<BR><CANVAS WIDTH=" + CalcGraphCanvasWidth() + " HEIGHT=200 ID=graphCanvas></CANVAS>")
@@ -215,7 +215,7 @@ TabDefine("search", function(reply, thenCall)
 
 function SearchDrawGraph()
 {
-	DrawSmoothedGraph(g_searchDataForGraph, +g_currentOptions.search.smoothing)
+	DrawSmoothedGraph(g_searchDataForGraph, +g_currentOptions.search.smoothing, g_currentOptions.search.compress ? undefined : {colourUsing:g_currentOptions.search.colourUsing})
 }
 
 function HighlightThreadSection(num, bCanScroll)
@@ -276,7 +276,7 @@ function RedrawThread()
 			for (var metadata of g_metaDataInOrder)
 			{
 				const info = metadata.info
-				var showHeading = (skippedASection ? addWhenSkipASection : "") + (headings ? "<H3>" + MetaDataMakeFragmentDescription(info) + "</H3>" : addWhenSkipASection ? "<BR>" : "")
+				var showHeading = (skippedASection ? addWhenSkipASection : "") + (headings ? "<H3>" + MetaDataMakeFragmentDescription(metadata) + "</H3>" : addWhenSkipASection ? "<BR>" : "")
 				var before = ""
 
 				const matches = (page == "ALL") || ((page == "MENTIONS") ? metadata.Mentions[showThis] : (info[page] == showThis))

@@ -23,6 +23,7 @@
   <script src="issues.js"></script>
  </head>
  <body onLoad="SetUp()">
+  <div id=blocker><img src="loading.gif"></div>
   <p>
    <input type="checkbox" id="showInput" checked onChange="hideShowInputs(this.checked)"><label for="showInput">&nbsp;Show inputs</label>
   </p>
@@ -30,10 +31,10 @@
    <button onClick="addInputBox(true)">Add input text box</button><button onClick="mergeInputBoxes()">Merge input text boxes</button><button onClick="CallTheseFunctions(ClearInputBoxes, ProcessInput)">Clear</button><button onClick="pasteToInputBox()">Paste</button>
   </span>
   <p id=inputs></p>
-  <P id=infoPanel style="display:none" align=center></P>
-  <TT id=debugLog style="display:none" align=center><b>Initialising</b></TT>
-  <div id=hoverControls style="display:none"></div>
-  <div id=toTop style="display:none"></div>
-  <div id=debugOut style="display:none"></div>
+  <P id=infoPanel align=center></P>
+  <TT id=debugLog align=center><b>Initialising</b></TT>
+  <div id=hoverControls></div>
+  <div id=toTop></div>
+  <div id=debugOut></div>
  </body>
 </html>

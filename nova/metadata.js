@@ -15,13 +15,11 @@ var g_metaDataGatherSummaries
 var g_metaDataCurrentContainsToDo
 var g_metaDataSeenValues
 var g_hasSummaries
-var g_metaDataMaxValues
 var g_stillLookingForTagText
 
 const kMetaDataDefaultDisplay = MakeSet("Words", "Estimated final words", "Percent done")
 const kMetaDataDefaultGroup = MakeSet("PART")
 const kCanDisplayAsTimeToRead = MakeSet("Words", "Estimated final words")
-const kWordsPerSecond = (210 / 60) // Average WPM apparently 183 out loud, 238 in head
 const kTallyCheckboxes = ["Paragraphs", "Words", "Estimated final words", "Speech", "Percent done", "Percent speech"]
 
 function MakeClearTally(createMentions)
@@ -74,9 +72,10 @@ function MetaDataCombine(container, name, addThisValue)
 	}
 }
 
-function MetaDataMakeFragmentDescription(fromThis)
+function MetaDataMakeFragmentDescription(fromHere)
 {
-	fromThis = fromThis ?? g_metaDataCurrent
+	const fromThis = fromHere ? fromHere.info : g_metaDataCurrent
+	Assert(fromThis)
 	var out = []
 	for (var [key, val] of Object.entries(fromThis))
 	{
@@ -85,6 +84,18 @@ function MetaDataMakeFragmentDescription(fromThis)
 			out.push(val)
 		}
 	}
+
+	if (fromHere)
+	{
+		const numWords = fromHere.Words
+		const numFinal = fromHere["Estimated final words"]
+
+		if (numWords != numFinal)
+		{
+			out.push(100 * (numWords / numFinal) + "% complete")
+		}
+	}
+	
 	return "<BIG>" + fromThis.CHAPTER + "</BIG> &nbsp; <SMALL>(" + out.join(", ") + ")</SMALL>"
 }
 
@@ -102,7 +113,7 @@ function MetaDataEndProcess()
 {
 	if (g_metaDataGatherParagraphs.length)
 	{
-		g_metaDataTally.Paragraphs = g_metaDataGatherParagraphs.length
+//		g_metaDataTally.Paragraphs = g_metaDataGatherParagraphs.length
 
 		if (g_metaDataCurrentContainsToDo)
 		{
@@ -116,6 +127,14 @@ function MetaDataEndProcess()
 			IssueAdd("Completeness is " + g_metaDataCurrentCompleteness + " but there's no TODO in this section", "TODO")
 		}
 
+		for (var t of g_tagsExpectedInEverySection)
+		{
+			if (! (t in g_metaDataCurrent))
+			{
+				IssueAdd("There's no " + t + " tag set for this section", "MISSING TAG")
+			}
+		}
+		
 		var info = {}
 		for (var [key, val] of Object.entries(g_metaDataCurrent))
 		{
@@ -160,7 +179,7 @@ function MetaDataSet(key, val)
 
 	key = key.toUpperCase()
 
-	// TODO: custom callback
+	// TO DO: custom callback
 	if (key == 'LOC' && val)
 	{
 		const world = val.split('.', 1)[0]
@@ -179,7 +198,7 @@ function MetaDataSet(key, val)
 
 	if (g_stillLookingForTagText && (key in g_stillLookingForTagText))
 	{
-		IssueAdd("Didn't find the text " + FixStringHTML(g_stillLookingForTagText[key]) + " anywhere in this " + key.toLowerCase(), "CHAPTER NAME IN CHAPTER")
+		IssueAdd("Didn't find the text " + FixStringHTML(g_stillLookingForTagText[key]) + " anywhere in this " + key.toLowerCase(), "TAG TEXT IN SECTION")
 		delete g_stillLookingForTagText[key]
 	}
 
@@ -245,7 +264,6 @@ function MetaDataClear()
 	g_metaDataCurrentContainsToDo = false
 	g_metaDataSeenValues = {}
 	g_hasSummaries = undefined
-	g_metaDataMaxValues = undefined
 	g_stillLookingForTagText = null
 }
 
@@ -261,8 +279,6 @@ function MetaDataDrawTable()
 	var reply = []
 	var seenThings = {}
 	
-	NovaLog("Redrawing stats table sorted by " + sort)
-
 	const estimatedSize = g_metaDataTotals["Estimated final words"]
 	if (estimatedSize)
 	{
@@ -285,8 +301,6 @@ function MetaDataDrawTable()
 	var lastTally = MakeClearTally(true)
 	var dataToDisplay = []
 	var lastMetaData = ""
-
-//	console.log("============================")
 
 	function AddLastDeets()
 	{
@@ -407,6 +421,7 @@ function MetaDataDrawTable()
 	var colourBasedOn
 	var lowestSize
 
+	// TO DO: update this to use number of different values for each metadata tag VISIBLE, not ALL of them
 	for (var [key,val] of Object.entries(seenThings))
 	{
 		var total = Object.keys(val).length
@@ -418,6 +433,7 @@ function MetaDataDrawTable()
 	}
 
 	const colourLookUp = colourBasedOn ? MakeColourLookUpTable(Object.keys(seenThings[colourBasedOn])) : null
+	const kSecondsPerWord = (60 / 210) // Average WPM apparently 183 out loud, 238 in head
 
 	var maximums = MakeClearTally(false)
 
@@ -442,7 +458,7 @@ function MetaDataDrawTable()
 		dataToDisplay.sort((a,b) => b.tally[sort] - a.tally[sort])
 	}
 
-	for (var name of Object.keys(lastTally))
+	for (var name of Object.keys(maximums))
 	{
 		if (g_currentOptions.stats["display_" + name])
 		{
@@ -450,12 +466,14 @@ function MetaDataDrawTable()
 			selectedDisplay.push(name)
 		}
 	}
+
+	NovaLog("Redrawing stats table [" + selectedColumns + "] <" + selectedDisplay + ">" + (sort ? " sort='" + sort + "'" : "") + (colourBasedOn ? " colours='" + colourBasedOn + "'" : ""))
 	
 	function ExtraDeets(num, name)
 	{
 		if (name in kCanDisplayAsTimeToRead)
 		{
-			return ' &#x2022; ' + UtilFormatTime(num / kWordsPerSecond)
+			return ' &#x2022; ' + UtilFormatTime(num * kSecondsPerWord)
 		}
 		
 		return ""
@@ -528,123 +546,125 @@ TabDefine("stats", TabFunctionStats, {icon:"&#128202;"})
 
 function TabFunctionStats(reply, thenCall)
 {
-	var options = []
-	var optionsDisplay = []
-	var optionsTextRow = []
+	TabBuildButtonsBar(reply, ["SECTIONS", "BOOKS"])
 
-	const selectedColumns = Object.keys(g_metaDataAvailableColumns)
-
-	for (var colName of selectedColumns)
+	if (g_currentOptions.stats.page == "SECTIONS")
 	{
-		OptionsMakeCheckbox(options, "MetaDataDrawTable()", "process_" + colName, colName + " (" + Object.keys(g_metaDataSeenValues[colName]).length + ")", kMetaDataDefaultGroup[colName], true)
+		var options = []
+		var optionsDisplay = []
+		var optionsTextRow = []
+
+		const selectedColumns = Object.keys(g_metaDataAvailableColumns)
+
+		for (var colName of selectedColumns)
+		{
+			OptionsMakeCheckbox(options, "MetaDataDrawTable()", "process_" + colName, colName + " (" + Object.keys(g_metaDataSeenValues[colName]).length + ")", kMetaDataDefaultGroup[colName], true)
+		}
+
+		var sortData = {"":"Do not consolidate", none:"Chronological"}
+
+		for (var name of kTallyCheckboxes)
+		{
+			sortData[name] = name
+			OptionsMakeCheckbox(optionsDisplay, "MetaDataDrawTable()", "display_" + name, name, kMetaDataDefaultDisplay[name], true)
+		}
+
+		OptionsMakeCheckbox(optionsDisplay, "MetaDataDrawTable()", "display_Mentions", "Mentions", kMetaDataDefaultDisplay["Mentions"], true)
+		OptionsMakeSelect(optionsTextRow, "MetaDataDrawTable()", "Sort", "sort", sortData, "none")
+
+		reply.push("<B>Split into rows using:</B><BR>")
+		reply.push(OptionsConcat(options) + "<BR>")
+		reply.push("<B>Show data columns:</B><BR>")
+		reply.push(OptionsConcat(optionsDisplay) + "<BR>")
+		reply.push(OptionsConcat(optionsTextRow))
+		
+		MakeUpdatingArea(reply, "metaDataOutput")
+		thenCall.push(MetaDataDrawTable)
 	}
-
-	var sortData = {"":"Do not consolidate", none:"Chronological"}
-
-	for (var name of kTallyCheckboxes)
+	else
 	{
-		sortData[name] = name
-		OptionsMakeCheckbox(optionsDisplay, "MetaDataDrawTable()", "display_" + name, name, kMetaDataDefaultDisplay[name], true)
+		var wordsInDoc = 0
+		g_metaDataInOrder.forEach(metaData => wordsInDoc += metaData.Words)
+
+		var bookList = {["Les Miserables"]:568751, ["War and Peace"]:567246, ["David Copperfield"]:360231, ["Moby Dick"]:215839, ["Jane Eyre"]:190339, ["Great Expectations"]:187596, ["Dracula"]:165453, ["Emma"]:163514, ["Oliver Twist"]:161712, ["The Da Vinci Code"]:144330, ["A Tale of Two Cities"]:139605, ["Pride and Prejudice"]:124713, ["Sense and Sensibility"]:122646, ["Wuthering Heights"]:119572, ["To Kill A Mockingbird"]:99121, ["The Picture of Dorian Gray"]:82222, ["Frankenstein"]:78100, ["The Catcher in the Rye"]:74144, ["Treasure Island"]:72036, ["The War of the Worlds"]:63194, ["The Hound of the Baskervilles"]:62297, ["The Jungle Book"]:54178, ["Peter Pan"]:50844, ["The Great Gatsby"]:47094, ["Beowulf"]:43092, ["The Wonderful Wizard of Oz"]:42636, ["Pygmalion"]:36718, ["A Christmas Carol"]:31650, ["Alice’s Adventures in Wonderland"]:29610, ["The Strange Case of Dr. Jekyll and Mr. Hyde"]:28668, ["The Importance of Being Earnest"]:23760}
+		bookList["THIS BOOK"] = wordsInDoc
+		reply.push(TableShowTally(bookList, {colours:{["THIS BOOK"]:"#DDFFDD"}, colourEntireLine:true, keyHeading:"Book name", valueHeading:"Words"}))
 	}
-
-	OptionsMakeCheckbox(optionsDisplay, "MetaDataDrawTable()", "display_Mentions", "Mentions", kMetaDataDefaultDisplay["Mentions"], true)
-	OptionsMakeSelect(optionsTextRow, "MetaDataDrawTable()", "Sort", "sort", sortData, "none")
-
-	reply.push("<B>Split into rows using:</B><BR>")
-	reply.push(OptionsConcat(options) + "<BR>")
-	reply.push("<B>Show data columns:</B><BR>")
-	reply.push(OptionsConcat(optionsDisplay) + "<BR>")
-	reply.push(OptionsConcat(optionsTextRow))
-	
-	MakeUpdatingArea(reply, "metaDataOutput")
-	thenCall.push(MetaDataDrawTable)
 }
 
 TabDefine("graph", TabFunctionGraph, {icon:"&#x1F4C8;"})
 
 function MetaDataDrawGraph()
 {
-	/*
-	const canvas = document.getElementById("graphCanvas")
-	const drawToHere = canvas?.getContext("2d")
+	const whichGraphType = g_currentOptions.graph.page
 	
-	if (drawToHere)
+	if (whichGraphType == "PARAGRAPHS")
 	{
-		drawToHere.clearRect(0, 0, canvas.width, canvas.height)
+		const graphThis = {colours:{SPEECH:"#FFFFFF", NARRATIVE:"rgba(0,0,0,0.9)"}, data:[]}
 		
-		// Draw bg
-		var countParagraphs = 0
-		var lastX = 0
-
-		const colourUsing = g_currentOptions.graph.colourUsing
-		const colours = MakeColourLookUpTable(Object.keys(g_metaDataSeenValues[colourUsing]))
-
 		for (var elem of g_metaDataInOrder)
-		{
-			countParagraphs += elem.Paragraphs
-			const x = (countParagraphs / g_totalParagraphs) * canvas.width
-
-			drawToHere.beginPath()
-			drawToHere.fillStyle = colours[elem.info[colourUsing]] ?? "#666666"
-			drawToHere.rect(lastX, 0, x - lastX + 1, canvas.height)
-			drawToHere.fill()
-			lastX = x
-		}
-
-		// Draw lines
-		countParagraphs = 0
-		lastX = 0
-
-		drawToHere.fillStyle = "#00000040"
-
-		for (var elem of g_metaDataInOrder)
-		{
-			Assert(elem.Paragraphs == elem.myParagraphs.length, "Paragraph count mismatch, " + elem.Paragraphs + " != " + elem.myParagraphs.length + ": " + Object.values(elem.info).join('|'))
-
-			for (var para of elem.myParagraphs)
-			{
-				++ countParagraphs
-				
-				const val = para.allOfIt.length
-				
-				const x = (countParagraphs / g_totalParagraphs) * canvas.width
-				const y = (1 - val / g_metaDataLongestParagraphLength) * canvas.height
-
-				drawToHere.beginPath()
-				drawToHere.rect(lastX - 1, y, x - lastX + 2, canvas.height - y)
-				drawToHere.fill()
-
-				lastX = x
-			}
-		}
-	}
-	*/
-
-	const graphThis = {colours:{SPP:"#FF0000", WPP:"#00FF00"}, data:[]}
-	
-	for (var elem of g_metaDataInOrder)
-	{
-		if (0)
 		{
 			for (var para of elem.myParagraphs)
 			{
 				if (! para.ignoreFragments)
 				{
-					graphThis.data.push({PARA:para.allOfIt.length})
+					var speech = 0
+					var narrative = 0
+
+					for (var frag of para.fragments)
+					{
+						if (frag.isSpeech)
+						{
+							speech += frag.text.length
+						}
+						else
+						{
+							narrative += frag.text.length
+						}
+					}
+					
+					graphThis.data.push({SPEECH:speech, NARRATIVE:narrative})
 				}
 			}
 		}
-		else
-		{
-			graphThis.data.push({SPP:elem.Speech / elem.Paragraphs, WPP:(elem.Words - elem.Speech) / elem.Paragraphs})
-		}
-	}
 
-	DrawSmoothedGraph(graphThis, 2)
+		DrawSmoothedGraph(graphThis, +g_currentOptions.graph.smoothing, {colourUsing:g_currentOptions.graph.colourUsing})
+	}
+	else
+	{
+		const highestVal = 10000
+		const divideBy = 8
+
+		const data = Array(highestVal / divideBy + 1)
+		const seenLocations = {}
+
+		for (var metaData of g_metaDataInOrder)
+		{
+			if (whichGraphType in metaData.info)
+			{
+				const index = Math.floor(parseInt(metaData.info[whichGraphType]) / divideBy)
+
+				if (index >= 0 && index < data.length)
+				{
+					if (! data[index])
+					{
+						data[index] = {}
+					}
+					Tally (data[index], metaData.info.LOC, metaData.Words)
+					seenLocations[metaData.info.LOC] = true
+				}
+			}
+		}
+
+		DrawSmoothedGraph({data:data, colours:MakeColourLookUpTable(Object.keys(seenLocations), 0.5)}, +g_currentOptions.graph.smoothing)
+	}
 }
 
 function TabFunctionGraph(reply, thenCall)
 {
+	// TO DO build this array programatically
+	TabBuildButtonsBar(reply, ["PARAGRAPHS", "TMINUS"])
+
 	var nameData = {}
 
 	for (var eachCol of Object.keys(g_metaDataAvailableColumns))
@@ -653,7 +673,7 @@ function TabFunctionGraph(reply, thenCall)
 	}
 
 	var options = []
-	OptionsMakeSelect(options, "MetaDataDrawGraph()", "Colour using", "colourUsing", nameData, "CHAPTER", true)
+	GraphCreateStandardOptions(options, "MetaDataDrawGraph", g_currentOptions.graph.page == "PARAGRAPHS")
 	reply.push(OptionsConcat(options))
 	reply.push("<BR><CANVAS WIDTH=" + CalcGraphCanvasWidth() + " HEIGHT=300 ID=graphCanvas></CANVAS>")
 	thenCall.push(MetaDataDrawGraph)

@@ -8,16 +8,12 @@ var g_voiceLookUp = {}
 var g_voiceLanguages = []
 var g_currentSpeaky
 
-function OnReaderError(e)
-{
-	NovaWarn("Speech synthesis error: " + e.error + " after time=" + e.elapsedTime)
-}
+const OnReaderError  = e         => NovaWarn("Speech synthesis error: " + e.error + " after time=" + e.elapsedTime)
+const SpeechTest     = whichOne  => SpeakUsingVoice("Testing, one two three!", whichOne)
 
 function SpeakUsingVoice(thingToSay, voiceType, onEnd)
 {
 	g_currentSpeaky = new SpeechSynthesisUtterance(thingToSay)
-
-	NovaLog("[" + voiceType + "] " + thingToSay)
 
 	if (onEnd)
 	{
