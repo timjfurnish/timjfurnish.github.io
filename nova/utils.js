@@ -167,21 +167,30 @@ function PickColourOffsetForString(str)
 	return total
 }
 
-function MakeColourLookUpTable(arr, forceMult, offset)
+function MakeColourLookUpTable(arr, forceMult, offset, scale)
 {
 	var reply = {}
 	var count = 0
 	var total = arr.length
 	
 	offset = offset ?? 0
-
+	
+	if (scale === undefined)
+	{
+		scale = 1
+	}
+	
 	for (var each of arr)
 	{
 		var colourWheelAngle = Math.PI * 2 * count / total + offset
 		++ count
-		var mult = forceMult ?? ((count & 1) ? (count & 2) ? 0.05 : 0.08 : 0.15)
-		var add = 1 - mult
-		reply[each] = rgbToHex(Math.sqrt(add + Math.sin(colourWheelAngle) * mult), add + Math.sin(colourWheelAngle + 2) * mult, Math.sqrt(add + Math.sin(colourWheelAngle + 4) * mult))
+		var mult = (forceMult ?? ((count & 1) ? (count & 2) ? 0.05 : 0.08 : 0.15))
+		var add = (1 - mult)
+
+		reply[each] = rgbToHex(
+			scale * Math.sqrt(add + Math.sin(colourWheelAngle) * mult),
+			scale *          (add + Math.sin(colourWheelAngle + 2) * mult),
+			scale * Math.sqrt(add + Math.sin(colourWheelAngle + 4) * mult))
 	}
 	
 	return reply

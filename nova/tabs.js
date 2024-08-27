@@ -59,6 +59,11 @@ function BuildTabDisplayText(tabName, extra)
 function MakeIconWithTooltip(icon, angle, tooltipText, clickyFunc, id, alpha, xOffset)
 {
 	var extraArgs = clickyFunc ? ' onClick="' + clickyFunc + '"' : ''
+	
+	if (xOffset === undefined)
+	{
+		xOffset = 50
+	}
 
 	if (id)
 	{
@@ -70,20 +75,14 @@ function MakeIconWithTooltip(icon, angle, tooltipText, clickyFunc, id, alpha, xO
 		icon = '<nobr style="opacity:' + alpha + '">' + icon + '</nobr>'
 	}
 
-	var transformBits = []
+	var transformBits = ['translate(-' + xOffset + '%, 0px)']
 
 	if (angle)
 	{
 		transformBits.push('rotate(' + angle + 'deg)')
 	}
 
-	if (xOffset)
-	{
-		transformBits.push('translate(' + xOffset + 'px, 0px)')
-	}
-
-	const style = transformBits.length ? ' STYLE="transform:' + transformBits.join(' ') + '"' : ''
-	return '<b CLASS="iconWithTooltip"' + extraArgs + '>' + icon + '<span class="tooltipBubble"' + style + '>' + tooltipText + '</span></b>'
+	return '<center CLASS="iconWithTooltip"' + extraArgs + '>' + icon + '<br><span class="tooltipBubble" STYLE="transform:' + transformBits.join(' ') + '">' + tooltipText + '</span></center>'
 }
 
 function ShowTabs()
@@ -159,17 +158,18 @@ function ShowContentForSelectedTab()
 		NovaLog("Showing contents for '" + g_selectedTabName + "' tab, page '" + page + "'")
 	}
 
-	const {func, canSelect} = g_tabFunctions[g_selectedTabName]
+	const {func, canSelect, alignment} = g_tabFunctions[g_selectedTabName]
 	
 	func(displayThis, thenCall)
 	
 	const elem = document.getElementById('tabContents')
 	elem.innerHTML = displayThis.join('')
 	elem.style.userSelect = canSelect ? "text" : "none"
+	elem.style.textAlign = alignment ?? ""
 
-	speechSynthesis.cancel()
-
+	StopTalking()
 	SetOptions()
+
 	CallTheseFunctions(...thenCall)
 }
 

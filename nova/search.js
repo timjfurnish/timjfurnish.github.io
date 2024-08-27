@@ -220,7 +220,7 @@ function SearchDrawGraph()
 
 function HighlightThreadSection(num, bCanScroll)
 {
-	speechSynthesis.cancel()
+	StopTalking()
 	
 	if (num >= 0 && num < g_threadSections.length)
 	{
@@ -406,7 +406,7 @@ TabDefine("voice", function(reply, thenCall)
 	
 	var hoverOptions = []
 	hoverOptions.push('<BUTTON ONCLICK="ThreadRead()">' + MakeIconWithTooltip(kIconSpeech, -15, "Speak") + '</BUTTON>')
-	hoverOptions.push('<BUTTON ONCLICK="speechSynthesis.cancel()">' + MakeIconWithTooltip(kIconMute, -4, "Stop") + '</BUTTON>')
+	hoverOptions.push('<BUTTON ONCLICK="StopTalking()">' + MakeIconWithTooltip(kIconMute, -4, "Stop") + '</BUTTON>')
 	ShowHoverControls(hoverOptions)
 	
 	thenCall.push(RedrawThread)

@@ -46,7 +46,7 @@ function DrawSmoothedGraph(graphData, smoothingCount, backgroundData)
 	const drawData = {}
 	const sizeX = data.length
 
-	NovaLog("Drawing graph of width " + sizeX + " for " + colourEntries.length + " values [" + colourEntries.join(', ') + "] smoothing=" + smoothingCount)
+//	NovaLog("Drawing graph of width " + sizeX + " for " + colourEntries.length + " values [" + colourEntries.join(', ') + "] smoothing=" + smoothingCount)
 
 	var biggestVal = 0
 	
@@ -125,7 +125,7 @@ function DrawSmoothedGraph(graphData, smoothingCount, backgroundData)
 		{
 			if (colourUsing in g_metaDataSeenValues)
 			{
-				const colours = MakeColourLookUpTable(Object.keys(g_metaDataSeenValues[colourUsing]), 0.4)
+				const colours = MakeColourLookUpTable(Object.keys(g_metaDataSeenValues[colourUsing]), 0.4, undefined, backgroundData.brightness)
 
 				var countParagraphs = 0
 				var lastX = 0

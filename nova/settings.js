@@ -225,7 +225,7 @@ function BuildAutomaticTagsBox(moreOutput)
 	for (var line of g_autoTagKeys)
 	{
 		const {keep, numericalCheck} = kAutoTagStuff[line]
-		var numericalCheckBits = ['<select id="' + MakeElementID("AutoTagOrder", line) + '" onchange="AutoTagUpdateOrder()">']
+		var numericalCheckBits = ['&nbsp;<select id="' + MakeElementID("AutoTagOrder", line) + '" onchange="AutoTagUpdateOrder()">']
 		var optionBits = []
 
 		for (var [key, data] of Object.entries(kAutoTagChecks))
@@ -236,15 +236,16 @@ function BuildAutomaticTagsBox(moreOutput)
 		for (var [k, data] of kAutoTagOptions)
 		{
 			const isOn = kAutoTagStuff[line][k]
-			optionBits.push(MakeIconWithTooltip(data.icon, -4, data.tooltip + (isOn ? ": ON" : ": OFF"), "AutoTagOptionToggle('" + line + "', '" + k + "')", undefined, isOn ? undefined : 0.15, data.tooltip.length * -1.5))
+			optionBits.push("<BIG>" + MakeIconWithTooltip(data.icon, -4, data.tooltip + (isOn ? ": ON" : ": OFF"), "AutoTagOptionToggle('" + line + "', '" + k + "')", undefined, isOn ? undefined : 0.15, 80) + "</BIG>")
 		}
+		optionBits.push(numericalCheckBits.join('') + '</select>')
 		
 		TableNewRow(reply)
-		TableAddCell(reply, "<BIG>" + MakeIconWithTooltip(kIconTrash, 0, "Delete", "delete kAutoTagStuff['" + line + "']; AutoTagUpdate()") + "&nbsp;</BIG>" + MakeClickableTextBubble(line, "Enter the name for this tag", "tag"))
+		TableAddCell(reply, PutBitsSideBySide(["<BIG>" + MakeIconWithTooltip(kIconTrash, 0, "Delete", "delete kAutoTagStuff['" + line + "']; AutoTagUpdate()") + "</BIG>", "&nbsp;" + MakeClickableTextBubble(line, "Enter the name for this tag", "tag")]))
 		TableAddCell(reply, MakeClickableTextBubble(line, "Enter string to find in document"))
-		TableAddCell(reply, /* "<BIG>" + MakeIconWithTooltip(keep ? kIconGreenTick : kIconRedCross, 0, keep ? "Keep only these characters" : "Remove these characters", "AutoTagOptionToggle('" + line + "', 'keep')") + "&nbsp;</BIG>" + */ MakeClickableTextBubble(line, "Enter characters to remove from line before storing tag text", "characters"))
+		TableAddCell(reply, MakeClickableTextBubble(line, "Enter characters to remove from line before storing tag text", "characters"))
 		TableAddCell(reply, MakeClickableTextBubble(line, "Enter space-seperated list of tags to clear when this text is found", "clearTags"))
-		TableAddCell(reply, "<BIG>" + optionBits.join('') + "&nbsp;&nbsp;</BIG>" + numericalCheckBits.join('') + '</select>')
+		TableAddCell(reply, PutBitsSideBySide(optionBits))
 	}
 
 	TableClose(reply)
@@ -931,7 +932,7 @@ TabDefine("settings", function(reply, thenCall)
 			var [displayName, classList] = display.split('|', 2)
 			var theType = 'input type=text'
 			var theMiddle = ""
-			var revert = ""
+			var theEditBits = []
 			var customColumnCell = undefined
 			
 			classList = classList ? classList.split(' ') : []
@@ -944,7 +945,7 @@ TabDefine("settings", function(reply, thenCall)
 					theMiddle += "<option>" + voice + "</option>"
 				}
 				classList = ''
-				revert = "&nbsp;" + MakeIconWithTooltip(kIconSpeech, 0, "Test", "SpeechTest('" + k + "')")
+				theEditBits.push(MakeIconWithTooltip(kIconSpeech, 0, "Test", "SpeechTest('" + k + "')"))
 			}
 			else if (classList == 'language')
 			{
@@ -973,7 +974,8 @@ TabDefine("settings", function(reply, thenCall)
 			}
 			else
 			{
-				revert = "&nbsp;" + MakeIconWithTooltip(kIconRevert, 0, "Revert", "SettingAskRevert('" + k + "')")
+				theEditBits.push("<BIG>" + MakeIconWithTooltip(kIconRevert, 0, "Revert", "SettingAskRevert('" + k + "')") + "</BIG>")
+
 				if (Array.isArray(g_tweakableSettings[k]))
 				{
 					theType = 'textarea onFocus="CheckItsOpen(\'' + k + '\')"'
@@ -986,17 +988,22 @@ TabDefine("settings", function(reply, thenCall)
 					
 					if (kTweakableDefaults[k].length)
 					{
-						revert += MakeIconWithTooltip(kIconFix, 0, "Repair", "SettingFixArray('" + k + "')")
+						theEditBits.push("<BIG>" + MakeIconWithTooltip(kIconFix, 0, "Repair", "SettingFixArray('" + k + "')") + "</BIG>")
 					}
 				}
 				else if (typeof g_tweakableSettings[k] == "object")
 				{
-					revert += " <B>OBJECT</B>";
+					theEditBits.push("<B>TO DO: SUPPORT THIS OBJECT</B>")
 				}
 			}
-		
+
 			const tagBits = theType + ' onChange="UserChangedSetting(\'' + k + '\')" ' + (classList.length ? 'class="' + classList.join(' ') + '" ' : '') + 'id="setting_' + k + '"'
-			SettingsAdd(reply, displayName, '<nobr><' + tagBits + '>' + theMiddle + '</' + theType.split(' ', 1)[0] + '>' + revert + "</nobr>", "cellNoWrap", customColumnCell)
+			if (theEditBits.length)
+			{
+				theEditBits.unshift('&nbsp;')
+			}
+			theEditBits.unshift('<' + tagBits + '>' + theMiddle + '</' + theType.split(' ', 1)[0] + '>')
+			SettingsAdd(reply, displayName, PutBitsSideBySide(theEditBits, 'VALIGN=top'), "cellNoWrap", customColumnCell)
 		}
 		else
 		{

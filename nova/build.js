@@ -9,11 +9,11 @@
 
 const kIconSearch = "&#128269;"
 const kIconPaste = "&#128203;"
-const kIconFix = "&#128736;"
+const kIconFix = "&#128736;&#xFE0F;"
 const kIconSpeech = "&#128172;" // "&#128266;"
 const kIconPhrase = "&#128209;"
 const kIconToTop = "&#9757;&#65039;" // "&#128285;" // "&#8679;"
-const kIconRevert = "&hookleftarrow;"
+const kIconRevert = "&#x21A9;&#xFE0F;" // "&hookleftarrow;"
 const kIconSettings = "&#128736;&#65039;"
 const kIconIssues = "&#9888;&#65039;"
 const kIconEntities = "&#129333;"
@@ -130,6 +130,11 @@ function TableShowTally(tally, options)
 // HTML BITS
 //=======================
 
+function PutBitsSideBySide(bits, trOptions)
+{
+	return '<TABLE CELLPADDING=0 CELLSPACING=0 BORDER=0><TR' + (trOptions ? " " + trOptions : "") + '><TD>' + bits.join('</TD><TD>') + '</TD></TR></TABLE>'
+}
+
 function CreateClickableText(theText, callThis)
 {
 	return '<B class="clicky" onClick="' + callThis + '">' + theText + '</B>'
@@ -183,7 +188,7 @@ function AfterScroll()
 function InitToTop()
 {
 	g_toTopElem = document.getElementById("toTop")
-	g_toTopElem.innerHTML = '<BUTTON ONCLICK="window.scrollTo(0,0)">' + MakeIconWithTooltip(kIconToTop, -6, "Scroll to top", undefined, undefined, undefined, -70) + '</BUTTON>'
+	g_toTopElem.innerHTML = '<BUTTON ONCLICK="window.scrollTo(0,0)">' + MakeIconWithTooltip(kIconToTop, -6, "Scroll to top", undefined, undefined, undefined, 80) + '</BUTTON>'
 
 	document.addEventListener("scroll", AfterScroll)
 	window.addEventListener("resize", AfterScroll)

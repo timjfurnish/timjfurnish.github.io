@@ -8,10 +8,6 @@ td
 {
 	font-family:Arial, Helvetica, sans-serif;
 }
-li
-{
-	margin-bottom:2px;
-}
 body
 {
 	font-size:15px;
@@ -287,6 +283,37 @@ button:disabled, button[disabled]
 	opacity:1;
 	cursor:default
 }
+.iconWithTooltip
+{
+	position:relative;
+	cursor:pointer
+}
+.iconWithTooltip .tooltipBubble
+{
+	font-weight:1000;
+	border:1px solid rgba(0, 0, 0, 0.5);
+	border-radius:6px;
+	background-color:#FFFFAA;
+	padding:5px;
+	font-size:3pt;
+	color:rgba(0, 0, 0, 0.9);
+	text-align:center;
+	visibility:hidden;
+	position:absolute;
+	bottom:100%;
+	z-index:12;
+	white-space:nowrap;
+	opacity:0;
+	pointer-events: none;
+	transition:opacity 0.2s, font 0.2s;
+	box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.5);
+}
+.iconWithTooltip:hover .tooltipBubble
+{
+	visibility:visible;
+	font-size:10pt;
+	opacity:0.95;
+}
 @media screen and (max-width:1000px)
 {
 	body
@@ -323,36 +350,14 @@ button:disabled, button[disabled]
 	{
 		transform:scale(2) translate(-10px, 10px);
 	}
-}
-.iconWithTooltip
-{
-	position:relative;
-	cursor:pointer
-}
-.iconWithTooltip .tooltipBubble
-{
-	border:1px solid rgba(0, 0, 0, 0.5);
-	border-radius:8px;
-	background-color:#FFFFAA;
-	padding:5px;
-	font-size:70%;
-	color:black;
-	text-align:center;
-	visibility:hidden;
-	position:absolute;
-	bottom:100%;
-	left:-20px;
-	z-index:12;
-	white-space:nowrap;
-	opacity:0;
-	pointer-events: none;
-	transition:opacity 0.2s;
-	box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.5);
-}
-.iconWithTooltip:hover .tooltipBubble
-{
-	visibility:visible;
-	opacity:1;
+	.iconWithTooltip .tooltipBubble
+	{
+		font-size:6pt;
+	}
+	.iconWithTooltip:hover .tooltipBubble
+	{
+		font-size:18pt;
+	}
 }
 .alertBubble
 {

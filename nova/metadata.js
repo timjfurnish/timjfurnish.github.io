@@ -586,7 +586,7 @@ function TabFunctionStats(reply, thenCall)
 		var wordsInDoc = 0
 		g_metaDataInOrder.forEach(metaData => wordsInDoc += metaData.Words)
 
-		var bookList = {["Les Miserables"]:568751, ["War and Peace"]:567246, ["David Copperfield"]:360231, ["Moby Dick"]:215839, ["Jane Eyre"]:190339, ["Great Expectations"]:187596, ["Dracula"]:165453, ["Emma"]:163514, ["Oliver Twist"]:161712, ["The Da Vinci Code"]:144330, ["A Tale of Two Cities"]:139605, ["Pride and Prejudice"]:124713, ["Sense and Sensibility"]:122646, ["Wuthering Heights"]:119572, ["To Kill A Mockingbird"]:99121, ["The Picture of Dorian Gray"]:82222, ["Frankenstein"]:78100, ["The Catcher in the Rye"]:74144, ["Treasure Island"]:72036, ["The War of the Worlds"]:63194, ["The Hound of the Baskervilles"]:62297, ["The Jungle Book"]:54178, ["Peter Pan"]:50844, ["The Great Gatsby"]:47094, ["Beowulf"]:43092, ["The Wonderful Wizard of Oz"]:42636, ["Pygmalion"]:36718, ["A Christmas Carol"]:31650, ["Alice’s Adventures in Wonderland"]:29610, ["The Strange Case of Dr. Jekyll and Mr. Hyde"]:28668, ["The Importance of Being Earnest"]:23760}
+		var bookList = {["Les Miserables"]:568751, ["War and Peace"]:567246, ["David Copperfield"]:360231, ["Moby Dick"]:215839, ["Jane Eyre"]:190339, ["Great Expectations"]:187596, ["Dracula"]:165453, ["Emma"]:163514, ["Oliver Twist"]:161712, ["The Night Watch"]:146965, ["The Da Vinci Code"]:144330, ["A Tale of Two Cities"]:139605, ["Pride and Prejudice"]:124713, ["Sense and Sensibility"]:122646, ["Wuthering Heights"]:119572, ["To Kill A Mockingbird"]:99121, ["The Picture of Dorian Gray"]:82222, ["Frankenstein"]:78100, ["The Catcher in the Rye"]:74144, ["Treasure Island"]:72036, ["The War of the Worlds"]:63194, ["The Hound of the Baskervilles"]:62297, ["The Jungle Book"]:54178, ["Peter Pan"]:50844, ["The Great Gatsby"]:47094, ["Beowulf"]:43092, ["The Wonderful Wizard of Oz"]:42636, ["Pygmalion"]:36718, ["A Christmas Carol"]:31650, ["Alice’s Adventures in Wonderland"]:29610, ["The Strange Case of Dr. Jekyll and Mr. Hyde"]:28668, ["The Importance of Being Earnest"]:23760}
 		bookList["THIS BOOK"] = wordsInDoc
 		reply.push(TableShowTally(bookList, {colours:{["THIS BOOK"]:"#DDFFDD"}, colourEntireLine:true, keyHeading:"Book name", valueHeading:"Words"}))
 	}
@@ -598,7 +598,36 @@ function MetaDataDrawGraph()
 {
 	const whichGraphType = g_currentOptions.graph.page
 	
-	if (whichGraphType == "PARAGRAPHS")
+	if (whichGraphType in g_metaDataAvailableColumns)
+	{
+		// TO DO: this is all very TMINUS-centric!
+		const highestVal = 10000
+		const divideBy = 8
+
+		const data = Array(highestVal / divideBy + 1)
+		const seenLocations = {}
+
+		for (var metaData of g_metaDataInOrder)
+		{
+			if (whichGraphType in metaData.info)
+			{
+				const index = Math.floor(parseInt(metaData.info[whichGraphType]) / divideBy)
+
+				if (index >= 0 && index < data.length)
+				{
+					if (! data[index])
+					{
+						data[index] = {}
+					}
+					Tally (data[index], metaData.info.LOC, metaData.Words)
+					seenLocations[metaData.info.LOC] = true
+				}
+			}
+		}
+
+		DrawSmoothedGraph({data:data, colours:MakeColourLookUpTable(Object.keys(seenLocations), 0.5)}, +g_currentOptions.graph.smoothing)
+	}
+	else if (g_currentOptions.graph.data == "SPEECH")
 	{
 		const graphThis = {colours:{SPEECH:"#FFFFFF", NARRATIVE:"rgba(0,0,0,0.9)"}, data:[]}
 		
@@ -630,50 +659,66 @@ function MetaDataDrawGraph()
 
 		DrawSmoothedGraph(graphThis, +g_currentOptions.graph.smoothing, {colourUsing:g_currentOptions.graph.colourUsing})
 	}
-	else
+	else if (g_currentOptions.graph.data)
 	{
-		const highestVal = 10000
-		const divideBy = 8
-
-		const data = Array(highestVal / divideBy + 1)
-		const seenLocations = {}
-
-		for (var metaData of g_metaDataInOrder)
+		const graphThis = {colours:MakeColourLookUpTable(Object.keys(g_metaDataSeenValues[g_currentOptions.graph.data]), 0.4), data:[]}
+		
+		for (var elem of g_metaDataInOrder)
 		{
-			if (whichGraphType in metaData.info)
-			{
-				const index = Math.floor(parseInt(metaData.info[whichGraphType]) / divideBy)
+			const tagText = elem.info[g_currentOptions.graph.data]
 
-				if (index >= 0 && index < data.length)
+			for (var para of elem.myParagraphs)
+			{
+				if (! para.ignoreFragments)
 				{
-					if (! data[index])
+					if (tagText === undefined)
 					{
-						data[index] = {}
+						graphThis.data.push({})
 					}
-					Tally (data[index], metaData.info.LOC, metaData.Words)
-					seenLocations[metaData.info.LOC] = true
+					else
+					{
+						graphThis.data.push({[tagText]:para.allOfIt.length})
+					}
 				}
 			}
 		}
 
-		DrawSmoothedGraph({data:data, colours:MakeColourLookUpTable(Object.keys(seenLocations), 0.5)}, +g_currentOptions.graph.smoothing)
+		DrawSmoothedGraph(graphThis, +g_currentOptions.graph.smoothing, {colourUsing:g_currentOptions.graph.colourUsing, brightness:0.4})
 	}
 }
 
 function TabFunctionGraph(reply, thenCall)
 {
+	const pageNames = ["TAGS"]
+	
 	// TO DO build this array programatically
-	TabBuildButtonsBar(reply, ["PARAGRAPHS", "TMINUS"])
-
-	var nameData = {}
-
-	for (var eachCol of Object.keys(g_metaDataAvailableColumns))
+	if (g_metaDataAvailableColumns.TMINUS)
 	{
-		nameData[eachCol] = eachCol
+		pageNames.push("TMINUS")
 	}
+	
+	TabBuildButtonsBar(reply, pageNames)
 
 	var options = []
-	GraphCreateStandardOptions(options, "MetaDataDrawGraph", g_currentOptions.graph.page == "PARAGRAPHS")
+
+	if (g_currentOptions.graph.page in g_metaDataAvailableColumns)
+	{
+		GraphCreateStandardOptions(options, "MetaDataDrawGraph", false)
+	}
+	else
+	{
+		GraphCreateStandardOptions(options, "MetaDataDrawGraph", true)
+
+		var nameData = {SPEECH:"Speech vs. narrative"}
+
+		for (var eachCol of Object.keys(g_metaDataAvailableColumns))
+		{
+			nameData[eachCol] = eachCol
+		}
+
+		OptionsMakeSelect(options, "MetaDataDrawGraph()", "Data", "data", nameData, "SPEECH", true)
+	}
+
 	reply.push(OptionsConcat(options))
 	reply.push("<BR><CANVAS WIDTH=" + CalcGraphCanvasWidth() + " HEIGHT=300 ID=graphCanvas></CANVAS>")
 	thenCall.push(MetaDataDrawGraph)

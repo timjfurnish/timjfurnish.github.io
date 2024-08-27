@@ -8,23 +8,33 @@ var g_voiceLookUp = {}
 var g_voiceLanguages = []
 var g_currentSpeaky
 
-const OnReaderError  = e         => NovaWarn("Speech synthesis error: " + e.error + " after time=" + e.elapsedTime)
 const SpeechTest     = whichOne  => SpeakUsingVoice("Testing, one two three!", whichOne)
+const OnReaderEnd    = e         => e?.target?.myNovaOnEndCallback?.()
 
 function SpeakUsingVoice(thingToSay, voiceType, onEnd)
 {
+	StopTalking()
+
 	g_currentSpeaky = new SpeechSynthesisUtterance(thingToSay)
 
 	if (onEnd)
 	{
-		g_currentSpeaky.onend = onEnd
+		g_currentSpeaky.myNovaOnEndCallback = onEnd
 	}
 
-	g_currentSpeaky.onerror = OnReaderError
+	g_currentSpeaky.onend = OnReaderEnd
 	g_currentSpeaky.rate = g_tweakableSettings.speakRate
 	g_currentSpeaky.voice = g_voiceLookUp[g_tweakableSettings[voiceType]]
-	speechSynthesis.cancel()
 	speechSynthesis.speak(g_currentSpeaky)
+}
+
+function StopTalking()
+{
+	if (g_currentSpeaky)
+	{
+		g_currentSpeaky.myNovaOnEndCallback = undefined
+		speechSynthesis.cancel()
+	}
 }
 
 function ReadVoices()

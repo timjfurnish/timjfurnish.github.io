@@ -49,7 +49,7 @@ TabDefine("issues", function(reply, thenCall)
 	{
 		for (var [heading, issueList] of Object.entries(g_issues))
 		{
-			reply.push("<H3 align=left>" + heading + "</H3><UL align=left><LI>" + issueList.join("</LI><LI>") + "</LI></UL>")
+			reply.push("<H3>" + heading + "</H3>" + issueList.join(""))
 		}
 
 		if (! g_disabledWarnings["ISSUE SUMMARY"])
@@ -59,9 +59,9 @@ TabDefine("issues", function(reply, thenCall)
 	}
 	else
 	{
-		reply.push("No issues found")
+		reply.push("<CENTER>No issues found</CENTER>")
 	}
-}, {icon:kIconIssues, canSelect:true})
+}, {icon:kIconIssues, canSelect:true, alignment:"left"})
 
 function ClearEarlyIssues()
 {
@@ -103,6 +103,8 @@ function AutoFix(theType, param)
 
 function IssueAdd(addThis, theType, fixMeParam, overrideIssueHeading)
 {
+	var storeThis = []
+
 	if (theType)
 	{
 		var col = g_warningNames[theType]
@@ -118,37 +120,39 @@ function IssueAdd(addThis, theType, fixMeParam, overrideIssueHeading)
 			return
 		}
 		
-		addThis = '<SMALL>' + MakeIconWithTooltip(kIconRedCross, 0, "Disable " + theType + " check", "DisableIssueCheck('" + theType + "')") + '&nbsp;</SMALL><NOBR class="issueType" style="background:' + col + '">' + theType + '</NOBR> ' + addThis
+		storeThis.push('<SMALL>' + MakeIconWithTooltip(kIconRedCross, 0, "Disable " + theType + " check", "DisableIssueCheck('" + theType + "')", undefined, undefined, 10) + '</SMALL>', '&nbsp;')
+		addThis = '<NOBR class="issueType" style="background:' + col + '">' + theType + '</NOBR> ' + addThis
 		
 		if (fixMeParam)
 		{
 			const autoFix = g_autoFixIssues[theType]
+
 			if (autoFix)
 			{
 				const callThis = 'AutoFix(\'' + theType + '\', \'' + AddEscapeChars(fixMeParam.replace("'", "\\'")) + '\')'
 				addThis += ' <NOBR class="fixMe" onClick="' + callThis + '">' + autoFix.msg + '</NOBR>'
 			}
 		}
-		
-//		addThis += ' <NOBR class="fixMe" onClick="DisableIssueCheck(\'' + theType + '\')" STYLE="background:#FFDDDD">Disable ' + theType + ' check</NOBR>'
 	}
 
-//	NovaLog(addThis)
+	storeThis.push(addThis)
+	
+	// Turn array into a single string...
+	storeThis = PutBitsSideBySide(storeThis, "valign=top")
 
 	Tally(g_issueStats, theType ?? "NO TYPE")
 
 	++ g_issueCount
-//	console.log("Increased issue count to " + g_issueCount)
 
 	const issueHeading = overrideIssueHeading ?? MetaDataMakeFragmentDescription()
 
 	if (issueHeading in g_issues)
 	{
-		g_issues[issueHeading].push(addThis)
+		g_issues[issueHeading].push(storeThis)
 	}
 	else
 	{
-		g_issues[issueHeading] = [addThis]
+		g_issues[issueHeading] = [storeThis]
 	}
 }
 
