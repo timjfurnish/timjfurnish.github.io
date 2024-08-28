@@ -120,7 +120,7 @@ function IssueAdd(addThis, theType, fixMeParam, overrideIssueHeading)
 			return
 		}
 		
-		storeThis.push('<SMALL>' + MakeIconWithTooltip(kIconRedCross, 0, "Disable " + theType + " check", "DisableIssueCheck('" + theType + "')", undefined, undefined, 10) + '</SMALL>', '&nbsp;')
+		storeThis.push(MakeIconWithTooltip(kIconRedCross, 0, "Disable " + theType + " check", "DisableIssueCheck('" + theType + "')", undefined, undefined, 10), '&nbsp;')
 		addThis = '<NOBR class="issueType" style="background:' + col + '">' + theType + '</NOBR> ' + addThis
 		
 		if (fixMeParam)

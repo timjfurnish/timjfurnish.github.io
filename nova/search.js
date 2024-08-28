@@ -248,8 +248,6 @@ function HighlightThreadSection(num, bCanScroll)
 		}
 	}
 	
-//	SetTabTitle('voice', g_threadSectionSelected)
-	
 	return num == g_threadSectionSelected
 }
 
@@ -405,8 +403,8 @@ TabDefine("voice", function(reply, thenCall)
 	MakeUpdatingArea(reply, "threadsGoHere", 'align="left" style="user-select:text"')
 	
 	var hoverOptions = []
-	hoverOptions.push('<BUTTON ONCLICK="ThreadRead()">' + MakeIconWithTooltip(kIconSpeech, -15, "Speak") + '</BUTTON>')
-	hoverOptions.push('<BUTTON ONCLICK="StopTalking()">' + MakeIconWithTooltip(kIconMute, -4, "Stop") + '</BUTTON>')
+	hoverOptions.push('<BUTTON ONCLICK="ThreadRead()">' + MakeIconWithTooltip(kIconSpeech, -15, "Speak", undefined, undefined, undefined, undefined, "175%") + '</BUTTON>')
+	hoverOptions.push('<BUTTON ONCLICK="StopTalking()">' + MakeIconWithTooltip(kIconMute, -4, "Stop", undefined, undefined, undefined, undefined, "175%") + '</BUTTON>')
 	ShowHoverControls(hoverOptions)
 	
 	thenCall.push(RedrawThread)

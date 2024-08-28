@@ -278,267 +278,287 @@ function MetaDataDrawTable()
 	var selectedDisplay = []
 	var reply = []
 	var seenThings = {}
-	
+	var maximums = MakeClearTally(false)
+
+	// Order here determines (in reverse) the order in which the columns will appear...
+	maximums["Mentions"] = maximums["Percent speech"] = maximums["Percent done"] = undefined
+
 	const estimatedSize = g_metaDataTotals["Estimated final words"]
 	if (estimatedSize)
 	{
 		reply.push("<H4>Complete: " + (100 * g_metaDataTotals.Words / estimatedSize).toFixed(2) + "<SMALL>%</SMALL></H4>")
 	}
 
-	TableOpen(reply)
-
 	for (var colName of Object.keys(g_metaDataAvailableColumns))
 	{
 		if (g_currentOptions.stats["process_" + colName])
 		{
-			TableAddHeading(reply, colName)
 			selectedColumns.push(colName)
 			seenThings[colName] = {}
 		}
 	}
-	
-	var lastDeets = ""
-	var lastTally = MakeClearTally(true)
-	var dataToDisplay = []
-	var lastMetaData = ""
-
-	function AddLastDeets()
-	{
-		if (lastTally.Paragraphs && lastDeets)
-		{
-//			console.log("  > " + lastDeets + ": " + Object.entries(lastTally.Mentions).join(' '))
-
-			if (consolidate && lastDeets in consolidate)
-			{
-				var addLastTallyToHere = consolidate[lastDeets]
-
-				for (var [name, val] of Object.entries(lastTally))
-				{
-					if (typeof val == "number")
-					{
-						addLastTallyToHere[name] += val
-					}
-					else
-					{
-						for (var [objName, objVal] of Object.entries(val))
-						{
-							Tally(addLastTallyToHere[name], objName, objVal)
-						}
-					}
-				}
-
-				lastTally = addLastTallyToHere
-//				console.log("    Reusing entry for " + lastDeets)
-			}
-			else
-			{
-//				console.log("   Creating entry for '" + Object.entries(lastMetaData).join(" ") + "' i.e. '" + lastDeets + "'")
-				var newData = {deets:lastDeets, tally:lastTally, metaData:lastMetaData}
-
-				dataToDisplay.push(newData)
-				
-				if (consolidate)
-				{
-					consolidate[lastDeets] = lastTally
-				}
-			}
-		}
-	}
-
-	for (var elem of g_metaDataInOrder)
-	{
-		var deets = ''
-		var ignoreMe = false
 		
-		for (var colName of selectedColumns)
-		{
-			if (colName in elem.info)
-			{
-				deets += "<TD CLASS=cellNoWrap><B>" + elem.info[colName] + "</B></TD>"
-			}
-			else
-			{
-				deets += "<TD></TD>"
-				ignoreMe = true
-			}
-			
-			seenThings[colName][elem.info[colName]] = true
-		}
-
-//		console.log("[D] " + Object.entries(elem.Mentions).join(' '))
-
-		if (ignoreMe)
-		{
-			deets = undefined
-		}
-		
-		if (deets != lastDeets)
-		{
-			AddLastDeets()
-
-			lastTally = MakeClearTally(true)
-			lastDeets = deets			
-			lastMetaData = {}
-			
-			for (var colName of selectedColumns)
-			{
-				lastMetaData[colName] = elem.info[colName]
-			}
-
-			for (var name of Object.keys(lastTally))
-			{
-				var val = elem[name]
-
-				if (typeof val == "number")
-				{
-					lastTally[name] = val
-				}
-				else
-				{
-					lastTally[name] = {}
-					
-					for (var [k, v] of Object.entries(val))
-					{
-//						console.log(name + ": " + k + "=" + v)
-						Tally(lastTally[name], k, v)
-					}
-				}
-			}
-		}
-		else
-		{
-			for (var name of Object.keys(lastTally))
-			{
-				MetaDataCombine(lastTally, name, elem[name])
-			}
-		}
-	}
-
-	AddLastDeets()
-
-	// Now work out which of the visible metadata types has the fewest entries
-
-	var colourBasedOn
-	var lowestSize
-
-	// TO DO: update this to use number of different values for each metadata tag VISIBLE, not ALL of them
-	for (var [key,val] of Object.entries(seenThings))
-	{
-		var total = Object.keys(val).length
-		if (!colourBasedOn || total < lowestSize)
-		{
-			lowestSize = total
-			colourBasedOn = key
-		}
-	}
-
-	const colourLookUp = colourBasedOn ? MakeColourLookUpTable(Object.keys(seenThings[colourBasedOn])) : null
-	const kSecondsPerWord = (60 / 210) // Average WPM apparently 183 out loud, 238 in head
-
-	var maximums = MakeClearTally(false)
-
-	// Calculate derived values (e.g. percentages) and max values
-	for (var data of dataToDisplay)
-	{
-		data.tally["Percent speech"] = 100 * (data.tally.Speech / data.tally.Words)
-		data.tally["Percent done"] = 100 * (data.tally.Words / data.tally["Estimated final words"])
-		
-		for (var [name, val] of Object.entries(data.tally))
-		{
-			if (! (name in maximums) || val > maximums[name])
-			{
-				maximums[name] = val
-			}
-		}
-	}
-	
-	// Sort
-	if (sort in maximums)
-	{
-		dataToDisplay.sort((a,b) => b.tally[sort] - a.tally[sort])
-	}
-
 	for (var name of Object.keys(maximums))
 	{
 		if (g_currentOptions.stats["display_" + name])
 		{
-			TableAddHeading(reply, name)
 			selectedDisplay.push(name)
 		}
 	}
 
-	NovaLog("Redrawing stats table [" + selectedColumns + "] <" + selectedDisplay + ">" + (sort ? " sort='" + sort + "'" : "") + (colourBasedOn ? " colours='" + colourBasedOn + "'" : ""))
-	
-	function ExtraDeets(num, name)
+//	SetTabTitle("stats", selectedColumns.length + "/" + selectedDisplay.length)	
+
+	if (selectedColumns.length || selectedDisplay.length)
 	{
-		if (name in kCanDisplayAsTimeToRead)
+		var lastDeets = ""
+		var lastTally = MakeClearTally(true)
+		var dataToDisplay = []
+		var lastMetaData = ""
+
+		function AddLastDeets()
 		{
-			return ' &#x2022; ' + UtilFormatTime(num * kSecondsPerWord)
+			if (lastTally.Paragraphs)
+			{
+//				NovaLog(lastTally.Paragraphs + " paragraphs, lastDeets = '" + lastDeets + "'")
+
+				if (consolidate && lastDeets in consolidate)
+				{
+					var addLastTallyToHere = consolidate[lastDeets]
+
+					for (var [name, val] of Object.entries(lastTally))
+					{
+						if (typeof val == "number")
+						{
+							addLastTallyToHere[name] += val
+						}
+						else
+						{
+							for (var [objName, objVal] of Object.entries(val))
+							{
+								Tally(addLastTallyToHere[name], objName, objVal)
+							}
+						}
+					}
+
+					lastTally = addLastTallyToHere
+	//				console.log("    Reusing entry for " + lastDeets)
+				}
+				else
+				{
+	//				console.log("   Creating entry for '" + Object.entries(lastMetaData).join(" ") + "' i.e. '" + lastDeets + "'")
+					var newData = {deets:lastDeets, tally:lastTally, metaData:lastMetaData}
+
+					dataToDisplay.push(newData)
+					
+					if (consolidate)
+					{
+						consolidate[lastDeets] = lastTally
+					}
+				}
+			}
+		}
+
+		for (var elem of g_metaDataInOrder)
+		{
+			var deets = ''
+			var ignoreMe = false
+			
+			for (var colName of selectedColumns)
+			{
+				if (colName in elem.info)
+				{
+					deets += "<TD CLASS=cellNoWrap><B>" + elem.info[colName] + "</B></TD>"
+				}
+				else
+				{
+					deets += "<TD></TD>"
+					ignoreMe = true
+				}
+				
+				seenThings[colName][elem.info[colName]] = true
+			}
+
+	//		console.log("[D] " + Object.entries(elem.Mentions).join(' '))
+
+			if (ignoreMe)
+			{
+				deets = undefined
+			}
+			
+			if (deets != lastDeets)
+			{
+				AddLastDeets()
+
+				lastTally = MakeClearTally(true)
+				lastDeets = deets			
+				lastMetaData = {}
+				
+				for (var colName of selectedColumns)
+				{
+					lastMetaData[colName] = elem.info[colName]
+				}
+
+				for (var name of Object.keys(lastTally))
+				{
+					var val = elem[name]
+
+					if (typeof val == "number")
+					{
+						lastTally[name] = val
+					}
+					else
+					{
+						lastTally[name] = {}
+						
+						for (var [k, v] of Object.entries(val))
+						{
+	//						console.log(name + ": " + k + "=" + v)
+							Tally(lastTally[name], k, v)
+						}
+					}
+				}
+			}
+			else
+			{
+				for (var name of Object.keys(lastTally))
+				{
+					MetaDataCombine(lastTally, name, elem[name])
+				}
+			}
+		}
+
+		AddLastDeets()
+
+		// Now work out which of the visible metadata types has the fewest entries
+
+		var colourBasedOn
+		var lowestSize
+
+		// TO DO: update this to use number of different values for each metadata tag VISIBLE, not ALL of them
+		for (var [key,val] of Object.entries(seenThings))
+		{
+			var total = Object.keys(val).length
+			if (!colourBasedOn || total < lowestSize)
+			{
+				lowestSize = total
+				colourBasedOn = key
+			}
+		}
+
+		const colourLookUp = colourBasedOn ? MakeColourLookUpTable(Object.keys(seenThings[colourBasedOn])) : null
+		const kSecondsPerWord = (60 / 210) // Average WPM apparently 183 out loud, 238 in head
+
+		// Calculate derived values (e.g. percentages) and max values
+		for (var data of dataToDisplay)
+		{
+			data.tally["Percent speech"] = 100 * (data.tally.Speech / data.tally.Words)
+			data.tally["Percent done"] = 100 * (data.tally.Words / data.tally["Estimated final words"])
+			
+			for (var [name, val] of Object.entries(data.tally))
+			{
+				if (maximums[name] === undefined || val > maximums[name])
+				{
+					maximums[name] = val
+				}
+			}
 		}
 		
-		return ""
-	}
-
-	for (var data of dataToDisplay)
-	{
-		if (colourBasedOn)
+		// Sort
+		if (sort in maximums)
 		{
-			TableNewRow(reply, colourLookUp[data.metaData[colourBasedOn]])
+			dataToDisplay.sort((a,b) => b.tally[sort] - a.tally[sort])
 		}
-		else
+
+		//----------------------
+		// Now draw the table!
+		//----------------------
+
+		NovaLog("Redrawing stats table [" + selectedColumns + "] (" + selectedDisplay + ")" + (sort ? " sort='" + sort + "'" : "") + (colourBasedOn ? " colours='" + colourBasedOn + "'" : ""))
+
+		TableOpen(reply)
+
+		for (var colNameToDisplay of selectedColumns)
+		{
+			TableAddHeading(reply, colNameToDisplay)		
+		}
+
+		for (var statNameToDisplay of selectedDisplay)
+		{
+			TableAddHeading(reply, statNameToDisplay)		
+		}
+		
+		function ExtraDeets(num, name)
+		{
+			if (name in kCanDisplayAsTimeToRead)
+			{
+				return ' &#x2022; ' + UtilFormatTime(num * kSecondsPerWord)
+			}
+			
+			return ""
+		}
+
+		for (var data of dataToDisplay)
+		{
+			if (colourBasedOn)
+			{
+				TableNewRow(reply, colourLookUp[data.metaData[colourBasedOn]])
+			}
+			else
+			{
+				TableNewRow(reply)
+			}
+			reply.push(data.deets)
+			for (var name of selectedDisplay)
+			{
+				var value = data.tally[name]
+				var contents = ""
+
+				if (typeof value == "object")
+				{
+					var listEm = []
+					for (var n of Object.keys(value))
+					{
+						listEm.push('<NOBR class="issueType" style="background:#FFFFFF">' + n + '</nobr>')
+					}
+					contents = listEm.join("<wbr>")
+				}
+				else if (name.startsWith("Percent"))
+				{
+					contents = RenderBarFor(value, 100.0 / maximums[name], 2, '%')
+				}
+				else
+				{
+					var extra = value ? ' <B>(' + (100 * value / g_metaDataTotals[name]).toFixed(2) + '<SMALL>%</SMALL>)</B>' : ''
+					contents = RenderBarFor(value, 200.0 / maximums[name], 0, extra + ExtraDeets(value, name))
+				}
+
+				reply.push("<TD CLASS=cell>" + contents + "</TD>")
+			}
+		}
+
+		// Only need to display total if we had any columns selected...
+		if (selectedColumns.length)
 		{
 			TableNewRow(reply)
-		}
-		reply.push(data.deets)
-		for (var name of selectedDisplay)
-		{
-			var value = data.tally[name]
-			var contents = ""
+			reply.push('<TD COLSPAN="' + selectedColumns.length + '" CLASS="cellNoWrap"><B><SMALL>TOTAL:</SMALL></B></TD>')
 
-			if (typeof value == "object")
+			for (var name of selectedDisplay)
 			{
-				var listEm = []
-				for (var n of Object.keys(value))
+				const value = g_metaDataTotals[name]
+				if (value)
 				{
-					listEm.push('<NOBR class="issueType" style="background:#FFFFFF">' + n + '</nobr>')
+					reply.push('<TD CLASS="cell"><B>' + Math.round(value) + "</B><SMALL>" + ExtraDeets(value, name) + '</SMALL></TD>')				
 				}
-				contents = listEm.join("<wbr>")
-			}
-			else if (name.startsWith("Percent"))
-			{
-				contents = RenderBarFor(value, 100.0 / maximums[name], 2, '%')
-			}
-			else
-			{
-				var extra = value ? ' <B>(' + (100 * value / g_metaDataTotals[name]).toFixed(2) + '<SMALL>%</SMALL>)</B>' : ''
-				contents = RenderBarFor(value, 200.0 / maximums[name], 0, extra + ExtraDeets(value, name))
-			}
-
-			reply.push("<TD CLASS=cell>" + contents + "</TD>")
-		}
-	}
-
-	// Only need to display total if we had any columns selected...
-	if (selectedColumns.length)
-	{
-		TableNewRow(reply)
-		reply.push('<TD COLSPAN="' + selectedColumns.length + '" CLASS="cellNoWrap"><B><SMALL>TOTAL:</SMALL></B></TD>')
-
-		for (var name of selectedDisplay)
-		{
-			const value = g_metaDataTotals[name]
-			if (value)
-			{
-				reply.push('<TD CLASS="cell"><B>' + Math.round(value) + "</B><SMALL>" + ExtraDeets(value, name) + '</SMALL></TD>')				
-			}
-			else
-			{
-				reply.push('<TD CLASS="cell"></TD>')
+				else
+				{
+					reply.push('<TD CLASS="cell"></TD>')
+				}
 			}
 		}
+		
+		TableClose(reply)
 	}
 	
-	reply.push("</TABLE>")
 	document.getElementById("metaDataOutput").innerHTML = reply.join("")
 }
 

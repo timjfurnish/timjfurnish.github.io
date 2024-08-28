@@ -20,13 +20,9 @@ var g_tagsExpectedInEverySection = []
 // TO DO: would be good to put this into settings, but let's get it working first...
 const kAutoTagStuff =
 {
-	["T minus "]:{tag:"TMINUS", numericalCheck:"descend", characters:",.", clearTags:"", unique:true},
+	["T minus "]:{tag:"TMINUS", numericalCheck:"descend", includeLineInText:true, characters:",.", clearTags:"", unique:true},
 	["Document #"]:{tag:"PART", numericalCheck:"ascend", characters:"", clearTags:"", global:true, unique:true, joinNextLine:true},
-	["*"]:{tag:"CHAPTER", numericalCheck:"none", mustInclude:true, clearTags:"TMINUS", global:true, unique:true},
-
-//	["BOOK "]:{tag:"BOOK", numericalCheck:"", includeLineInText:true, clearTags:""},
-//	["VOLUME "]:{tag:"VOLUME", numericalCheck:"", includeLineInText:true, clearTags:""},
-//	["CHAPTER "]:{tag:"CHAPTER", numericalCheck:"", includeLineInText:true, clearTags:""},
+	["*"]:{tag:"CHAPTER", numericalCheck:"none", mustInclude:true, clearTags:"TMINUS", global:true, unique:true}
 }
 
 const kAutoTagOptions = Object.entries(
@@ -236,12 +232,12 @@ function BuildAutomaticTagsBox(moreOutput)
 		for (var [k, data] of kAutoTagOptions)
 		{
 			const isOn = kAutoTagStuff[line][k]
-			optionBits.push("<BIG>" + MakeIconWithTooltip(data.icon, -4, data.tooltip + (isOn ? ": ON" : ": OFF"), "AutoTagOptionToggle('" + line + "', '" + k + "')", undefined, isOn ? undefined : 0.15, 80) + "</BIG>")
+			optionBits.push(MakeIconWithTooltip(data.icon, -4, data.tooltip + (isOn ? ": ON" : ": OFF"), "AutoTagOptionToggle('" + line + "', '" + k + "')", undefined, isOn ? undefined : 0.15, 80))
 		}
 		optionBits.push(numericalCheckBits.join('') + '</select>')
 		
 		TableNewRow(reply)
-		TableAddCell(reply, PutBitsSideBySide(["<BIG>" + MakeIconWithTooltip(kIconTrash, 0, "Delete", "delete kAutoTagStuff['" + line + "']; AutoTagUpdate()") + "</BIG>", "&nbsp;" + MakeClickableTextBubble(line, "Enter the name for this tag", "tag")]))
+		TableAddCell(reply, PutBitsSideBySide([MakeIconWithTooltip(kIconTrash, 0, "Delete", "delete kAutoTagStuff['" + line + "']; AutoTagUpdate()"), "&nbsp;" + MakeClickableTextBubble(line, "Enter the name for this tag", "tag")]))
 		TableAddCell(reply, MakeClickableTextBubble(line, "Enter string to find in document"))
 		TableAddCell(reply, MakeClickableTextBubble(line, "Enter characters to remove from line before storing tag text", "characters"))
 		TableAddCell(reply, MakeClickableTextBubble(line, "Enter space-seperated list of tags to clear when this text is found", "clearTags"))
@@ -351,10 +347,10 @@ const kSettingNames =
 {
 	INPUT:
 	{
-		replace:"Replace (regex)|mediumTextBox",
-		wordsContainingFullStops:"Words with full stops|shortTextBox",
-		skip:"Skip lines starting with|shortTextBox",
-		["Automatic tags"]:BuildAutomaticTagsBox,
+		replace:"Replace^(regex)|mediumTextBox",
+		wordsContainingFullStops:"Words with^full stops|shortTextBox",
+		skip:"Skip lines^starting with|shortTextBox",
+		["Automatic^tags"]:BuildAutomaticTagsBox,
 	},
 	VOICE:
 	{
@@ -974,7 +970,7 @@ TabDefine("settings", function(reply, thenCall)
 			}
 			else
 			{
-				theEditBits.push("<BIG>" + MakeIconWithTooltip(kIconRevert, 0, "Revert", "SettingAskRevert('" + k + "')") + "</BIG>")
+				theEditBits.push(MakeIconWithTooltip(kIconRevert, 0, "Revert", "SettingAskRevert('" + k + "')"))
 
 				if (Array.isArray(g_tweakableSettings[k]))
 				{
@@ -988,7 +984,7 @@ TabDefine("settings", function(reply, thenCall)
 					
 					if (kTweakableDefaults[k].length)
 					{
-						theEditBits.push("<BIG>" + MakeIconWithTooltip(kIconFix, 0, "Repair", "SettingFixArray('" + k + "')") + "</BIG>")
+						theEditBits.push(MakeIconWithTooltip(kIconFix, 0, "Repair", "SettingFixArray('" + k + "')"))
 					}
 				}
 				else if (typeof g_tweakableSettings[k] == "object")

@@ -40,39 +40,45 @@ function TabDefine(tabName, myFunction, settings)
 
 function SetTabTitle(tabName, text)
 {
-//	console.log("Setting alert marker for tab '" + tabName + "' to " + text)
-	document.getElementById("tabText_" + tabName).innerHTML = BuildTabDisplayText(tabName, text)
+	document.getElementById("tabText_" + tabName).innerHTML = g_tabFunctions[tabName].icon + (text ? '<span class="alertBubble">&nbsp;' + text + '&nbsp;</span>' : '')
 }
 
-function BuildTabDisplayText(tabName, extra)
+function MakeIconWithTooltip(icon, angle, tooltipText, clickyFunc, id, alpha, xOffset, fontSize)
 {
-	var main = '&nbsp;' + g_tabFunctions[tabName].icon + '&nbsp;'
+	//------------------
+	// Build extraArgs
+	//------------------
 
-	if (extra != undefined)
-	{
-		main += ('<span class="alertBubble">&nbsp;' + extra + '&nbsp;</span>')
-	}
-	
-	return main
-}
-
-function MakeIconWithTooltip(icon, angle, tooltipText, clickyFunc, id, alpha, xOffset)
-{
 	var extraArgs = clickyFunc ? ' onClick="' + clickyFunc + '"' : ''
-	
-	if (xOffset === undefined)
-	{
-		xOffset = 50
-	}
+	var styleBits = []
 
 	if (id)
 	{
 		extraArgs += ' id="' + id + '"'
 	}
 
+	if (fontSize)
+	{
+		styleBits.push('font-size:' + fontSize)
+	}
+	
 	if (alpha != undefined)
 	{
-		icon = '<nobr style="opacity:' + alpha + '">' + icon + '</nobr>'
+		styleBits.push('opacity:' + alpha)
+	}
+
+	if (styleBits.length)
+	{
+		extraArgs += ' style="' + styleBits.join('; ') + '"'
+	}
+
+	//------------------------------------
+	// Build transformBits (for tooltip)
+	//------------------------------------
+
+	if (xOffset === undefined)
+	{
+		xOffset = 50
 	}
 
 	var transformBits = ['translate(-' + xOffset + '%, 0px)']
@@ -82,7 +88,11 @@ function MakeIconWithTooltip(icon, angle, tooltipText, clickyFunc, id, alpha, xO
 		transformBits.push('rotate(' + angle + 'deg)')
 	}
 
-	return '<center CLASS="iconWithTooltip"' + extraArgs + '>' + icon + '<br><span class="tooltipBubble" STYLE="transform:' + transformBits.join(' ') + '">' + tooltipText + '</span></center>'
+	//----------------------
+	// Put it all together
+	//----------------------
+
+	return '<center CLASS="iconWithTooltip"><FONT' + extraArgs + '>' + icon + '</FONT><br><span class="tooltipBubble" STYLE="transform:' + transformBits.join(' ') + '">' + tooltipText + '</span></center>'
 }
 
 function ShowTabs()
@@ -116,12 +126,10 @@ function BuildTabs()
 			g_tabIconsToDisableWhenNoText.push(tabName)
 		}
 		
-		const iconHTML = '<span id="tabText_' + tabName + '">' + BuildTabDisplayText(tabName) + '</span>'
-		
 		spanCols += 2
 		output.push(joiner)
 		output.push('<TD WIDTH="10" ID="tab_' + tabName + '" TABINDEX=0 ONCLICK="SetTab(\'' + tabName + '\')" CLASS="tabDeselected">')
-		output.push(MakeIconWithTooltip(iconHTML, Math.round(Math.sin(tilty) * 10), g_tabFunctions[tabName].tooltipText))
+		output.push(MakeIconWithTooltip(g_tabFunctions[tabName].icon, Math.round(Math.sin(tilty) * 10), g_tabFunctions[tabName].tooltipText, undefined, "tabText_" + tabName, undefined, undefined, "175%"))
 		output.push("</TD>")
 		joiner = '<TD WIDTH="1" STYLE="border-bottom:' + kTabLine + '"></TD>'
 		tilty += 3

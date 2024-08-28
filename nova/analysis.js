@@ -192,7 +192,21 @@ function ShouldProcessPara(txtInProcessed)
 				}
 			}
 
-			return includeLineInText
+			if (includeLineInText)
+			{
+				g_metaDataTally.Words += OnlyKeepValid(txtInProcessed.split(g_processInputWorkspace.regexForSplittingIntoWords)).length
+				++ g_metaDataTally.Paragraphs
+
+				if (g_metaDataGatherParagraphs.length == 0)
+				{
+					g_metaDataCurrentCompleteness = g_metaDataNextCompleteness
+					g_metaDataNextCompleteness = 100
+				}
+
+				g_metaDataGatherParagraphs.push({allOfIt:txtInProcessed, fragments:[{text:txtInProcessed, followedBy:""}]})
+			}
+
+			return false
 		}
 	}
 	
