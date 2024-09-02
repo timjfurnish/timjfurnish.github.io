@@ -8,6 +8,7 @@ var g_selectedTabName = null
 var g_hoverControls
 var g_canSelectTabs = true
 var g_tabIconsToDisableWhenNoText = []
+var g_cacheTabTitles = {}
 
 const kTabLine = "1px solid #000000"
 const kTabSelected = "#F5F5F5"
@@ -40,7 +41,16 @@ function TabDefine(tabName, myFunction, settings)
 
 function SetTabTitle(tabName, text)
 {
-	document.getElementById("tabText_" + tabName).innerHTML = g_tabFunctions[tabName].icon + (text ? '<span class="alertBubble">&nbsp;' + text + '&nbsp;</span>' : '')
+	if (text)
+	{
+		g_cacheTabTitles[tabName] = text
+		document.getElementById("tabText_" + tabName).innerHTML = g_tabFunctions[tabName].icon + '<span class="alertBubble">&nbsp;' + text + '&nbsp;</span>'
+	}
+	else
+	{
+		delete g_cacheTabTitles[tabName]
+		document.getElementById("tabText_" + tabName).innerHTML = g_tabFunctions[tabName].icon
+	}
 }
 
 function MakeIconWithTooltip(icon, angle, tooltipText, clickyFunc, id, alpha, xOffset, fontSize)
@@ -92,12 +102,32 @@ function MakeIconWithTooltip(icon, angle, tooltipText, clickyFunc, id, alpha, xO
 	// Put it all together
 	//----------------------
 
-	return '<center CLASS="iconWithTooltip"><FONT' + extraArgs + '>' + icon + '</FONT><br><span class="tooltipBubble" STYLE="transform:' + transformBits.join(' ') + '">' + tooltipText + '</span></center>'
+	const tooltipHTML = (g_tweakableSettings.tooltips && tooltipText) ? '<br><span class="tooltipBubble" STYLE="transform:' + transformBits.join(' ') + '">' + tooltipText + '</span>' : ""
+
+	return '<center CLASS="iconWithTooltip"><FONT' + extraArgs + '>' + icon + '</FONT>' + tooltipHTML + '</center>'
 }
 
 function ShowTabs()
 {
 	document.getElementById("infoPanel").style.display = "block"
+}
+
+function RedoTabTops()
+{
+	var tilty = -1
+
+	for (var tabName of Object.keys(g_tabFunctions))
+	{
+		document.getElementById('tab_' + tabName).innerHTML = MakeIconWithTooltip(g_tabFunctions[tabName].icon, Math.round(Math.sin(tilty) * 10), g_tabFunctions[tabName].tooltipText, undefined, "tabText_" + tabName, undefined, undefined, "175%")
+
+		const title = g_cacheTabTitles[tabName]
+		if (title)
+		{
+			SetTabTitle(tabName, title)
+		}
+
+		tilty += 3
+	}
 }
 
 function BuildTabs()
@@ -110,7 +140,6 @@ function BuildTabs()
 	var spanCols = 1
 	var endCell = '<TD STYLE="border-bottom:' + kTabLine + '">&nbsp;&nbsp;&nbsp;&nbsp;</TD>'
 	var joiner = endCell
-	var tilty = -1
 	
 //	console.log(g_tabFunctions)
 	
@@ -127,12 +156,8 @@ function BuildTabs()
 		}
 		
 		spanCols += 2
-		output.push(joiner)
-		output.push('<TD WIDTH="10" ID="tab_' + tabName + '" TABINDEX=0 ONCLICK="SetTab(\'' + tabName + '\')" CLASS="tabDeselected">')
-		output.push(MakeIconWithTooltip(g_tabFunctions[tabName].icon, Math.round(Math.sin(tilty) * 10), g_tabFunctions[tabName].tooltipText, undefined, "tabText_" + tabName, undefined, undefined, "175%"))
-		output.push("</TD>")
+		output.push(joiner + '<TD WIDTH="10" ID="tab_' + tabName + '" TABINDEX=0 ONCLICK="SetTab(\'' + tabName + '\')" CLASS="tabDeselected"></TD>')
 		joiner = '<TD WIDTH="1" STYLE="border-bottom:' + kTabLine + '"></TD>'
-		tilty += 3
 	}
 	
 	output.push(endCell)

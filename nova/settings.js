@@ -280,6 +280,7 @@ const kTweakableDefaults =
 	numberIgnoreList:[],
 	suggestNameIfSeenThisManyTimes:5,
 	numTextBoxes:1,
+	tooltips:true,
 	debugListQueuedFunctions:false,
 	debugLog:false,
 }
@@ -288,6 +289,7 @@ const kSettingFunctions =
 {
 	debugListQueuedFunctions:val => document.getElementById("debugOut").style.display = val ? "block" : "none",
 	debugLog:val => document.getElementById("debugLog").style.display = val ? "block" : "none",
+	tooltips:val => RedoToTop() + RedoTabTops()
 }
 
 function SortCharactersAndRemoveDupes(inText)
@@ -385,8 +387,9 @@ const kSettingNames =
 		["Enabled checks"]:moreOutput => BuildIssueDefaults(false, moreOutput),
 		["Additional settings"]:moreOutput => BuildIssueDefaults(true, moreOutput),
 	},
-	DEBUG:
+	DISPLAY:
 	{
+		tooltips:"Tooltips",
 		debugListQueuedFunctions:"List queued functions",
 		debugLog:"Show log",
 	}

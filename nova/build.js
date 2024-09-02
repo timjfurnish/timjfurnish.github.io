@@ -185,10 +185,15 @@ function AfterScroll()
 	}
 }
 
-function InitToTop()
+function RedoToTop()
 {
 	g_toTopElem = document.getElementById("toTop")
 	g_toTopElem.innerHTML = '<BUTTON ONCLICK="window.scrollTo(0,0)">' + MakeIconWithTooltip(kIconToTop, -6, "Scroll to top", undefined, undefined, undefined, 80, "175%") + '</BUTTON>'
+}
+
+function InitToTop()
+{
+	RedoToTop()
 
 	document.addEventListener("scroll", AfterScroll)
 	window.addEventListener("resize", AfterScroll)
