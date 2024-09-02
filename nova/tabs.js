@@ -128,6 +128,8 @@ function RedoTabTops()
 
 		tilty += 3
 	}
+	
+	g_canSelectTabs = true
 }
 
 function BuildTabs()
@@ -288,19 +290,21 @@ function TabBuildButtonsBar(toHere, array, theDefault)
 
 function RethinkEnabledTabs()
 {
-	const hasAnyDataNow = g_metaDataInOrder.length > 0
+	const hasNoDataNow = !g_metaDataInOrder?.length
 
-	if (g_canSelectTabs != hasAnyDataNow)
+	NovaLog("hasNoDataNow=" + hasNoDataNow)
+
+	if (g_canSelectTabs == hasNoDataNow)
 	{
-		g_canSelectTabs = hasAnyDataNow
-		const newOpacity = hasAnyDataNow ? 1 : 0.25
+		g_canSelectTabs = !hasNoDataNow
+		const newOpacity = hasNoDataNow ? 0.25 : 1
 
 		for (var name of g_tabIconsToDisableWhenNoText)
 		{
 			document.getElementById("tabText_" + name).style.opacity = newOpacity
 		}
 		
-		if (! hasAnyDataNow)
+		if (hasNoDataNow && g_tabIconsToDisableWhenNoText.includes(g_selectedTabName))
 		{
 			SetTab("settings")
 		}

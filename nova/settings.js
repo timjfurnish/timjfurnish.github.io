@@ -289,7 +289,7 @@ const kSettingFunctions =
 {
 	debugListQueuedFunctions:val => document.getElementById("debugOut").style.display = val ? "block" : "none",
 	debugLog:val => document.getElementById("debugLog").style.display = val ? "block" : "none",
-	tooltips:val => RedoToTop() + RedoTabTops()
+	tooltips:val => RedoToTop() + RedoTabTops() + RethinkEnabledTabs()
 }
 
 function SortCharactersAndRemoveDupes(inText)
