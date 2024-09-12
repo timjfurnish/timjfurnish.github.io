@@ -3,106 +3,137 @@
 // (c) Tim Furnish, 2023-2024
 //==============================================
 
-/* TODO: word count 2.0
-const g_wordSortModes = {Alphabetical:"Alphabetical", WordLength:"Word length", Count:"Count", Score:"Score"}
-const g_whatToCount = {All:"All words", Adverbs:"Adverbs", First:"First word in each sentence"}
+const g_wordSortModes = {Alphabetical:"Alphabetical", WordLength:"Word length", Count:"Count", InSpeech:"In speech", InNarrative:"In narrative", Score:"Score"}
 const g_displayUnique = {All:"Everything", Repeated:"Repeated words only", Unique:"Unique words only"}
+const g_showNameModes = {All:"Everything", JustNames:"Just names", NoNames:"No names"}
+
+var g_maxWordCountRows = 100
+var g_calculatedScores = true
 
 TabDefine("words", function(reply, thenCall)
 {
+	if (! g_calculatedScores)
+	{
+		NovaLog("Calculating word count scores!")
+
+		for (var [key, data] of Object.entries(g_checkedWords))
+		{
+			if (key.length > 2)
+			{
+				const lenM1 = (key.length - 2)
+				data.score = lenM1 * lenM1 * data.total
+			}
+			else
+			{
+				data.score = 0
+			}
+		}
+
+		g_calculatedScores = true
+	}
+
 	var options = []
-	OptionsMakeSelect(options, "RedrawWordTable()", "Sort", "sortMode", g_wordSortModes, "Score")
-	OptionsMakeSelect(options, "RedrawWordTable()", "What to count", "whatToCount", g_whatToCount, "All")
-	OptionsMakeSelect(options, "RedrawWordTable()", "Show one-offs", "displayUnique", g_displayUnique, "Unique")
-	OptionsMakeCheckbox(options, "RedrawWordTable()", "stopAtApostrophe", "Trim words at apostrophes/hyphens")
+	OptionsMakeSelect(options, "ChangedWordCountSettings()", "Sort", "sortMode", g_wordSortModes, "Score")
+	OptionsMakeSelect(options, "ChangedWordCountSettings()", "Show", "displayUnique", g_displayUnique, "Repeated")
+	OptionsMakeSelect(options, "ChangedWordCountSettings()", "Include", "showNames", g_showNameModes, "NoNames")		
+
 	reply.push(options.join('&nbsp;&nbsp;'))
 	MakeUpdatingArea(reply, "wordTableHere")
 
-	thenCall.push(RedrawWordTable)
-}, {})
+	thenCall.push(ChangedWordCountSettings)
+}, {icon:kIconAbacus, tooltipText:"Word counter"})
+
+function ChangedWordCountSettings()
+{
+	g_maxWordCountRows = 100
+	RedrawWordTable()
+}
+
+OnEvent("clear", false, () => g_calculatedScores = false)
 
 function RedrawWordTable()
 {
 	var reply = []
-	var wordCounts = {}
+	var wordsInOrder = Object.keys(g_checkedWords)
 
-	var g_selectFunctions =
+	NovaLog("wordsInOrder length=" + wordsInOrder.length)
+
+	if (wordsInOrder.length)
 	{
-		All:list => list,
-		First:list => list.slice(0, 1),
-		Adverbs:list => list.filter(w => w.slice(-2) == "ly"),
-	}
-
-	const stopAtApostrophe = document.getElementById("words.stopAtApostrophe")?.checked
-	const selectFunc = g_selectFunctions[document.getElementById("words.whatToCount").value]
-	
-	for (var metadata of g_metaDataInOrder)
-	{			
-		for (var para of metadata.myParagraphs)
+		var sortFunctions =
 		{
-			for (var fragment of para.fragments)
+			WordLength:(p1, p2) => (p2.length - p1.length),
+			Count:(p1, p2) => (g_checkedWords[p2].total - g_checkedWords[p1].total),
+			InSpeech:(p1, p2) => (g_checkedWords[p2].inSpeech - g_checkedWords[p1].inSpeech),
+			InNarrative:(p1, p2) => (g_checkedWords[p2].inNarrative - g_checkedWords[p1].inNarrative),
+			Score:(p1, p2) => (g_checkedWords[p2].score - g_checkedWords[p1].score),
+		}
+		
+		TableOpen(reply)
+		TableAddHeading(reply, "Word")
+		TableAddHeading(reply, "Count")
+		TableAddHeading(reply, "In speech")
+		TableAddHeading(reply, "In narrative")
+		TableAddHeading(reply, "Score")
+
+		var limitFunctions =
+		{
+			All:num => true,
+			Unique:num => num == 1,
+			Repeated:num => num > 1,
+		}
+
+		const limitFunc = limitFunctions[document.getElementById("words.displayUnique").value]
+		const nameMode = document.getElementById("words.showNames").value
+		const sortMode = document.getElementById('words.sortMode').value
+		const whichVar = "total"
+		wordsInOrder.sort(sortFunctions[sortMode])
+
+		var thereWasMore = false;
+		var numRows = 0;
+		
+		for (var w of wordsInOrder)
+		{
+			const wordInfo = g_checkedWords[w]			
+			if (limitFunc(wordInfo[whichVar]))
 			{
-				for (var ww of selectFunc(fragment.split(' '))
+				var isAName = false
+				
+				for (var each of g_nameLookup)
 				{
-					for (var w of stopAtApostrophe ? ww.split(/[\-']/) : [ww])
+					if (w.match(each.regex))
 					{
-						const length = w.length
-						const myScore = (length * (length + 1)) / 2
-						
-						if (w in wordCounts)
-						{
-							++ wordCounts[w].count
-							wordCounts[w].score += myScore
-						}
-						else
-						{
-							wordCounts[w] = {count:1, score:myScore}
-						}
+						isAName = each.type
+						break
 					}
+				}
+				
+				if (nameMode != (isAName ? "NoNames" : "JustNames"))
+				{
+					if (numRows >= g_maxWordCountRows)
+					{
+						thereWasMore = true;
+						break;
+					}
+
+					TableNewRow(reply, kSettingsWhichProvideNames[isAName])
+					TableAddCell(reply, MakeMentionLink(w))
+					TableAddCell(reply, wordInfo.total)
+					TableAddCell(reply, wordInfo.inSpeech)
+					TableAddCell(reply, wordInfo.inNarrative)				
+					TableAddCell(reply, wordInfo.score)
+
+					++ numRows
 				}
 			}
 		}
-	}
-
-	if (wordCounts)
-	{
-		var wordsInOrder = Object.keys(wordCounts)
-
-		if (wordsInOrder.length)
+		TableClose(reply)
+		
+		if (thereWasMore)
 		{
-			reply.push("<TABLE BORDER=1 CELLPADDING=2 CELLSPACING=0>")
-			reply.push("<TR><TD BGCOLOR=#DDDDDD>Word<TD ALIGN=Center BGCOLOR=#DDDDDD>Count<TD ALIGN=Center BGCOLOR=#DDDDDD>Score")
-
-			var sortFunctions =
-			{
-				WordLength:(p1, p2) => (p2.length - p1.length),
-				Count:(p1, p2) => (wordCounts[p2].count - wordCounts[p1].count),
-				Score:(p1, p2) => (wordCounts[p2].score - wordCounts[p1].score),
-			}
-			
-			var limitFunctions =
-			{
-				All:num => true,
-				Unique:num => num == 1,
-				Repeated:num => num > 1,
-			}
-
-			const limitFunc = limitFunctions[document.getElementById("words.displayUnique").value]
-			const sortMode = document.getElementById('words.sortMode').value
-			wordsInOrder.sort(sortFunctions[sortMode])
-			
-			for (var w of wordsInOrder)
-			{
-				const wordInfo = wordCounts[w]			
-				if (limitFunc(wordInfo.count))
-				{
-					reply.push("<TR><TD>" + MakeMentionLink(w) + "<TD ALIGN=Center>" + wordInfo.count + "<TD ALIGN=Center>" + wordInfo.score)
-				}
-			}
-			reply.push('</TABLE>')	
+			reply.push('<P><BUTTON ONCLICK="g_maxWordCountRows += 100; RedrawWordTable()">Show more</BUTTON></P>')
 		}
 	}
 
 	document.getElementById("wordTableHere").innerHTML = reply.join("")
 }
-*/

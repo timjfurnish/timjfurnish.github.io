@@ -292,8 +292,6 @@ function RethinkEnabledTabs()
 {
 	const hasNoDataNow = !g_metaDataInOrder?.length
 
-	NovaLog("hasNoDataNow=" + hasNoDataNow)
-
 	if (g_canSelectTabs == hasNoDataNow)
 	{
 		g_canSelectTabs = !hasNoDataNow

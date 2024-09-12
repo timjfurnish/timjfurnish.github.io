@@ -5,7 +5,7 @@
 
 const kHasNoEffect = ["voiceDefault", "voiceSpeech", "speakRate"]
 const kCurrentSaveFormatVersion = 2
-const kSettingsWhichProvideNames = MakeColourLookUpTable(["names", "names_places", "names_other"])
+const kSettingsWhichProvideNames = MakeColourLookUpTable(["names", "names_places", "names_other"], 0.25)
 
 var g_tweakableSettings = {}
 var g_openTextAreas = {}
@@ -409,7 +409,7 @@ OnEvent("clear", true, () =>
 	for (var nameList of SettingsGetNamesArrays())
 	{
 		const theString = "\\b(?:" + TurnNovaShorthandIntoRegex(nameList.arr.join('|')) + ")\\b"
-		g_nameLookup.push({means:nameList.arr[0], grandTotal:0, regex:new RegExp(theString, "ig")})
+		g_nameLookup.push({means:nameList.arr[0], type:nameList.type, grandTotal:0, regex:new RegExp(theString, "ig")})
 	}
 })
 
@@ -557,10 +557,21 @@ function SettingsGetNamesArrays()
 		for (var n of g_tweakableSettings[key])
 		{
 			var inner = []
-			for (var name of OnlyKeepValid(n.split(' ')))
+			const quoteUnquote = n.split('"')
+			var isQuoted = false
+
+			for (var txt of quoteUnquote)
 			{
-				inner.push(name)
+				if (txt)
+				{
+					for (var name of isQuoted ? [txt.trim()] : OnlyKeepValid(txt.split(' ')))
+					{
+						inner.push(name)
+					}
+				}
+				isQuoted = !isQuoted
 			}
+
 			reply.push({arr:inner, type:key})
 		}
 	}

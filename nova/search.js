@@ -199,12 +199,15 @@ function SettingsGetMentionList(firstElementText, useNameAsKey)
 TabDefine("search", function(reply, thenCall)
 {
 	const nameData = SettingsGetMentionList("Custom")
+	
+	nameData["twent*|thirt*|forty|fortie*|fift*|eight*|one|ones|two*|three*|four*|five*|six*|seven*|nine*|ten|tens|tenth*|third*|fourth*|ninth*|eleven*|twelfth*|twelve*|hundred*|thousand*|billion*|million*|trillion*"] = "Numbers (words)"
+	nameData["*[0-9]*"] = "Numbers (digits)"
 
 	var options = []
 	OptionsMakeSelect(options, "RedrawSearchResults()", "Entity", "entity", nameData, "")
 	OptionsMakeTextBox(options, "RedrawSearchResults()", "Search for", "custom")
 	OptionsMakeCheckbox(options, "RedrawSearchResults()", "compress", "Compress empty areas", false, true)
-	GraphCreateStandardOptions(options, "SearchDrawGraph", true)
+	GraphCreateStandardOptions(options, "RedrawSearchResults", true)
 
 	reply.push(OptionsConcat(options))
 	reply.push("<BR><CANVAS WIDTH=" + CalcGraphCanvasWidth() + " HEIGHT=200 ID=graphCanvas></CANVAS>")
@@ -262,7 +265,8 @@ function RedrawThread()
 	{
 		var output = []
 		var addWhenSkipASection = ""
-		var skippedASection = false
+		var skippedASection = true
+		var lastChapterName
 
 		const {page, headings, summary} = g_currentOptions.voice
 		const showThis = g_currentOptions.voice["showThis_" + page]
@@ -274,35 +278,72 @@ function RedrawThread()
 			for (var metadata of g_metaDataInOrder)
 			{
 				const info = metadata.info
-				var showHeading = (skippedASection ? addWhenSkipASection : "") + (headings ? "<H3>" + MetaDataMakeFragmentDescription(metadata) + "</H3>" : addWhenSkipASection ? "<BR>" : "")
-				var before = ""
+				const displayTheseThings = summary ? metadata.mySummaries : metadata.myParagraphs
 
-				const matches = (page == "ALL") || ((page == "MENTIONS") ? metadata.Mentions[showThis] : (info[page] == showThis))
-
-				if (matches)
+				if (displayTheseThings.length && ((page == "ALL") || ((page == "MENTIONS") ? metadata.Mentions[showThis] : (info[page] == showThis))))
 				{
-					for (var para of summary ? metadata.mySummaries : metadata.myParagraphs)
+					if (skippedASection)
 					{
-						if (showHeading)
+						output.push(addWhenSkipASection)
+					}
+					
+					if (headings)
+					{
+						const thisChapterName = info.CHAPTER
+						var headingText = MetaDataMakeFragmentDescription(metadata)
+						
+						if (lastChapterName != thisChapterName)
 						{
-							before = showHeading
-							showHeading = false
+							headingText = '<SPAN CLASS="clicky" ONCLICK="HighlightThreadSection(' + g_threadSections.length + ')" ID="threadSection' + g_threadSections.length + '">' + headingText + '</SPAN>'
+							g_threadSections.push({allOfIt:thisChapterName})
+							lastChapterName = thisChapterName
 						}
 
-						output.push(before + kIndent + '<SPAN CLASS="clicky" ONCLICK="HighlightThreadSection(' + g_threadSections.length + ')" ID="threadSection' + g_threadSections.length + '">' + TurnRedIf(para.allOfIt, para.issues) + '</SPAN>')
+						output.push("<H3>" + headingText + "</H3>")
+					}
+					else if (addWhenSkipASection)
+					{
+						output.push("<BR>")
+					}
+
+					for (var para of displayTheseThings)
+					{
+						output.push(kIndent + '<SPAN CLASS="clicky" ONCLICK="HighlightThreadSection(' + g_threadSections.length + ')" ID="threadSection' + g_threadSections.length + '">' + TurnRedIf(para.allOfIt, para.issues) + '</SPAN><BR>')
 						g_threadSections.push(para)
-						
-						before = ""
 					}
 
 					addWhenSkipASection = "<BR><HR WIDTH=45%>"
+					skippedASection = false
 				}
-				
-				skippedASection = !matches
+				else
+				{
+					skippedASection = true
+				}
 			}
 		}
 
-		threadsGoHere.innerHTML = output.join('<BR>')
+		// Add a button which goes to next section if there is one!
+		var addNext = false
+		for (var {info} of g_metaDataInOrder)
+		{
+			if (page in info)
+			{
+				const txt = info[page]
+				if (addNext)
+				{
+					const escapedText = txt.replaceAll("'", "\\'")
+					console.log("Escaped: " + escapedText)
+					output.push('<P ALIGN=center><BUTTON ONCLICK="' + AddEscapeChars('window.scrollTo(0,0); document.getElementById(\'voice.showThis_' + page + '\').value = \'' + escapedText + '\'; UpdateOptions(); RedrawThread()') + '">Next: ' + txt + '</BUTTON></p>')
+					break
+				}
+				else if (txt == showThis)
+				{
+					addNext = true
+				}
+			}
+		}
+
+		threadsGoHere.innerHTML = output.join('')
 	}
 	
 	HighlightThreadSection(g_threadSectionSelected)
@@ -366,8 +407,6 @@ TabDefine("voice", function(reply, thenCall)
 				break
 			}
 		}
-		
-		NovaLog("Does document have any summaries? " + (g_hasSummaries ? "Yes" : "No"))
 	}
 	
 	if (page == "MENTIONS")
@@ -408,7 +447,7 @@ TabDefine("voice", function(reply, thenCall)
 	ShowHoverControls(hoverOptions)
 	
 	thenCall.push(RedrawThread)
-}, {icon:kIconBooks, tooltipText:"Read"})
+}, {icon:kIconSpeaker, tooltipText:"Read"})
 
 //---------------------------------------
 // Switch to here from another tab

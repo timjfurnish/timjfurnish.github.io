@@ -5,6 +5,7 @@
 
 var g_profileAnalysis = {}
 var g_processInputWorkspace
+var g_checkedWords = {}
 
 // var g_uniqueWords = []
 
@@ -106,7 +107,7 @@ function CheckStringForEvenBraces(txtIn)
 	}
 }
 
-function CheckEachWord(word, s)
+function CheckEachWord(word, s, isSpeech)
 {
 	const wordLower = word.toLowerCase()
 	const {plainBadWords, badWordRegExpressions, checkedWordsSeenInLowerCase} = g_processInputWorkspace
@@ -136,11 +137,17 @@ function CheckEachWord(word, s)
 	const lastApostrophe = word.lastIndexOf("'")
 	if (lastApostrophe > 0)
 	{
-		CheckEachWord(word.substr(0, lastApostrophe), s)
+		CheckEachWord(word.substr(0, lastApostrophe), s, isSpeech)
 		return false
 	}
 
-	Tally (g_checkedWords, wordLower)
+	if (! (wordLower in g_checkedWords))
+	{
+		g_checkedWords[wordLower] = {inSpeech:0, inNarrative:0}
+	}
+	
+	Tally (g_checkedWords[wordLower], isSpeech ? "inSpeech" : "inNarrative")
+	Tally (g_checkedWords[wordLower], "total")
 
 	if (wordLower === word)
 	{
@@ -553,7 +560,7 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 								}
 							}
 							
-							shouldStartWithCapital = CheckEachWord(word, s) && ("following " + word + " in")
+							shouldStartWithCapital = CheckEachWord(word, s, isSpeech) && ("following " + word + " in")
 						}
 						else
 						{
@@ -758,11 +765,11 @@ function GatherNameSuggestions()
 
 	g_entityNewNameSuggestions = []
 
-	for (var [word, count] of Object.entries(g_checkedWords))
+	for (var [word, counts] of Object.entries(g_checkedWords))
 	{
-		if (word.length > 1 && count >= suggestNameIfSeenThisManyTimes && ! (word in g_processInputWorkspace.checkedWordsSeenInLowerCase))
+		if (word.length > 1 && counts.total >= suggestNameIfSeenThisManyTimes && ! (word in g_processInputWorkspace.checkedWordsSeenInLowerCase))
 		{
-			g_entityNewNameSuggestions.push({word:word, count:count})
+			g_entityNewNameSuggestions.push({word:word, count:counts.total})
 		}
 
 /*		if (count == 1)

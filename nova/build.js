@@ -19,6 +19,7 @@ const kIconIssues = "&#9888;&#65039;"
 const kIconEntities = "&#129333;"
 const kIconHyphen = "&#127846;"
 const kIconBooks = "&#128218;"
+const kIconSpeaker = "&#x1F50A;"
 const kIconMute = "&#x274C;" // "&#128263;"
 const kIconOpen = "&#x1f53d;"
 const kIconClosed = "&#x25B6;&#xFE0F;"
@@ -36,6 +37,7 @@ const kIconWrite = "&#x2712;&#xFE0F;"
 const kIconGlobal = "&#x1F30D;"
 const kIconJoin = "&#x1F9F7;"
 const kIconCheckbox = "&#x2611;&#xFE0F;"
+const kIconAbacus = "&#x1F9EE;"
 
 const kCharacterElipsis = "\u2026"
 const kCharacterEmDash = "\u2014"
@@ -218,6 +220,7 @@ function UpdateOptions()
 			if (elem)
 			{
 				myTabOptions[key] = ((typeof myTabOptions[key]) == "boolean") ? elem.checked : elem.value
+				console.log("UpdateOptions: found " + g_selectedTabName + "." + key + " set to [" + myTabOptions[key] + "]")
 			}
 		}
 	}

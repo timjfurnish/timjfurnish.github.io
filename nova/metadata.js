@@ -8,6 +8,7 @@ var g_metaDataInOrder
 var g_metaDataAvailableColumns
 var g_metaDataTally
 var g_metaDataTotals
+var g_everChangedPercentComplete
 var g_metaDataCurrentCompleteness
 var g_metaDataNextCompleteness
 var g_metaDataGatherParagraphs
@@ -17,7 +18,7 @@ var g_metaDataSeenValues
 var g_hasSummaries
 var g_stillLookingForTagText
 
-const kMetaDataDefaultDisplay = MakeSet("Words", "Estimated final words", "Percent done")
+const kMetaDataDefaultDisplay = MakeSet("Estimated final words", "Percent done")
 const kMetaDataDefaultGroup = MakeSet("PART")
 const kCanDisplayAsTimeToRead = MakeSet("Words", "Estimated final words")
 const kTallyCheckboxes = ["Paragraphs", "Words", "Estimated final words", "Speech", "Percent done", "Percent speech"]
@@ -246,6 +247,7 @@ SetMarkupFunction('%', valueTxt =>
 	}
 	else
 	{
+		g_everChangedPercentComplete = true
 		g_metaDataCurrentCompleteness = value
 	}
 })
@@ -257,6 +259,7 @@ function MetaDataClear()
 	g_metaDataAvailableColumns = {}
 	g_metaDataTally = MakeClearTally(true)
 	g_metaDataTotals = MakeClearTally()
+	g_everChangedPercentComplete = false
 	g_metaDataCurrentCompleteness = 100
 	g_metaDataNextCompleteness = 100
 	g_metaDataGatherParagraphs = []
@@ -586,10 +589,10 @@ function TabFunctionStats(reply, thenCall)
 		for (var name of kTallyCheckboxes)
 		{
 			sortData[name] = name
-			OptionsMakeCheckbox(optionsDisplay, "MetaDataDrawTable()", "display_" + name, name, kMetaDataDefaultDisplay[name], true)
+			OptionsMakeCheckbox(optionsDisplay, "MetaDataDrawTable()", "display_" + name, name, (name == "Words") || (g_everChangedPercentComplete && kMetaDataDefaultDisplay[name]), true)
 		}
 
-		OptionsMakeCheckbox(optionsDisplay, "MetaDataDrawTable()", "display_Mentions", "Mentions", kMetaDataDefaultDisplay["Mentions"], true)
+		OptionsMakeCheckbox(optionsDisplay, "MetaDataDrawTable()", "display_Mentions", "Mentions", false, true)
 		OptionsMakeSelect(optionsTextRow, "MetaDataDrawTable()", "Sort", "sort", sortData, "none")
 
 		reply.push("<B>Split into rows using:</B><BR>")
