@@ -3,7 +3,7 @@
 // (c) Tim Furnish, 2023-2024
 //==============================================
 
-const kHasNoEffect = ["voiceDefault", "voiceSpeech", "speakRate"]
+const kHasNoEffect = ["voiceDefault", "voiceSpeech", "speakRate", "showWordCountChanges"]
 const kCurrentSaveFormatVersion = 2
 const kSettingsWhichProvideNames = MakeColourLookUpTable(["names", "names_places", "names_other"], 0.25)
 
@@ -281,6 +281,7 @@ const kTweakableDefaults =
 	suggestNameIfSeenThisManyTimes:5,
 	numTextBoxes:1,
 	tooltips:true,
+	showWordCountChanges:true,
 	debugListQueuedFunctions:false,
 	debugLog:false,
 }
@@ -390,6 +391,7 @@ const kSettingNames =
 	DISPLAY:
 	{
 		tooltips:"Tooltips",
+		showWordCountChanges:"Show word count changes",
 		debugListQueuedFunctions:"List queued functions",
 		debugLog:"Show log",
 	}

@@ -17,6 +17,7 @@ var g_metaDataCurrentContainsToDo
 var g_metaDataSeenValues
 var g_hasSummaries
 var g_stillLookingForTagText
+var g_lastReportedWordCount = 0
 
 const kMetaDataDefaultDisplay = MakeSet("Estimated final words", "Percent done")
 const kMetaDataDefaultGroup = MakeSet("PART")
@@ -107,10 +108,26 @@ function MetaDataDoneProcessing()
 		MetaDataSet(v)
 	}
 
-	MetaDataEndProcess()
+	MetaDataEndSection()
+	
+	const {Words} = g_metaDataTotals
+
+	if (Words && g_lastReportedWordCount && g_tweakableSettings.showWordCountChanges)
+	{
+		if (Words != g_lastReportedWordCount)
+		{
+			alert("Word count has " + ((Words > g_lastReportedWordCount) ? "increased from " : "decreased from ") + g_lastReportedWordCount + " to " + Words + ".")
+		}
+		else
+		{
+			alert("Word count has stayed at " + Words + ".")
+		}
+	}
+
+	g_lastReportedWordCount = Words
 }
 
-function MetaDataEndProcess()
+function MetaDataEndSection()
 {
 	if (g_metaDataGatherParagraphs.length)
 	{
@@ -176,25 +193,14 @@ function MetaDataEndProcess()
 
 function MetaDataSet(key, val)
 {
-	MetaDataEndProcess()
+	MetaDataEndSection()
 
 	key = key.toUpperCase()
 
 	// TO DO: custom callback
 	if (key == 'LOC' && val)
 	{
-		const world = val.split('.', 1)[0]
-
-		if (key in g_metaDataCurrent)
-		{
-			const old = g_metaDataCurrent[key]
-			if (old.split('.', 1)[0] != world && old != 'sparks' && val != 'sparks' && old != 'movie' && val != 'movie' && old != 'log' && val != 'log')
-			{
-				IssueAdd("Moving from " + old + " to " + val, "ILLEGAL MOVE BETWEEN LOCATIONS")
-			}
-		}
-
-		g_metaDataCurrent['WORLD'] = world
+		g_metaDataCurrent['WORLD'] = val.split('.', 1)[0]
 	}
 
 	if (g_stillLookingForTagText && (key in g_stillLookingForTagText))
