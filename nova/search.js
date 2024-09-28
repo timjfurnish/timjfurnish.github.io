@@ -218,7 +218,7 @@ TabDefine("search", function(reply, thenCall)
 
 function SearchDrawGraph()
 {
-	DrawSmoothedGraph(g_searchDataForGraph, +g_currentOptions.search.smoothing, g_currentOptions.search.compress ? undefined : {colourUsing:g_currentOptions.search.colourUsing})
+	DrawSmoothedGraph(g_searchDataForGraph, g_currentOptions.search.compress ? undefined : {colourUsing:g_currentOptions.search.colourUsing})
 }
 
 function HighlightThreadSection(num, bCanScroll)
@@ -324,22 +324,29 @@ function RedrawThread()
 
 		// Add a button which goes to next section if there is one!
 		var addNext = false
+		var nameData = {[""]:""}
+
 		for (var {info} of g_metaDataInOrder)
 		{
 			if (page in info)
 			{
 				const txt = info[page]
-				if (addNext)
-				{
-					const escapedText = txt.replaceAll("'", "\\'")
-					console.log("Escaped: " + escapedText)
-					output.push('<P ALIGN=center><BUTTON ONCLICK="' + AddEscapeChars('window.scrollTo(0,0); document.getElementById(\'voice.showThis_' + page + '\').value = \'' + escapedText + '\'; UpdateOptions(); RedrawThread()') + '">Next: ' + txt + '</BUTTON></p>')
-					break
-				}
-				else if (txt == showThis)
-				{
-					addNext = true
-				}
+				nameData[txt] = txt
+			}
+		}
+		
+		for (var txt of Object.keys(nameData))
+		{
+			if (addNext)
+			{
+				const escapedText = txt.replaceAll("'", "\\'")
+				console.log("Escaped: " + escapedText)
+				output.push('<P ALIGN=center><BUTTON ONCLICK="' + AddEscapeChars('window.scrollTo(0,0); document.getElementById(\'voice.showThis_' + page + '\').value = \'' + escapedText + '\'; UpdateOptions(); RedrawThread()') + '">Next: ' + txt + '</BUTTON></p>')
+				break
+			}
+			else if (txt == showThis)
+			{
+				addNext = true
 			}
 		}
 

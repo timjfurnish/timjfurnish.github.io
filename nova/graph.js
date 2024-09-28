@@ -20,9 +20,15 @@ function Smoother(arr)
 	return total
 }
 
+function GetGraphSmoothingValueName()
+{
+	const {page} = g_currentOptions[g_selectedTabName]
+	return page ? "smoothing_" + page : "smoothing"
+}
+
 function GraphCreateStandardOptions(options, graphFuncName, addColourUsing)
 {
-	OptionsMakeNumberBox(options, graphFuncName, "Smoothing", "smoothing", 30)
+	OptionsMakeNumberBox(options, graphFuncName, "Smoothing", GetGraphSmoothingValueName(), 30)
 	
 	if (addColourUsing)
 	{
@@ -37,16 +43,17 @@ function GraphCreateStandardOptions(options, graphFuncName, addColourUsing)
 	}
 }
 
-function DrawSmoothedGraph(graphData, smoothingCount, backgroundData)
+function DrawSmoothedGraph(graphData, backgroundData)
 {
 	const {colours, data} = graphData
+	const smoothingCount = g_currentOptions[g_selectedTabName][GetGraphSmoothingValueName()]
 
 	// WORK OUT WHAT TO DRAW
 	const colourEntries = Object.keys(colours)
 	const drawData = {}
 	const sizeX = data.length
 
-//	NovaLog("Drawing graph of width " + sizeX + " for " + colourEntries.length + " values [" + colourEntries.join(', ') + "] smoothing=" + smoothingCount)
+	NovaLog("Drawing graph of width " + sizeX + " for " + colourEntries.length + " values [" + colourEntries.join(', ') + "] smooth=" + smoothingCount)
 
 	var biggestVal = 0
 	

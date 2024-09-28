@@ -220,7 +220,7 @@ function UpdateOptions()
 			if (elem)
 			{
 				myTabOptions[key] = ((typeof myTabOptions[key]) == "boolean") ? elem.checked : elem.value
-				console.log("UpdateOptions: found " + g_selectedTabName + "." + key + " set to [" + myTabOptions[key] + "]")
+//				console.log("UpdateOptions: found " + g_selectedTabName + "." + key + " set to [" + myTabOptions[key] + "]")
 			}
 		}
 	}

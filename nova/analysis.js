@@ -12,7 +12,6 @@ var g_checkedWords = {}
 const kReplaceOnlyKeepBraces   =  /[^\[\]\{\}\(\)]/g
 const kReplaceFullStops        =  /\./g
 const kReplaceCarats           =  /\^/g
-const kReplaceValidCharacters  =  /[A-Z0-9# \(\)'\.]+/g
 const kReplaceStartStuff       =  /^['\u2026]+/
 const kReplaceEndStuff         =  /[,'\u2026]+$/
 const kRemoveWordStartPunc     =  /^[\-']+/
@@ -415,7 +414,8 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 			}
 			else
 			{
-				const withValidCharsRemoved = thisBunchOfFragments.replace(kReplaceValidCharacters, '')
+				// Work out if next line is speech
+				const withValidCharsRemoved = thisBunchOfFragments.replace(/[A-Z0-9# \(\)'\.]+/g, '')
 
 				if (withValidCharsRemoved == '')
 				{
@@ -432,6 +432,8 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 				{
 					g_processInputWorkspace.treatNextParagraphAsSpeech = false
 				}
+
+//				NovaLog("'" + thisBunchOfFragments + "' with valid characters removed leaves '" + withValidCharsRemoved + "' therefore treatNextParagraphAsSpeech=" + g_processInputWorkspace.treatNextParagraphAsSpeech)
 			}
 		}
 		else
@@ -556,7 +558,7 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 
 								if (letter == letter.toLowerCase())
 								{
-									IssueAdd("Expected " + FixStringHTML(word) + " to start with a capital letter " + shouldStartWithCapital + " " + FixStringHTML(s), "CAPITALS")
+									IssueAdd("Expected " + FixStringHTML(word) + " to start with a capital letter " + shouldStartWithCapital + " " + FixStringHTML(thisBunchOfFragments), "CAPITALS")
 								}
 							}
 							

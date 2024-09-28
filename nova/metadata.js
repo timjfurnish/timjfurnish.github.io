@@ -654,7 +654,7 @@ function MetaDataDrawGraph()
 			}
 		}
 
-		DrawSmoothedGraph({data:data, colours:MakeColourLookUpTable(Object.keys(seenLocations), 0.5)}, +g_currentOptions.graph.smoothing)
+		DrawSmoothedGraph({data:data, colours:MakeColourLookUpTable(Object.keys(seenLocations), 0.5)})
 	}
 	else if (g_currentOptions.graph.data == "SPEECH")
 	{
@@ -686,7 +686,7 @@ function MetaDataDrawGraph()
 			}
 		}
 
-		DrawSmoothedGraph(graphThis, +g_currentOptions.graph.smoothing, {colourUsing:g_currentOptions.graph.colourUsing})
+		DrawSmoothedGraph(graphThis, {colourUsing:g_currentOptions.graph.colourUsing})
 	}
 	else if (g_currentOptions.graph.data)
 	{
@@ -712,7 +712,7 @@ function MetaDataDrawGraph()
 			}
 		}
 
-		DrawSmoothedGraph(graphThis, +g_currentOptions.graph.smoothing, {colourUsing:g_currentOptions.graph.colourUsing, brightness:0.4})
+		DrawSmoothedGraph(graphThis, {colourUsing:g_currentOptions.graph.colourUsing, brightness:0.4})
 	}
 }
 
