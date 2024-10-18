@@ -38,6 +38,8 @@ const kIconGlobal = "&#x1F30D;"
 const kIconJoin = "&#x1F9F7;"
 const kIconCheckbox = "&#x2611;&#xFE0F;"
 const kIconAbacus = "&#x1F9EE;"
+const kIconUSA = "&#x1F985;"
+const kIconMatch = "&#x1F525;"
 
 const kCharacterElipsis = "\u2026"
 const kCharacterEmDash = "\u2014"

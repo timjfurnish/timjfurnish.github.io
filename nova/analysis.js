@@ -13,7 +13,7 @@ const kReplaceOnlyKeepBraces   =  /[^\[\]\{\}\(\)]/g
 const kReplaceFullStops        =  /\./g
 const kReplaceCarats           =  /\^/g
 const kReplaceStartStuff       =  /^['\u2026]+/
-const kReplaceEndStuff         =  /[,'\u2026]+$/
+const kReplaceEndStuff         =  /[,'—\u2026]+$/
 const kRemoveWordStartPunc     =  /^[\-']+/
 const kRemoveWordEndPunc       =  /[\-']+$/
 
@@ -131,14 +131,14 @@ function CheckEachWord(word, s, isSpeech)
 		}
 	}
 
-//	CheckForInternationalTally(wordLower)
-	
 	const lastApostrophe = word.lastIndexOf("'")
 	if (lastApostrophe > 0)
 	{
 		CheckEachWord(word.substr(0, lastApostrophe), s, isSpeech)
 		return false
 	}
+
+	CheckForInternationalTally(wordLower)
 
 	if (! (wordLower in g_checkedWords))
 	{

@@ -3,7 +3,7 @@
 // (c) Tim Furnish, 2023-2024
 //==============================================
 
-const g_wordSortModes = {Alphabetical:"Alphabetical", WordLength:"Word length", Count:"Count", InSpeech:"In speech", InNarrative:"In narrative", Score:"Score"}
+const g_wordSortModes = {Alphabetical:"Alphabetical", WordLength:"Word length (descending)", WordLengthUp:"Word length (ascending)", Count:"Count", InSpeech:"In speech", InNarrative:"In narrative", Score:"Score"}
 const g_displayUnique = {All:"Everything", Repeated:"Repeated words only", Unique:"Unique words only"}
 const g_showNameModes = {All:"Everything", JustNames:"Just names", NoNames:"No names"}
 
@@ -35,7 +35,8 @@ TabDefine("words", function(reply, thenCall)
 	var options = []
 	OptionsMakeSelect(options, "ChangedWordCountSettings()", "Sort", "sortMode", g_wordSortModes, "Score")
 	OptionsMakeSelect(options, "ChangedWordCountSettings()", "Show", "displayUnique", g_displayUnique, "Repeated")
-	OptionsMakeSelect(options, "ChangedWordCountSettings()", "Include", "showNames", g_showNameModes, "NoNames")		
+	OptionsMakeSelect(options, "ChangedWordCountSettings()", "Include", "showNames", g_showNameModes, "NoNames")
+	OptionsMakeCheckbox(options, "ChangedWordCountSettings()", "includeHyphens", "Include words containing hyphens", true, true)
 
 	reply.push(options.join('&nbsp;&nbsp;'))
 	MakeUpdatingArea(reply, "wordTableHere")
@@ -63,10 +64,11 @@ function RedrawWordTable()
 		var sortFunctions =
 		{
 			WordLength:(p1, p2) => (p2.length - p1.length),
-			Count:(p1, p2) => (g_checkedWords[p2].total - g_checkedWords[p1].total),
-			InSpeech:(p1, p2) => (g_checkedWords[p2].inSpeech - g_checkedWords[p1].inSpeech),
-			InNarrative:(p1, p2) => (g_checkedWords[p2].inNarrative - g_checkedWords[p1].inNarrative),
-			Score:(p1, p2) => (g_checkedWords[p2].score - g_checkedWords[p1].score),
+			WordLengthUp:(p1, p2) => (p1.length - p2.length),
+			Count:(p1, p2) => ((g_checkedWords[p2].total - g_checkedWords[p1].total) ?? (p2.length - p1.length)),
+			InSpeech:(p1, p2) => ((g_checkedWords[p2].inSpeech - g_checkedWords[p1].inSpeech) ?? (p2.length - p1.length)),
+			InNarrative:(p1, p2) => ((g_checkedWords[p2].inNarrative - g_checkedWords[p1].inNarrative) ?? (p2.length - p1.length)),
+			Score:(p1, p2) => ((g_checkedWords[p2].score - g_checkedWords[p1].score) ?? (p2.length - p1.length)),
 		}
 		
 		TableOpen(reply)
@@ -86,6 +88,7 @@ function RedrawWordTable()
 		const limitFunc = limitFunctions[document.getElementById("words.displayUnique").value]
 		const nameMode = document.getElementById("words.showNames").value
 		const sortMode = document.getElementById('words.sortMode').value
+		const includeHyphens = document.getElementById("words.includeHyphens").checked
 		const whichVar = "total"
 		wordsInOrder.sort(sortFunctions[sortMode])
 
@@ -110,20 +113,23 @@ function RedrawWordTable()
 				
 				if (nameMode != (isAName ? "NoNames" : "JustNames"))
 				{
-					if (numRows >= g_maxWordCountRows)
+					if (includeHyphens || !w.includes('-'))
 					{
-						thereWasMore = true;
-						break;
+						if (numRows >= g_maxWordCountRows)
+						{
+							thereWasMore = true;
+							break;
+						}
+
+						TableNewRow(reply, kSettingsWhichProvideNames[isAName])
+						TableAddCell(reply, MakeMentionLink(w))
+						TableAddCell(reply, wordInfo.total)
+						TableAddCell(reply, wordInfo.inSpeech)
+						TableAddCell(reply, wordInfo.inNarrative)				
+						TableAddCell(reply, wordInfo.score)
+
+						++ numRows
 					}
-
-					TableNewRow(reply, kSettingsWhichProvideNames[isAName])
-					TableAddCell(reply, MakeMentionLink(w))
-					TableAddCell(reply, wordInfo.total)
-					TableAddCell(reply, wordInfo.inSpeech)
-					TableAddCell(reply, wordInfo.inNarrative)				
-					TableAddCell(reply, wordInfo.score)
-
-					++ numRows
 				}
 			}
 		}

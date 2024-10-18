@@ -4,7 +4,7 @@
 //==============================================
 
 var g_usWords, g_ukWords
-var g_internationalSubStrings = ["color|colour", "avor|avour", "ization|isation", "ize|ise", "izing|ising", "aluminum|aluminium"]
+var g_internationalSubStrings = ["color|colour", "avor|avour", "ization|isation", "ize|ise", "izing|ising", "aluminum|aluminium", "humor|humour", "theater|theatre", "meter|metre", "liter|litre"]
 
 function DoInternationalTally(thisWord, thisCounter)
 {
@@ -32,19 +32,20 @@ function CheckForInternationalTally(word)
 		{
 			const [us, uk] = aPair.split('|', 2)
 
-			if (word.includes(us))
+			const ukVersion = word.replaceAll(us, uk)
+			
+			if (ukVersion != word)
 			{
+				g_ukWords[ukVersion] = word
 				DoInternationalTally(word, "us")
 			}
-			else
+			
+			const usVersion = word.replaceAll(uk, us)
+			
+			if (usVersion != word)
 			{
-				const usVersion = word.replace(uk, us)
-				
-				if (usVersion != word)
-				{
-					g_ukWords[word] = usVersion
-					DoInternationalTally(usVersion, "uk")
-				}
+				g_ukWords[word] = usVersion
+				DoInternationalTally(usVersion, "uk")
 			}
 		}
 	}
@@ -56,10 +57,21 @@ OnEvent("clear", true, () =>
 	g_ukWords = {}
 })
 
+/*
 TabDefine("international", function(reply, thenCall)
 {
-//	TabBuildButtonsBar(reply, Object.keys(kSettingNames))
-
 	TableOpen(reply)
+	TableAddHeading(reply, "")
+	TableAddHeading(reply, "UK")
+	TableAddHeading(reply, "US")
+	
+	for (var [key, val] of Object.entries(g_ukWords))
+	{		
+		TableNewRow(reply)
+		TableAddCell(reply, key + " / " + val)
+		TableAddCell(reply, g_usWords[val].uk)
+		TableAddCell(reply, g_usWords[val].us)
+	}
 	TableClose(reply)
-}, {icon:"US_UK"})
+}, {icon:kIconUSA, tooltipText:"UK vs. US"})
+*/

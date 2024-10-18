@@ -2,7 +2,7 @@ html
 {
 	margin:0px;
     overflow-y:scroll;
-	user-select: none;
+	user-select:none;
 }
 td
 {
