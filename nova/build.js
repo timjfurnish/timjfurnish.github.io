@@ -316,6 +316,18 @@ function OptionsConcat(arr)
 	return "<nobr>" + arr.join("&nbsp;</nobr> <nobr>") + "</nobr><br>"
 }
 
+function OptionsMakeButtons(toHere, info)
+{
+	var reply = []
+
+	for (var [label, callThis] of Object.entries(info))
+	{
+		reply.push('<button onClick="' + callThis + '">' + label + '</button>')
+	}
+
+	toHere.push('<small>' + reply.join('') + '</small>')
+}
+
 function OptionsMakeSelect(toHere, funcName, heading, id, options, defaultVal, callFuncLate)
 {
 	id = OptionsMakeKey(g_selectedTabName, id, defaultVal, Object.keys(options))

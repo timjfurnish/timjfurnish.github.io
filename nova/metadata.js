@@ -357,7 +357,10 @@ function MetaDataDrawTable()
 	//				console.log("   Creating entry for '" + Object.entries(lastMetaData).join(" ") + "' i.e. '" + lastDeets + "'")
 					var newData = {deets:lastDeets, tally:lastTally, metaData:lastMetaData}
 
-					dataToDisplay.push(newData)
+					if(lastDeets !== undefined)
+					{
+						dataToDisplay.push(newData)
+					}
 					
 					if (consolidate)
 					{
@@ -506,6 +509,9 @@ function MetaDataDrawTable()
 			return ""
 		}
 
+		const totalise = g_currentOptions.stats.totalise && {}
+		var showTotal = false
+
 		for (var data of dataToDisplay)
 		{
 			if (colourBasedOn)
@@ -535,18 +541,24 @@ function MetaDataDrawTable()
 				{
 					contents = RenderBarFor(value, 100.0 / maximums[name], 2, '%')
 				}
+				else if (totalise)
+				{
+					Tally(totalise, name, value)
+					var extra = totalise[name] ? ' <B>(' + (100 * totalise[name] / g_metaDataTotals[name]).toFixed(2) + '<SMALL>%</SMALL>)</B>' : ''
+					contents = RenderBarFor(totalise[name], 200.0 / g_metaDataTotals[name], 0, extra + ExtraDeets(totalise[name], name))
+				}
 				else
 				{
 					var extra = value ? ' <B>(' + (100 * value / g_metaDataTotals[name]).toFixed(2) + '<SMALL>%</SMALL>)</B>' : ''
 					contents = RenderBarFor(value, 200.0 / maximums[name], 0, extra + ExtraDeets(value, name))
+					showTotal = true
 				}
 
 				reply.push("<TD CLASS=cell>" + contents + "</TD>")
 			}
 		}
 
-		// Only need to display total if we had any columns selected...
-		if (selectedColumns.length)
+		if (showTotal && selectedColumns.length)
 		{
 			TableNewRow(reply)
 			reply.push('<TD COLSPAN="' + selectedColumns.length + '" CLASS="cellNoWrap"><B><SMALL>TOTAL:</SMALL></B></TD>')
@@ -600,6 +612,7 @@ function TabFunctionStats(reply, thenCall)
 
 		OptionsMakeCheckbox(optionsDisplay, "MetaDataDrawTable()", "display_Mentions", "Mentions", false, true)
 		OptionsMakeSelect(optionsTextRow, "MetaDataDrawTable()", "Sort", "sort", sortData, "none")
+		OptionsMakeCheckbox(optionsTextRow, "MetaDataDrawTable()", "totalise", "Show running totals", false, true)
 
 		reply.push("<B>Split into rows using:</B><BR>")
 		reply.push(OptionsConcat(options) + "<BR>")

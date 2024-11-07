@@ -32,6 +32,18 @@ canvas
 	border:1px solid #000000;
 	box-shadow: 0px 0px 3px rgba(0, 0, 0, 0.75);
 }
+.MatchAdd
+{
+	font-weight:700;
+	color: rgba(10, 150, 10, 1);
+	background-color:rgba(10, 150, 10, 0.1);
+}
+.MatchRemove
+{
+	text-decoration: line-through;
+	color: rgba(200, 10, 10, 0.5);
+	background-color: rgba(200, 10, 10, 0.07);
+}
 #issueText
 {
 	font-size:85%;

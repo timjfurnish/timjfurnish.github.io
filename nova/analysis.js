@@ -219,11 +219,6 @@ function ShouldProcessPara(txtInProcessed)
 	return true
 }
 
-function CheckStartsWithCapital(word, reason, s)
-{
-
-}
-
 function SplitIntoFragments(thisBunch)
 {
 	const fragments = []
@@ -270,7 +265,9 @@ function MakeRegexForSplittingIntoWords()
 			}
 		}
 	}
-	return new RegExp('[^' + EscapeRegExSpecialChars(allowedInWords) + ']+', 'i')
+
+	const matchThis = '[^' + EscapeRegExSpecialChars(allowedInWords) + ']+'
+	return new RegExp(matchThis, 'i')
 }
 
 function SetUpBadWordRules()

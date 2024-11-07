@@ -44,19 +44,12 @@ function ClearInputBoxes()
 
 async function pasteToInputBox()
 {
-	try
-	{
-		const theText = await navigator.clipboard.readText()
-		document.getElementById('inputs').innerHTML = ''
-		g_numInputBoxes = 0
-		addInputBox(true)
-		document.getElementById("txtIn1").value = theText
-		CallTheseFunctions(ProcessInput)
-	}
-	catch (error)
-	{
-		NovaWarn('Failed to read clipboard: ' + error)
-	}
+	const theText = await navigator.clipboard.readText()
+	document.getElementById('inputs').innerHTML = ''
+	g_numInputBoxes = 0
+	addInputBox(true)
+	document.getElementById("txtIn1").value = theText
+	CallTheseFunctions(ProcessInput)
 }
 
 function hideShowInputs(checked)
