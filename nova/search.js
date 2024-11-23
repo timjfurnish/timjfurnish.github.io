@@ -166,17 +166,17 @@ function RedrawSearchResults()
 		
 		searchResultsHere.innerHTML = displayThis
 		
-		const graph = document.getElementById("graphCanvas")
-		if (graph)
+		const graphShowHide = document.getElementById("graphShowHide")
+		if (graphShowHide)
 		{
 			if (graphVisible)
 			{
-				graph.style.display = "block"
+				graphShowHide.style.display = "block"
 				SearchDrawGraph()
 			}
 			else
 			{
-				graph.style.display = "none"
+				graphShowHide.style.display = "none"
 			}
 		}
 	}
@@ -210,7 +210,7 @@ TabDefine("search", function(reply, thenCall)
 	GraphCreateStandardOptions(options, "RedrawSearchResults", true)
 
 	reply.push(OptionsConcat(options))
-	reply.push("<BR><CANVAS WIDTH=" + CalcGraphCanvasWidth() + " HEIGHT=200 ID=graphCanvas></CANVAS>")
+	GraphAddCanvas(reply, 200, thenCall)
 	MakeUpdatingArea(reply, "searchResultsHere", 'align="left" style="user-select:text"')
 	
 	thenCall.push(RedrawSearchResults)
@@ -341,7 +341,7 @@ function RedrawThread()
 			{
 				const escapedText = txt.replaceAll("'", "\\'")
 				console.log("Escaped: " + escapedText)
-				output.push('<P ALIGN=center><BUTTON ONCLICK="' + AddEscapeChars('window.scrollTo(0,0); document.getElementById(\'voice.showThis_' + page + '\').value = \'' + escapedText + '\'; UpdateOptions(); RedrawThread()') + '">Next: ' + txt + '</BUTTON></p>')
+				output.push('<P ALIGN=center><BUTTON ID=nextChunk ONCLICK="' + AddEscapeChars('window.scrollTo(0,0); document.getElementById(\'voice.showThis_' + page + '\').value = \'' + escapedText + '\'; UpdateOptions(); RedrawThread()') + '">Next: ' + txt + '</BUTTON></p>')
 				break
 			}
 			else if (txt == showThis)
@@ -387,6 +387,21 @@ function ThreadRead()
 		if (HighlightThreadSection(g_threadSectionSelected + 1, true))
 		{
 			CallTheseFunctions(ThreadRead)
+		}
+		else
+		{
+			NovaLog("Reading done - autoAdvance=" + g_currentOptions.voice.autoAdvance)
+			
+			if (g_currentOptions.voice.autoAdvance)
+			{
+				var nextChunkButton = document.getElementById("nextChunk")
+				
+				if (nextChunkButton)
+				{
+					nextChunkButton.click()
+					CallTheseFunctions(ThreadRead)
+				}
+			}
 		}
 	}
 }
@@ -444,6 +459,8 @@ TabDefine("voice", function(reply, thenCall)
 		OptionsMakeCheckbox(options, "RedrawThread()", "summary", "Show summary", false, true)
 	}
 
+	OptionsMakeCheckbox(options, null, "autoAdvance", "Auto-advance", true, true)
+
 	reply.push(OptionsConcat(options))
 
 	MakeUpdatingArea(reply, "threadsGoHere", 'align="left" style="user-select:text"')
@@ -454,7 +471,7 @@ TabDefine("voice", function(reply, thenCall)
 	ShowHoverControls(hoverOptions)
 	
 	thenCall.push(RedrawThread)
-}, {icon:kIconSpeaker, tooltipText:"Read"})
+}, {icon:kIconEar, tooltipText:"Read to me"})
 
 //---------------------------------------
 // Switch to here from another tab
@@ -490,7 +507,17 @@ function SwitchToMentionsAndSearch(txt)
 	ShowTab("search")
 }
 
+function OpenThesaurus(word)
+{
+	window.open('https://www.thesaurus.com/browse/' + word, 'nova_thesaurus_' + word, 'width=600,height=800,menubar=no,toolbar=no')
+}
+
 function MakeMentionLink(showText, searchForText)
 {
-	return showText + '&nbsp;' + CreateClickableText(kIconSearch, "SwitchToMentionsAndSearch(" + MakeParamsString(searchForText ?? showText) + ")")
+	const paramsString = MakeParamsString(searchForText ?? showText)
+	const reply = [showText]
+	reply.push('&nbsp;')
+	reply.push(CreateClickableText(kIconSearch, "SwitchToMentionsAndSearch(" + paramsString + ")"))
+	reply.push(CreateClickableText(kIconThesaurus, "OpenThesaurus(" + paramsString + ")"))
+	return reply.join('')
 }

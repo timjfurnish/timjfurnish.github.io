@@ -301,25 +301,29 @@ button:disabled, button[disabled]
 	cursor:pointer;
 	font-size:10pt;
 }
-.iconWithTooltip .tooltipBubble
+.tooltipBubble
 {
-	font-weight:1000;
 	border:1px solid rgba(0, 0, 0, 0.5);
 	border-radius:6px;
 	background-color:#FFFFAA;
 	padding:5px;
-	font-size:25%;
 	color:rgba(0, 0, 0, 0.9);
 	text-align:center;
-	visibility:hidden;
 	position:absolute;
-	bottom:100%;
 	z-index:12;
 	white-space:nowrap;
-	opacity:0;
 	pointer-events: none;
-	transition:opacity 0.2s, font 0.2s;
 	box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.5);
+}
+.iconWithTooltip .tooltipBubble
+{
+	font-weight:1000;
+	bottom:100%;
+	font-size:25%;
+	position:absolute;
+	visibility:hidden;
+	opacity:0;
+	transition:opacity 0.2s, font 0.2s;
 }
 .iconWithTooltip:hover .tooltipBubble
 {

@@ -20,6 +20,7 @@ const kIconEntities = "&#129333;"
 const kIconHyphen = "&#127846;"
 const kIconBooks = "&#128218;"
 const kIconSpeaker = "&#x1F50A;"
+const kIconEar = "&#x1F442;"
 const kIconMute = "&#x274C;" // "&#128263;"
 const kIconOpen = "&#x1f53d;"
 const kIconClosed = "&#x25B6;&#xFE0F;"
@@ -40,6 +41,7 @@ const kIconCheckbox = "&#x2611;&#xFE0F;"
 const kIconAbacus = "&#x1F9EE;"
 const kIconUSA = "&#x1F985;"
 const kIconMatch = "&#x1F525;"
+const kIconThesaurus = "&#x1F4D4;"
 
 const kCharacterElipsis = "\u2026"
 const kCharacterEmDash = "\u2014"
@@ -85,7 +87,7 @@ function TableShowTally(tally, options)
 	var reply = []
 	var total = 0
 
-	const {colours, colourEntireLine, showTotal, keyHeading, valueHeading} = options ?? {}
+	const {colours, colourEntireLine, showTotal, keyHeading, valueHeading, custom, customHeading} = options ?? {}
 	const keysInOrder = Object.keys(tally).sort((p1, p2) => (tally[p2] - tally[p1]))
 	const addColourColumn = colours && !colourEntireLine
 
@@ -96,6 +98,11 @@ function TableShowTally(tally, options)
 	if (addColourColumn)
 	{
 		TableAddHeading(reply, "Colour")
+	}
+	
+	if (custom)
+	{
+		TableAddHeading(reply, customHeading ?? "Custom")
 	}
 	
 	NovaLog("Building tally table containing " + keysInOrder.length + " values")
@@ -109,6 +116,11 @@ function TableShowTally(tally, options)
 		if (addColourColumn)
 		{
 			reply.push('<td class=cell bgcolor="' + colours[key] + '" width=30></td>')
+		}
+		
+		if (custom)
+		{
+			reply.push('<td class=cell>' + custom(key) + '</td>')
 		}
 		
 		total += tally[key]

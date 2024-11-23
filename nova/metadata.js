@@ -630,7 +630,13 @@ function TabFunctionStats(reply, thenCall)
 
 		var bookList = {["Les Miserables"]:568751, ["War and Peace"]:567246, ["David Copperfield"]:360231, ["Moby Dick"]:215839, ["Jane Eyre"]:190339, ["Great Expectations"]:187596, ["Dracula"]:165453, ["Emma"]:163514, ["Oliver Twist"]:161712, ["The Night Watch"]:146965, ["The Da Vinci Code"]:144330, ["A Tale of Two Cities"]:139605, ["Pride and Prejudice"]:124713, ["Sense and Sensibility"]:122646, ["Wuthering Heights"]:119572, ["To Kill A Mockingbird"]:99121, ["The Picture of Dorian Gray"]:82222, ["Frankenstein"]:78100, ["The Catcher in the Rye"]:74144, ["Treasure Island"]:72036, ["The War of the Worlds"]:63194, ["The Hound of the Baskervilles"]:62297, ["The Jungle Book"]:54178, ["Peter Pan"]:50844, ["The Great Gatsby"]:47094, ["Beowulf"]:43092, ["The Wonderful Wizard of Oz"]:42636, ["Pygmalion"]:36718, ["A Christmas Carol"]:31650, ["Alice’s Adventures in Wonderland"]:29610, ["The Strange Case of Dr. Jekyll and Mr. Hyde"]:28668, ["The Importance of Being Earnest"]:23760}
 		bookList["THIS BOOK"] = wordsInDoc
-		reply.push(TableShowTally(bookList, {colours:{["THIS BOOK"]:"#DDFFDD"}, colourEntireLine:true, keyHeading:"Book name", valueHeading:"Words"}))
+		reply.push(TableShowTally(bookList, {colours:{["THIS BOOK"]:"#DDFFDD"}, colourEntireLine:true, keyHeading:"Book name", valueHeading:"Words", customHeading:"Ratio", custom:line =>
+			{
+				const num = bookList[line]
+				const ratio = (num > wordsInDoc) ? (wordsInDoc / num) : (num / wordsInDoc) 
+				return RenderBarFor(ratio * 100, 1.5, 2, '%')
+			}
+		}))
 	}
 }
 
@@ -762,6 +768,6 @@ function TabFunctionGraph(reply, thenCall)
 	}
 
 	reply.push(OptionsConcat(options))
-	reply.push("<BR><CANVAS WIDTH=" + CalcGraphCanvasWidth() + " HEIGHT=300 ID=graphCanvas></CANVAS>")
+	GraphAddCanvas(reply, 300, thenCall)
 	thenCall.push(MetaDataDrawGraph)
 }

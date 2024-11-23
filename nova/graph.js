@@ -3,6 +3,13 @@
 // (c) Tim Furnish, 2023-2024
 //==============================================
 
+var g_graphHoverData = null
+
+function OnChangeTab()
+{
+	g_graphHoverData = null
+}
+
 function Smoother(arr)
 {
 	var total = 0
@@ -47,15 +54,11 @@ function DrawSmoothedGraph(graphData, backgroundData)
 {
 	const {colours, data} = graphData
 	const smoothingCount = g_currentOptions[g_selectedTabName][GetGraphSmoothingValueName()]
-
-	// WORK OUT WHAT TO DRAW
 	const colourEntries = Object.keys(colours)
 	const drawData = {}
 	const sizeX = data.length
 
 	NovaLog("Drawing graph of width " + sizeX + " for " + colourEntries.length + " values [" + colourEntries.join(', ') + "] smooth=" + smoothingCount)
-
-	var biggestVal = 0
 	
 	for (var spelling of colourEntries)
 	{
@@ -67,8 +70,12 @@ function DrawSmoothedGraph(graphData, backgroundData)
 		}
 	}
 
-	const sanityCheckTotalData = {}
-	
+	//================================================
+	// Calculate largest value and fill in drawData
+	//================================================
+
+	var biggestVal = 0
+
 	for (var t of data)
 	{
 		var totalHere = 0
@@ -78,8 +85,6 @@ function DrawSmoothedGraph(graphData, backgroundData)
 			const incomingValue = t?.[spelling] ?? 0
 			drawData[spelling].smoothing.push(incomingValue)				
 			drawData[spelling].smoothing.shift()
-
-			Tally(sanityCheckTotalData, spelling, incomingValue)
 
 			const myVal = Smoother(drawData[spelling].smoothing)
 			totalHere += myVal
@@ -116,7 +121,9 @@ function DrawSmoothedGraph(graphData, backgroundData)
 
 	colourEntries.reverse()
 
+	//=========================================
 	// DONE GATHERING DATA! DRAW IT!
+	//=========================================
 	
 	const canvas = document.getElementById("graphCanvas")
 	const drawToHere = canvas?.getContext("2d")
@@ -186,12 +193,70 @@ function DrawSmoothedGraph(graphData, backgroundData)
 			drawToHere.lineTo(canvas.width, canvas.height)
 			drawToHere.fill()
 		}
-	}	
+	}
+	
+	g_graphHoverData = graphData
 }
 
 function CalcGraphCanvasWidth()
 {
 	return Math.max(window.innerWidth - 125, 870)
+}
+
+function GraphMouseMove(e)
+{
+	const elem = document.getElementById("graphInfoHere")
+	const rect = e.target.getBoundingClientRect()
+	const width = (rect.right - rect.left) - 1
+	const frac = (e.clientX - rect.left) / width
+	const contents = []
+	const index = Math.round(frac * (g_graphHoverData.data.length + 1))
+
+	for (var each of Object.keys(g_graphHoverData.colours))
+	{
+		const val = g_graphHoverData.data[index]?.[each];
+		if (val)
+		{
+			contents.push(each + "=" + val)
+		}
+	}
+	
+	elem.innerHTML = '<TT>' + contents.join("<BR>") + '</TT>'
+	elem.style.left = e.clientX + "px"
+	elem.style.top = e.clientY + "px"
+}
+
+function GraphMouseOver(e)
+{
+	const elem = document.getElementById("graphInfoHere")
+	elem.style.display = "block"
+	GraphMouseMove(e)
+}
+
+function GraphMouseOut(e)
+{
+	const elem = document.getElementById("graphInfoHere")
+	elem.style.display = "none"
+}
+
+function GraphAddCanvas(reply, height, thenCall)
+{
+	reply.push('<DIV ID="graphShowHide"><BR><CANVAS WIDTH="' + CalcGraphCanvasWidth() + '" HEIGHT="' + height + '" ID="graphCanvas"></CANVAS>')
+	
+	if (g_tweakableSettings.tooltips)
+	{
+		reply.push('<SPAN class="tooltipBubble" ID="graphInfoHere" STYLE="transform:translate(-50%, 25px); display:none; white-space:nowrap; text-align:left"></SPAN>')
+
+		thenCall.push(function ()
+		{
+			const elem = document.getElementById("graphCanvas")
+			elem.onmouseover = GraphMouseOver
+			elem.onmousemove = GraphMouseMove
+			elem.onmouseout = GraphMouseOut
+		})
+	}
+	
+	reply.push('<DIV>')
 }
 
 window.addEventListener('resize', function(theEvent)

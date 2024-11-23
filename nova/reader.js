@@ -42,7 +42,7 @@ function ReadVoices()
 	try
 	{
 		const voices = window.speechSynthesis.getVoices()
-		g_voiceLookUp = {}
+		g_voiceLookUp = {Default:null}
 		var languages = {}
 		const wantLang = g_tweakableSettings.language
 		for (var voice of voices)
