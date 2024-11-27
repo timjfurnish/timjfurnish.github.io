@@ -253,7 +253,7 @@ function SplitIntoFragments(thisBunch)
 
 function MakeRegexForSplittingIntoWords()
 {
-	var allowedInWords = kCharacterEmDash + "-.%#'&0123456789"
+	var allowedInWords = "-.%#'&0123456789"
 
 	for (var chr of g_tweakableSettings.allowedCharacters)
 	{
@@ -529,7 +529,7 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 				s = s.replace(kReplaceStartStuff, "").replace(kReplaceEndStuff, "")
 				const myListOfWords = OnlyKeepValid(s.split(g_processInputWorkspace.regexForSplittingIntoWords))
 				const numWords = myListOfWords.length
-				
+								
 				if (numWords)
 				{
 					g_metaDataTally.Words += numWords

@@ -195,7 +195,7 @@ function ShowContentForSelectedTab()
 
 	const {func, canSelect, alignment, tooltipText} = g_tabFunctions[g_selectedTabName]
 	
-	displayThis.push('<CENTER STYLE="color:#888888; font-weight:1000; font-size:150%">' + tooltipText + "</CENTER><SMALL><BR></SMALL>")
+	displayThis.push('<CENTER STYLE="color:#888888; font-weight:1000; font-size:150%">' + tooltipText + '<HR></CENTER>')
 	
 	func(displayThis, thenCall)
 	

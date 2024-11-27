@@ -4,7 +4,31 @@
 //==============================================
 
 var g_usWords, g_ukWords
-var g_internationalSubStrings = ["color|colour", "avor|avour", "ization|isation", "ize|ise", "izing|ising", "aluminum|aluminium", "humor|humour", "theater|theatre", "meter|metre", "liter|litre"]
+var g_internationalSubStrings =
+[
+	// o[u]r
+	{us:"color",    uk:"colour"},
+	{us:"avor",     uk:"avour"},
+	{us:"humor",    uk:"humour"},
+	
+	// i[s/z]e
+	{us:"ization",  uk:"isation",  check:izeCheck},
+	{us:"ize",      uk:"ise",      check:izeCheck},
+	{us:"izing",    uk:"ising",    check:izeCheck},
+	
+	// er/re
+	{us:"theater",  uk:"theatre"},
+	{us:"meter",    uk:"metre"},
+	{us:"liter",    uk:"litre"},
+	
+	// misc.
+	{us:"aluminum", uk:"aluminium"},
+]
+
+function izeCheck(before, match, after)
+{
+	return true
+}
 
 function DoInternationalTally(thisWord, thisCounter)
 {
@@ -14,6 +38,11 @@ function DoInternationalTally(thisWord, thisCounter)
 	}
 	
 	Tally(g_usWords[thisWord], thisCounter)
+}
+
+function CheckForMatch(wordIn, changeThis, intoThis, check)
+{
+	return wordIn.replaceAll(changeThis, intoThis)
 }
 
 function CheckForInternationalTally(word)
@@ -28,24 +57,29 @@ function CheckForInternationalTally(word)
 	}
 	else
 	{
-		for (var aPair of g_internationalSubStrings)
-		{
-			const [us, uk] = aPair.split('|', 2)
+		var ukVersion = word
+		var usVersion = word
 
-			const ukVersion = word.replaceAll(us, uk)
+		for (const {us, uk, check} of g_internationalSubStrings)
+		{
+			ukVersion = CheckForMatch(ukVersion, us, uk, check)
+			usVersion = CheckForMatch(usVersion, uk, us, check)
+		}
+		
+		if (usVersion != ukVersion)
+		{
+//			NovaLog("Found " + word + " (uk=" + ukVersion + ", us=" + usVersion + ")")
+
+			g_ukWords[ukVersion] = usVersion
+
+			if (usVersion != word)
+			{
+				DoInternationalTally(usVersion, "uk")
+			}
 			
 			if (ukVersion != word)
 			{
-				g_ukWords[ukVersion] = word
-				DoInternationalTally(word, "us")
-			}
-			
-			const usVersion = word.replaceAll(uk, us)
-			
-			if (usVersion != word)
-			{
-				g_ukWords[word] = usVersion
-				DoInternationalTally(usVersion, "uk")
+				DoInternationalTally(usVersion, "us")
 			}
 		}
 	}
@@ -57,7 +91,6 @@ OnEvent("clear", true, () =>
 	g_ukWords = {}
 })
 
-/*
 TabDefine("international", function(reply, thenCall)
 {
 	TableOpen(reply)
@@ -69,9 +102,8 @@ TabDefine("international", function(reply, thenCall)
 	{		
 		TableNewRow(reply)
 		TableAddCell(reply, key + " / " + val)
-		TableAddCell(reply, g_usWords[val].uk)
-		TableAddCell(reply, g_usWords[val].us)
+		TableAddCell(reply, g_usWords[val].uk ?? '')
+		TableAddCell(reply, g_usWords[val].us ?? '')
 	}
 	TableClose(reply)
 }, {icon:kIconUSA, tooltipText:"UK vs. US"})
-*/
