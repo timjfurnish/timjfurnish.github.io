@@ -138,8 +138,6 @@ function CheckEachWord(word, s, isSpeech)
 		return false
 	}
 
-	CheckForInternationalTally(wordLower)
-
 	if (! (wordLower in g_checkedWords))
 	{
 		g_checkedWords[wordLower] = {inSpeech:0, inNarrative:0}

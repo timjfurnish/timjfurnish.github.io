@@ -131,8 +131,6 @@ function MetaDataEndSection()
 {
 	if (g_metaDataGatherParagraphs.length)
 	{
-//		g_metaDataTally.Paragraphs = g_metaDataGatherParagraphs.length
-
 		if (g_metaDataCurrentContainsToDo)
 		{
 			if (g_metaDataCurrentCompleteness >= 100)
