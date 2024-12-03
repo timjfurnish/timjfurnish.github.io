@@ -25,7 +25,7 @@ function addInputBox(saveIt)
 
 function mergeInputBoxes()
 {
-	const contents = GetInputTextRaw()
+	const contents = GetInputText()
 
 	document.getElementById('inputs').innerHTML = ''
 	g_numInputBoxes = 0
@@ -58,7 +58,7 @@ function hideShowInputs(checked)
 	document.getElementById('inputs').style.display = checked ? "block" : "none"
 }
 
-function GetInputTextRaw()
+function GetInputText()
 {
 	var reply = []
 
@@ -70,13 +70,3 @@ function GetInputTextRaw()
 	return reply.join('\n').replace(/\</g, '[').replace(/\>/g, ']')
 }
 
-function GetInputText()
-{
-	var reply = GetInputTextRaw()
-
-	reply = reply.replace(/[\u201C\u201D]/g, '"')
-	reply = reply.replace(/[\u2018\u2019]/g, "'")
-//	reply = reply.replace(/([0-9]+:)\n([^\n])/g, '$1 $2')
-	
-	return reply.split(/[\n]+/)
-}

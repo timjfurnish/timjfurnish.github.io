@@ -9,18 +9,19 @@ var g_checkedWords = {}
 
 // var g_uniqueWords = []
 
-const kReplaceOnlyKeepBraces   =  /[^\[\]\{\}\(\)]/g
-const kReplaceFullStops        =  /\./g
-const kReplaceCarats           =  /\^/g
-const kReplaceStartStuff       =  /^['\u2026]+/
-const kReplaceEndStuff         =  /[,'—\u2026]+$/
-const kRemoveWordStartPunc     =  /^[\-']+/
-const kRemoveWordEndPunc       =  /[\-']+$/
+const kReplaceOnlyKeepBraces      =  /[^‘’\u201C\u201D\[\]\{\}\(\)]/g // And opening/closing quotes
+const kReplaceFullStops           =  /\./g
+const kReplaceCarats              =  /\^/g
+const kReplaceSentenceStartStuff  =  /^['‘\u2026]+/
+const kReplaceSentenceEndStuff    =  /[,'’—\u2026]+$/
+const kRemoveWordStartPunc        =  /^[\-'‘’]+/
+const kRemoveWordEndPunc          =  /[\-'’]+$/
 
-const kSplitToCheckForGappyPunctuation  =  /[\.,;:!\?]+["\)]?/
+const kSplitToCheckForGappyPunctuation  =  /[\.,;:!\?]+["\u201D\)]?/
 const kSplitIntoFragments               =  /([\|\!\?;:]+) */
+const kSplitOnSpeechMarks               =  /[\u201C\u201D"]/
 
-const kBraces = {['{']:'}', ['[']:']', ['(']:')'}
+const kBraces = {['‘']:'’', ['{']:'}', ['[']:']', ['(']:')', ['\u201C']:'\u201D'}
 
 // Value is whether the punctuation in question ends a sentence
 const kValidJoiners =
@@ -55,9 +56,7 @@ const kIllegalSubstrings =
 [
 	["tab character", "\t"],
 	["numbers", /#?[A-Z\/\-\.]*[0-9]+[A-Z\/\-0-9]*/gi, ShouldIgnoreNumberFoundInText],
-	["double apostrophe", "''"],
 	["misused hyphen", /( \-)|(\- )/g],
-	["double quote", "\"\""],
 	["double space", "  "],
 	["dubious punctuation combo", /[;:\-,\.\!\?][;:\-,\.\!\?]/g, txt => txt == "!?"],
 	["space before punctuation", / [;:,\.\!\?]/g],
@@ -89,12 +88,22 @@ function CheckStringForEvenBraces(txtIn)
 			}
 			else
 			{
-				const shouldBe = closeThese.pop()
+				var shouldBe = closeThese.pop()
 
 				if (b != shouldBe)
 				{
-					IssueAdd("Mismatched brackets in " + FixStringHTML(txtIn) + ": found " + FixStringHTML(b) + " while expecting " + (shouldBe ? FixStringHTML(shouldBe) : "nothing"), "BRACKETS")
-					return
+					if (b == '’')
+					{
+						if (shouldBe)
+						{
+							closeThese.push(shouldBe)
+						}
+					}
+					else
+					{
+						IssueAdd("Mismatched brackets in " + FixStringHTML(txtIn) + ": found " + FixStringHTML(b) + " while expecting " + (shouldBe ? FixStringHTML(shouldBe) : "nothing"), "BRACKETS")
+						return
+					}
 				}
 			}			
 		}
@@ -131,7 +140,7 @@ function CheckEachWord(word, s, isSpeech)
 		}
 	}
 
-	const lastApostrophe = word.lastIndexOf("'")
+	const lastApostrophe = word.lastIndexOf("’")
 	if (lastApostrophe > 0)
 	{
 		CheckEachWord(word.substr(0, lastApostrophe), s, isSpeech)
@@ -251,7 +260,7 @@ function SplitIntoFragments(thisBunch)
 
 function MakeRegexForSplittingIntoWords()
 {
-	var allowedInWords = "-.%#'&0123456789"
+	var allowedInWords = "-.%#'‘’&0123456789"
 
 	for (var chr of g_tweakableSettings.allowedCharacters)
 	{
@@ -355,7 +364,7 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 	splittyFun.shift()
 	for (var each of splittyFun)
 	{
-		if (each && ! each.startsWith(' ') && ! each.startsWith("'"))
+		if (each && ! each.startsWith(' ') && ! each.startsWith("’"))
 		{
 			IssueAdd("Found punctuation not followed by space before " + FixStringHTML(each) + " in " + FixStringHTML(txtInProcessed), "PUNCTUATION WITHOUT SPACE")
 		}
@@ -366,7 +375,7 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 	//==================================
 	
 	const bScriptMode = ! g_disabledWarnings.SCRIPT
-	const talkyNonTalky = bScriptMode ? [txtInProcessed] : txtInProcessed.split('"')
+	const talkyNonTalky = bScriptMode ? [txtInProcessed] : txtInProcessed.split(kSplitOnSpeechMarks)
 
 	if ((talkyNonTalky.length & 1) == 0)
 	{
@@ -517,14 +526,8 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 				Tally (g_profileAnalysis, "Sentence")
 
 				const followedBy = joiners.shift()
-
-				const remains = s.replace(g_processInputWorkspace.regexForRemovingValidChars, '')
-				if (remains != '')
-				{
-					IssueAdd("Characters " + FixStringHTML(remains) + " found in " + FixStringHTML(s), "ILLEGAL CHARACTERS", remains)
-				}
 				
-				s = s.replace(kReplaceStartStuff, "").replace(kReplaceEndStuff, "")
+				s = s.replace(kReplaceSentenceStartStuff, "").replace(kReplaceSentenceEndStuff, "")
 				const myListOfWords = OnlyKeepValid(s.split(g_processInputWorkspace.regexForSplittingIntoWords))
 				const numWords = myListOfWords.length
 								
@@ -609,6 +612,12 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 	{
 		CheckFinalCharacter(txtInProcessed, isTreatingAsSpeech)
 	}
+	
+	const remains = txtInRaw.replace(g_processInputWorkspace.regexForRemovingValidChars, '')
+	if (remains != '')
+	{
+		IssueAdd("Characters " + FixStringHTML(remains) + " found in " + FixStringHTML(txtInRaw), "ILLEGAL CHARACTERS", remains)
+	}
 
 	//========================
 	// STORE IT
@@ -672,7 +681,7 @@ function ProcessInputBegin()
 		regexForRemovingValidChars:new RegExp('[' + EscapeRegExSpecialChars(g_tweakableSettings.allowedCharacters) + ']', 'g'),
 		treatNextParagraphAsSpeech:false,
 		regexForSplittingIntoWords:MakeRegexForSplittingIntoWords(),
-		inputTextArray:GetInputText(),
+		inputTextArray:GetInputText().split(/[\n]+/),
 		replaceRules:SettingsGetReplacementRegularExpressionsArray()
 	}
 
@@ -800,9 +809,9 @@ function CheckFinalCharacter(txtIn, endsWithSpeech)
 
 	if (! endsWithSpeech)
 	{
-		while (finalCharacter == '"' || finalCharacter == ')')
+		while (finalCharacter.match(kSplitOnSpeechMarks) || finalCharacter == ')')
 		{
-			if (finalCharacter == '"')
+			if (finalCharacter != ')')
 			{
 				if (endsWithSpeech)
 				{

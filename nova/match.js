@@ -52,7 +52,7 @@ function MatchCompare()
 
 	if (g_currentOptions.match.chunks != '')
 	{
-		const compareRaw = document.getElementById('compareWithThis').value.replace(/\</g, '[').replace(/\>/g, ']').replace(/[\u201C\u201D]/g, '"').replace(/[\u2018\u2019]/g, "'").split(/[\n]+/)
+		const compareRaw = document.getElementById('compareWithThis').value.replace(/\</g, '[').replace(/\>/g, ']').split(/[\n]+/)
 		const replaceRules = SettingsGetReplacementRegularExpressionsArray()
 		
 		var currentChunkName = null
