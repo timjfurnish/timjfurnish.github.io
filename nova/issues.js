@@ -54,7 +54,7 @@ TabDefine("issues", function(reply, thenCall)
 
 		if (! g_disabledWarnings["ISSUE SUMMARY"])
 		{
-			reply.push(TableShowTally(g_issueStats, {colours:g_warningNames, colourEntireLine:true, showTotal:true}))
+			reply.push("<CENTER><HR>" + TableShowTally(g_issueStats, {colours:g_warningNames, colourEntireLine:true, showTotal:true}) + "</CENTER>")
 		}
 	}
 	else

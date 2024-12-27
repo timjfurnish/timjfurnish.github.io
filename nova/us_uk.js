@@ -10,21 +10,98 @@ const g_internationalSubStrings =
 	// o[u]r
 	{us:"color",    uk:"colour"},
 	{us:"avor",     uk:"avour"},
+	{us:"vior",     uk:"viour"},
 	{us:"humor",    uk:"humour"},
+	{us:"abor",     uk:"abour",     check:laboratoryCheck},
+	{us:"ghbor",    uk:"ghbour"},
 	
 	// i[s/z]e
-	{us:"ization",  uk:"isation",  check:izeCheck},
-	{us:"ize",      uk:"ise",      check:izeCheck},
-	{us:"izing",    uk:"ising",    check:izeCheck},
+	{us:"ization",  uk:"isation",   check:izeCheck},
+	{us:"ize",      uk:"ise",       check:izeCheck},
+	{us:"izing",    uk:"ising",     check:izeCheck},
+
+	// y[s/z]e
+	{us:"yzation",  uk:"ysation"},
+	{us:"yze",      uk:"yse",       check:(a,b,c)=>c!="lf"},
+	{us:"yzing",    uk:"ysing"},
+
+	// travelled/traveled etc.
+	{us:"ele",      uk:"elle",      check:elCheck},
+	{us:"eling",    uk:"elling",    check:elCheck},
 	
 	// er/re
+	{us:"fiber",    uk:"fibre"},
 	{us:"theater",  uk:"theatre"},
 	{us:"meter",    uk:"metre",     check:meterCheck},
 	{us:"liter",    uk:"litre",		check:notANextCheck},
 	
+	// ence vs. ense
+	{us:"ense",     uk:"ence",      check:enceCheck},
+	{us:"ensing",   uk:"encing",    check:enceCheck},
+	
 	// misc.
-	{us:"aluminum", uk:"aluminium"},
+	{us:"aluminum",    uk:"aluminium"},
+	{us:"maneuver",    uk:"manoeuvre",     check:(a,b,c)=>c==""},
+	{us:"maneuvering", uk:"manoeuvring"},
+	{us:"maneuvered",  uk:"manoeuvred"},
+	{us:"artifact",    uk:"artefact"},
+	{us:"cozy",        uk:"cosy"},
+	{us:"coziness",    uk:"cosiness"},
+	{us:"gray",        uk:"grey"},
+	{us:"plow",        uk:"plough"},
+	{us:"skeptic",     uk:"sceptic"},
+	{us:"sulfur",      uk:"sulphur"},
 ]
+
+function laboratoryCheck(before, match, after)
+{
+	if (after.startsWith('ator'))
+	{
+		return false
+	}
+	
+	return true
+}
+
+function elCheck(before, match, after)
+{
+	if (before.endsWith('e') || before.endsWith('u') || before.endsWith('w') || before.endsWith('h') || before.endsWith('s') || before.endsWith('sm') || before.endsWith('sp') || before.endsWith('yt') || before.endsWith('-t') || before.endsWith('ret') || before.length == 1)
+	{
+		// Ignore kneeled, fueled, dweller, shelling etc.
+		return false
+	}
+
+	if (match.endsWith('e'))
+	{
+		if ((before.endsWith('dec') || before.endsWith('acc')) && after.startsWith('rat'))
+		{
+			// Ignore acceleration, decelerate etc.
+			return false
+		}
+
+		if (! (after.startsWith('r') || after.startsWith('d')))
+		{
+			return false
+		}
+	}
+	
+	return true
+}
+
+function enceCheck(before, match, after)
+{
+	if (before.length == 1)
+	{
+		return false
+	}
+	
+	if (before.endsWith('f') || before.endsWith('ic') || before.endsWith('pret'))
+	{
+		return true
+	}
+	
+	return false
+}
 
 function izeCheck(before, match, after)
 {
@@ -244,7 +321,7 @@ TabDefine("international", function(reply, thenCall)
 	{
 		const val = g_ukWords[key]
 		TableNewRow(reply)
-		TableAddCell(reply, key + " / " + val)
+		TableAddCell(reply, key + " / " + val + " " + CreateClickableText(kIconSearch, "SwitchToMentionsAndSearch(" + MakeParamsString(key + '|' + val) + ")"))
 		TableAddCell(reply, g_usWords[val].uk ?? '')
 		TableAddCell(reply, g_usWords[val].us ?? '')
 	}

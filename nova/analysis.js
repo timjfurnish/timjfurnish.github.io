@@ -7,8 +7,6 @@ var g_profileAnalysis = {}
 var g_processInputWorkspace
 var g_checkedWords = {}
 
-// var g_uniqueWords = []
-
 const kReplaceOnlyKeepBraces      =  /[^‘’\u201C\u201D\[\]\{\}\(\)]/g // And opening/closing quotes
 const kReplaceFullStops           =  /\./g
 const kReplaceCarats              =  /\^/g
@@ -54,9 +52,9 @@ function ShouldIgnoreNumberFoundInText(number)
 
 const kIllegalSubstrings =
 [
-	["tab character", "\t"],
 	["numbers", /#?[A-Z\/\-\.]*[0-9]+[A-Z\/\-0-9]*/gi, ShouldIgnoreNumberFoundInText],
 	["misused hyphen", /( \-)|(\- )/g],
+	["misused opening quote", /[^“\( ][‘“]/g],
 	["double space", "  "],
 	["dubious punctuation combo", /[;:\-,\.\!\?][;:\-,\.\!\?]/g, txt => txt == "!?"],
 	["space before punctuation", / [;:,\.\!\?]/g],
@@ -661,7 +659,7 @@ function ProcessInput()
 {
 	document.getElementById("blocker").style.display="block"
 	
-	CallTheseFunctions(ProcessInputBegin)
+	CallTheseFunctions(StopTalking, ProcessInputBegin)
 }
 
 function ProcessInputBegin()
@@ -669,7 +667,6 @@ function ProcessInputBegin()
 	DoEvent("clear")
 
 	g_profileAnalysis = {}
-//	g_uniqueWords = []
 	g_checkedWords = {}
 
 	g_processInputWorkspace =
@@ -749,7 +746,7 @@ function TickProcessInput()
 		if (! TickProcessInternal())
 		{
 			g_onQueueEmpty.push(RemoveClickBlocker)
-			CallTheseFunctions(OutputProcessInputProfileResults, GatherNameSuggestions, AfterProcessInput)
+			CallTheseFunctions(GatherNameSuggestions, AfterProcessInput)
 			return
 		}
 	}
@@ -757,14 +754,6 @@ function TickProcessInput()
 	CallTheseFunctions(TickProcessInput)
 }
 	
-function OutputProcessInputProfileResults()
-{
-	if (g_profileAnalysis.Input)
-	{
-		console.log(g_profileAnalysis)
-	}
-}
-
 function GatherNameSuggestions()
 {
 	const {suggestNameIfSeenThisManyTimes} = g_tweakableSettings
@@ -777,11 +766,6 @@ function GatherNameSuggestions()
 		{
 			g_entityNewNameSuggestions.push({word:word, count:counts.total})
 		}
-
-/*		if (count == 1)
-		{
-			g_uniqueWords.push(word)
-		}*/
 	}
 }
 

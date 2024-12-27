@@ -262,6 +262,7 @@ function SetBit(toHere, key, bit)
 
 var g_functionsStillToCall = []
 var g_onQueueEmpty = []
+var g_debugInfo = []
 
 function DescribeFunction(func)
 {
@@ -276,12 +277,12 @@ function UpdateDebugListOfRunningFunctions()
 	}
 	else
 	{
-		var info = []
 		for (var f of g_functionsStillToCall)
 		{
-			info.push(DescribeFunction(f))
+			g_debugInfo.push(DescribeFunction(f))
 		}
-		const newList = info.join("<BR>")
+		const newList = g_debugInfo.join("<BR>")
+		g_debugInfo = []
 		if (document.getElementById("debugOut").innerHTML != newList)
 		{
 			document.getElementById("debugOut").innerHTML = newList
@@ -313,7 +314,6 @@ function CallNextQueuedFunction()
 	const queue = DescribeFunctions(g_functionsStillToCall)
 
 	const func = g_functionsStillToCall.shift()
-//	NovaLog("Calling queued " + DescribeFunction(func))
 
 	UpdateDebugListOfRunningFunctions()
 
@@ -333,18 +333,8 @@ function CallNextQueuedFunction()
 
 	if (g_functionsStillToCall.length == 0)
 	{
-//		NovaLog("Function queue changed from '" + queue + "' to empty")
 		CallTheseFunctionsNow(...g_onQueueEmpty)
 		g_onQueueEmpty = []
-	}
-	else
-	{
-		const newQueue = DescribeFunctions(g_functionsStillToCall)
-
-		// if (newQueue != queue)
-		// {
-			// NovaLog("Function queue changed from '" + queue + "' to '" + newQueue + "'")
-		// }
 	}
 }
 

@@ -98,7 +98,8 @@ function MetaDataMakeFragmentDescription(fromHere)
 		}
 	}
 	
-	return "<BIG>" + fromThis.CHAPTER + "</BIG> &nbsp; <SMALL>(" + out.join(", ") + ")</SMALL>"
+	const addThis = out.length ? " &nbsp; <SMALL>(" + out.join(", ") + ")</SMALL>" : ""
+	return "<BIG>" + fromThis.CHAPTER + "</BIG>" + addThis
 }
 
 function MetaDataDoneProcessing()
@@ -313,8 +314,6 @@ function MetaDataDrawTable()
 		}
 	}
 
-//	SetTabTitle("stats", selectedColumns.length + "/" + selectedDisplay.length)	
-
 	if (selectedColumns.length || selectedDisplay.length)
 	{
 		var lastDeets = ""
@@ -377,7 +376,8 @@ function MetaDataDrawTable()
 			{
 				if (colName in elem.info)
 				{
-					deets += "<TD CLASS=cellNoWrap><B>" + elem.info[colName] + "</B></TD>"
+					const linkTxt = CreateClickableText(kIconEar, "SwitchToReadToMe(" + MakeParamsString(colName) + ", " + MakeParamsString(elem.info[colName]) + ")")
+					deets += "<TD CLASS=cellNoWrap>" + linkTxt + " <B>" + elem.info[colName] + "</B></TD>"
 				}
 				else
 				{
@@ -675,7 +675,7 @@ function MetaDataDrawGraph()
 	}
 	else if (g_currentOptions.graph.data == "SPEECH")
 	{
-		const graphThis = {colours:{SPEECH:"#FFFFFF", NARRATIVE:"rgba(0,0,0,0.9)"}, data:[]}
+		const graphThis = {colours:{SPEECH:"rgba(255,255,255,0.3)", NARRATIVE:"rgba(0,0,0,0.6)"}, data:[]}
 		
 		for (var elem of g_metaDataInOrder)
 		{
@@ -699,6 +699,35 @@ function MetaDataDrawGraph()
 					}
 					
 					graphThis.data.push({SPEECH:speech, NARRATIVE:narrative})
+				}
+			}
+		}
+
+		DrawSmoothedGraph(graphThis, {colourUsing:g_currentOptions.graph.colourUsing})
+	}
+	else if (g_currentOptions.graph.data == "SPEECHFRAC")
+	{
+		const graphThis = {colours:{SPEECH:"rgba(255,255,255,0.6)"}, data:[]}
+		
+		for (var elem of g_metaDataInOrder)
+		{
+			for (var para of elem.myParagraphs)
+			{
+				if (! para.ignoreFragments)
+				{
+					var speech = 0
+					var total = 0
+
+					for (var frag of para.fragments)
+					{
+						total += frag.text.length
+						if (frag.isSpeech)
+						{
+							speech += frag.text.length
+						}
+					}
+					
+					graphThis.data.push({SPEECH:speech / total})
 				}
 			}
 		}
@@ -755,7 +784,7 @@ function TabFunctionGraph(reply, thenCall)
 	{
 		GraphCreateStandardOptions(options, "MetaDataDrawGraph", true)
 
-		var nameData = {SPEECH:"Speech vs. narrative"}
+		var nameData = {SPEECH:"Speech vs. narrative", SPEECHFRAC:"Speech fraction"}
 
 		for (var eachCol of Object.keys(g_metaDataAvailableColumns))
 		{

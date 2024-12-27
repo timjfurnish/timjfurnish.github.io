@@ -55,7 +55,7 @@ OnEvent("clear", false, () => g_calculatedScores = false)
 function RedrawWordTable()
 {
 	var reply = []
-	var wordsInOrder = Object.keys(g_checkedWords)
+	var wordsInOrder = Object.keys(g_checkedWords).filter(word => word.length > 1)
 
 	NovaLog("wordsInOrder length=" + wordsInOrder.length)
 

@@ -3,7 +3,7 @@
 // (c) Tim Furnish, 2023-2024
 //==============================================
 
-const kMaxLookAhead = 4
+const kMaxLookAhead = 100
 const kMaxIssuesPerSection = 4
 
 /*
@@ -59,6 +59,8 @@ function MatchCompare()
 		var issuesWithThisRow = []
 		var numOkParagraphs = 0
 		var numIssues = 0
+		var numOkParagraphsTotal = 0
+		var numParagraphsTotal = 0
 		
 		function WriteMatchRow()
 		{
@@ -89,6 +91,8 @@ function MatchCompare()
 		{
 			if (g_currentOptions.match.chunks in info)
 			{
+				numParagraphsTotal += myParagraphs.length
+
 				const thisChunkName = info[g_currentOptions.match.chunks]
 
 				if (currentChunkName != thisChunkName)
@@ -190,6 +194,7 @@ function MatchCompare()
 						else
 						{
 							++ numOkParagraphs
+							++ numOkParagraphsTotal
 						}
 					}
 				}
@@ -197,6 +202,12 @@ function MatchCompare()
 		}
 		
 		WriteMatchRow()
+		TableClose(reply)
+	}
+
+	if (numParagraphsTotal)
+	{
+		reply.unshift("Match: <B>" + (100 * numOkParagraphsTotal/numParagraphsTotal).toFixed(2) + "%</B><BR><BR>")
 	}
 
 	UpdateArea('matchOutput', reply.join(''))

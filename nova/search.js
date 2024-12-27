@@ -7,6 +7,7 @@ var g_threadSections = []
 var g_searchDataForGraph = {colours:{}, data:{}}
 var g_threadSectionSelected = 0
 var g_threadSectionFragment = 0
+var g_recentlyHighlightedReadToMeText = []
 
 const kIndent = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
 
@@ -225,6 +226,8 @@ function HighlightThreadSection(num, bCanScroll)
 {
 	StopTalking()
 	
+	console.log("Want to change highlight from " + typeof(g_threadSectionSelected) + " " + g_threadSectionSelected + " to " + typeof(num) + " " + num)
+	
 	if (num >= 0 && num < g_threadSections.length)
 	{
 		if (g_threadSectionSelected != num)
@@ -244,17 +247,34 @@ function HighlightThreadSection(num, bCanScroll)
 			{
 				window.scrollTo(0, rect.top + window.scrollY - window.innerHeight * 0.2)
 			}
-			else if (rect.top < window.innerHeight * 0.2)
-			{
-				window.scrollTo(0, rect.bottom + window.scrollY - window.innerHeight * 0.8)
-			}
+		}
+		
+		const stashThis = theElement?.innerHTML
+		if (stashThis)
+		{
+			g_recentlyHighlightedReadToMeText.unshift(stashThis)
+			g_recentlyHighlightedReadToMeText.splice(4)
 		}
 	}
 	
 	return num == g_threadSectionSelected
 }
 
-function RedrawThread()
+function FindRecentLine(txt)
+{
+	for (var checkEmAll in g_threadSections)
+	{
+		if (document.getElementById("threadSection" + checkEmAll)?.innerHTML == txt)
+		{
+			g_threadSectionSelected = +checkEmAll
+			return true
+		}
+	}
+	
+	return false
+}
+
+function RedrawThread(goToTop)
 {
 	var threadsGoHere = document.getElementById("threadsGoHere")
 	
@@ -273,7 +293,7 @@ function RedrawThread()
 		
 		if (showThis || page == "ALL")
 		{
-			NovaLog("Redrawing sections where " + page + "='" + showThis + "'")
+			NovaLog("Redrawing sections where " + page + "='" + showThis + "' (" + (goToTop ? "jumping to top" : "searching for previously highlighted text") + ")")
 
 			for (var metadata of g_metaDataInOrder)
 			{
@@ -337,20 +357,38 @@ function RedrawThread()
 		
 		for (var txt of Object.keys(nameData))
 		{
-			if (addNext)
+			if (txt)
 			{
-				const escapedText = txt.replaceAll("'", "\\'")
-				console.log("Escaped: " + escapedText)
-				output.push('<P ALIGN=center><BUTTON ID=nextChunk ONCLICK="' + AddEscapeChars('window.scrollTo(0,0); document.getElementById(\'voice.showThis_' + page + '\').value = \'' + escapedText + '\'; UpdateOptions(); RedrawThread()') + '">Next: ' + txt + '</BUTTON></p>')
-				break
-			}
-			else if (txt == showThis)
-			{
-				addNext = true
+				if (addNext)
+				{
+					const escapedText = txt.replaceAll("'", "\\'")
+	//				console.log("Escaped: " + escapedText)
+					output.push('<P ALIGN=center><BUTTON ID=nextChunk ONCLICK="' + AddEscapeChars('window.scrollTo(0,0); document.getElementById(\'voice.showThis_' + page + '\').value = \'' + escapedText + '\'; UpdateOptions(); RedrawThread(true)') + '">Next: ' + txt + '</BUTTON></p>')
+					break
+				}
+				else if (txt == showThis)
+				{
+					addNext = true
+				}
 			}
 		}
 
 		threadsGoHere.innerHTML = output.join('')
+	}
+	
+	if (goToTop)
+	{
+		g_recentlyHighlightedReadToMeText = []
+	}
+	else
+	{
+		for (var checkRecentLines of g_recentlyHighlightedReadToMeText)
+		{
+			if (FindRecentLine(checkRecentLines))
+			{
+				break
+			}
+		}
 	}
 	
 	HighlightThreadSection(g_threadSectionSelected)
@@ -373,7 +411,14 @@ function ThreadRead()
 			const fragment = thingToSay.fragments[g_threadSectionFragment]
 			if (fragment)
 			{
-				SpeakUsingVoice(fragment.text + fragment.followedBy, fragment.isSpeech ? "voiceSpeech" : "voiceDefault", OnDoneThreadSpeakingFragment)
+				if (g_currentOptions.voice.onlyReadSpeech && !fragment.isSpeech)
+				{
+					CallTheseFunctions(OnDoneThreadSpeakingFragment)
+				}
+				else
+				{
+					SpeakUsingVoice(fragment.text + fragment.followedBy, fragment.isSpeech ? "voiceSpeech" : "voiceDefault", OnDoneThreadSpeakingFragment)
+				}
 				return
 			}
 		}
@@ -390,7 +435,7 @@ function ThreadRead()
 		}
 		else
 		{
-			NovaLog("Reading done - autoAdvance=" + g_currentOptions.voice.autoAdvance)
+//			NovaLog("Reading done - autoAdvance=" + g_currentOptions.voice.autoAdvance)
 			
 			if (g_currentOptions.voice.autoAdvance)
 			{
@@ -456,10 +501,11 @@ TabDefine("voice", function(reply, thenCall)
 	
 	if (g_hasSummaries)
 	{
-		OptionsMakeCheckbox(options, "RedrawThread()", "summary", "Show summary", false, true)
+		OptionsMakeCheckbox(options, "RedrawThread(true)", "summary", "Show summary", false, true)
 	}
 
-	OptionsMakeCheckbox(options, null, "autoAdvance", "Auto-advance", true, true)
+	OptionsMakeCheckbox(options, null, "autoAdvance", "Auto-advance", true)
+	OptionsMakeCheckbox(options, null, "onlyReadSpeech", "Only read speech", false)
 
 	reply.push(OptionsConcat(options))
 
@@ -505,6 +551,13 @@ function SwitchToMentionsAndSearch(txt)
 	OptionsMakeKey("search", "entity", "", true)
 	OptionsMakeKey("search", "custom", txt, true)
 	ShowTab("search")
+}
+
+function SwitchToReadToMe(page, whichOne)
+{
+	OptionsMakeKey("voice", "page", page, true)
+	OptionsMakeKey("voice", "showThis_" + page, whichOne, true)
+	ShowTab("voice")
 }
 
 function OpenThesaurus(word)
