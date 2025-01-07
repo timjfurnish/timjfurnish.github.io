@@ -1,6 +1,6 @@
 //==============================================
 // Part of NOVA - NOVel Assistant
-// (c) Tim Furnish, 2023-2024
+// (c) Tim Furnish, 2023-2025
 //==============================================
 
 var g_profileAnalysis = {}
@@ -14,11 +14,9 @@ const kReplaceSentenceStartStuff  =  /^['‘\u2026]+/
 const kReplaceSentenceEndStuff    =  /[,'’—\u2026]+$/
 const kRemoveWordStartPunc        =  /^[\-'‘’]+/
 const kRemoveWordEndPunc          =  /[\-'’]+$/
-
 const kSplitToCheckForGappyPunctuation  =  /[\.,;:!\?]+["\u201D\)]?/
 const kSplitIntoFragments               =  /([\|\!\?;:]+) */
 const kSplitOnSpeechMarks               =  /[\u201C\u201D"]/
-
 const kBraces = {['‘']:'’', ['{']:'}', ['[']:']', ['(']:')', ['\u201C']:'\u201D'}
 
 // Value is whether the punctuation in question ends a sentence
@@ -46,7 +44,6 @@ function ShouldIgnoreNumberFoundInText(number)
 			return true
 		}
 	}
-
 	return false
 }
 
@@ -61,7 +58,6 @@ const kIllegalSubstrings =
 	["split infinitive", /\bto (not|never|always|almost|[a-z][a-z]+ly) [a-z][a-z]+/gi, txt => g_tweakableSettings.splitInfinitiveIgnoreList.includes(txt)],
 	["adverb with hyphen", /\b[a-z]+ly\-[a-z]+\b/gi, txt => g_tweakableSettings.adverbHyphenIgnoreList.includes(txt)]
 ]
-
 function SetUp()
 {
 	g_onQueueEmpty.push(ShowTabs)
@@ -71,15 +67,15 @@ function SetUp()
 function CheckStringForEvenBraces(txtIn)
 {
 	const justBraces = txtIn.replace(kReplaceOnlyKeepBraces, '')
-	
+
 	if (justBraces)
 	{
 		var closeThese = []
-		
+
 		for (var b of justBraces)
 		{
 			const closing = kBraces[b]
-			
+
 			if (closing)
 			{
 				closeThese.push(closing)
@@ -87,7 +83,6 @@ function CheckStringForEvenBraces(txtIn)
 			else
 			{
 				var shouldBe = closeThese.pop()
-
 				if (b != shouldBe)
 				{
 					if (b == '’')
@@ -103,9 +98,9 @@ function CheckStringForEvenBraces(txtIn)
 						return
 					}
 				}
-			}			
+			}
 		}
-		
+
 		if (closeThese.length)
 		{
 			IssueAdd("Mismatched brackets in " + FixStringHTML(txtIn) + ": reached end of text without closing " + FixStringHTML(closeThese.join(' ')), "BRACKETS")
@@ -117,7 +112,7 @@ function CheckEachWord(word, s, isSpeech)
 {
 	const wordLower = word.toLowerCase()
 	const {plainBadWords, badWordRegExpressions, checkedWordsSeenInLowerCase} = g_processInputWorkspace
-	
+
 	if (wordLower in plainBadWords)
 	{
 		IssueAdd("Found disallowed word " + FixStringHTML(word) + " in " + FixStringHTML(s), "DISALLOWED WORD")
@@ -137,63 +132,56 @@ function CheckEachWord(word, s, isSpeech)
 			}
 		}
 	}
-
 	const lastApostrophe = word.lastIndexOf("’")
 	if (lastApostrophe > 0)
 	{
 		CheckEachWord(word.substr(0, lastApostrophe), s, isSpeech)
 		return false
 	}
-
 	if (! (wordLower in g_checkedWords))
 	{
 		g_checkedWords[wordLower] = {inSpeech:0, inNarrative:0}
 	}
-	
+
 	Tally (g_checkedWords[wordLower], isSpeech ? "inSpeech" : "inNarrative")
 	Tally (g_checkedWords[wordLower], "total")
-
 	if (wordLower === word)
 	{
 		checkedWordsSeenInLowerCase[wordLower] = true
 	}
-		
+
 	return ["mr.", "dr.", "mrs."].includes(wordLower)
 }
 
 function ShouldProcessPara(txtInProcessed)
-{	
+{
 	for (var t of g_autoTagKeys)
 	{
 		const withoutKey = txtInProcessed.replace(t, '')
-		
+
 		if (withoutKey != txtInProcessed)
 		{
 			const autoTagSettings = kAutoTagStuff[t]
 			const {tag, characters, numericalCheck, clearTags, includeLineInText, joinNextLine} = autoTagSettings
 			var storeAs = withoutKey.trim()
-
 			if (characters)
 			{
 				storeAs = storeAs.replace(new RegExp('[' + EscapeRegExSpecialChars(characters) + ']', 'g'), "")
 			}
-			
+
 			if (joinNextLine)
 			{
 				storeAs += " " + g_processInputWorkspace.inputTextArray.shift()
 			}
-
 //			console.log ("Found auto-tag '" + tag + "' in line '" + txtInProcessed + "' - storing as '" + storeAs + "'")
-						
+
 			MetaDataSet(tag, storeAs)
-			
+
 			for (var clearEach of OnlyKeepValid(clearTags.split(' ')))
 			{
 				MetaDataSet(clearEach)
 			}
-
 			kAutoTagChecks[numericalCheck].onTagSetFunc?.(tag, storeAs)
-
 			// TO DO: Only need to check the ones with an onTagSetFunc
 			for (var [k, data] of kAutoTagOptions)
 			{
@@ -202,25 +190,21 @@ function ShouldProcessPara(txtInProcessed)
 					data?.onTagSetFunc?.(tag, storeAs)
 				}
 			}
-
 			if (includeLineInText)
 			{
 				g_metaDataTally.Words += OnlyKeepValid(txtInProcessed.split(g_processInputWorkspace.regexForSplittingIntoWords)).length
 				++ g_metaDataTally.Paragraphs
-
 				if (g_metaDataGatherParagraphs.length == 0)
 				{
 					g_metaDataCurrentCompleteness = g_metaDataNextCompleteness
 					g_metaDataNextCompleteness = 100
 				}
-
 				g_metaDataGatherParagraphs.push({allOfIt:txtInProcessed, fragments:[{text:txtInProcessed, followedBy:""}]})
 			}
-
 			return false
 		}
 	}
-	
+
 	return true
 }
 
@@ -229,16 +213,16 @@ function SplitIntoFragments(thisBunch)
 	const fragments = []
 	const joiners = []
 	const allBits = thisBunch.split(kSplitIntoFragments)
-	
+
 	for (;;)
 	{
 		var oneFragment = allBits.shift()
 		var oneJoiner = allBits.shift()
-		
+
 		if (oneFragment || oneJoiner)
 		{
 			fragments.push(oneFragment)
-			
+
 			if (oneJoiner)
 			{
 				oneJoiner = oneJoiner.replaceAll('|', '.')
@@ -259,7 +243,6 @@ function SplitIntoFragments(thisBunch)
 function MakeRegexForSplittingIntoWords()
 {
 	var allowedInWords = "-.%#'‘’&0123456789"
-
 	for (var chr of g_tweakableSettings.allowedCharacters)
 	{
 		if (! allowedInWords.includes(chr))
@@ -270,7 +253,6 @@ function MakeRegexForSplittingIntoWords()
 			}
 		}
 	}
-
 	const matchThis = '[^' + EscapeRegExSpecialChars(allowedInWords) + ']+'
 	return new RegExp(matchThis, 'i')
 }
@@ -282,7 +264,6 @@ function SetUpBadWordRules()
 		if (badWord.includes('*'))
 		{
 			var useInRegEx = (badWord[0] == '*') ? badWord.substring(1) : ("^" + badWord)
-
 			if (useInRegEx.endsWith('*'))
 			{
 				useInRegEx = useInRegEx.slice(0, -1)
@@ -291,7 +272,7 @@ function SetUpBadWordRules()
 			{
 				useInRegEx += "$"
 			}
-			
+
 			const myRegEx = new RegExp(useInRegEx)
 			if (myRegEx)
 			{
@@ -314,7 +295,7 @@ function SetUpNumberRules()
 	for (var eachIgnoreRule of g_tweakableSettings.numberIgnoreList)
 	{
 		const myReg = new RegExp('^' + eachIgnoreRule + '$', 'i')
-		
+
 		if (myReg)
 		{
 			g_processInputWorkspace.numberRules.push(myReg)
@@ -329,16 +310,13 @@ function SetUpNumberRules()
 function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 {
 	Tally (g_profileAnalysis, "AnalyseParagraph")
-
 	//==================================
 	// Check for issues
 	//==================================
-
 	for (var [k,v,allowFunc] of kIllegalSubstrings)
 	{
 		var grabEmHere = {}
 		const changed = txtInProcessed.replace(v, matched => (allowFunc?.(matched)) ? matched : (grabEmHere[matched] = true, HighlighterWithDots(matched)))
-
 		if (changed != txtInProcessed)
 		{
 			for (laa of Object.keys(grabEmHere))
@@ -347,17 +325,15 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 			}
 		}
 	}
-
 	const firstCharacter = txtInProcessed[0].toUpperCase()
 	const {allowedStartCharacters, endOfSpeech, startOfSpeech} = g_tweakableSettings
-	
+
 	if (! allowedStartCharacters.includes(firstCharacter))
 	{
 		IssueAdd("First character " + FixStringHTML(firstCharacter) + " of " + FixStringHTML(txtInProcessed) + " is not an allowed start character " + FixStringHTML(allowedStartCharacters), "ILLEGAL START CHARACTER", firstCharacter)
-	}		
-
+	}
 	CheckStringForEvenBraces(txtInProcessed)
-	
+
 	const splittyFun = txtInProcessed.split(kSplitToCheckForGappyPunctuation)
 	splittyFun.shift()
 	for (var each of splittyFun)
@@ -367,19 +343,18 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 			IssueAdd("Found punctuation not followed by space before " + FixStringHTML(each) + " in " + FixStringHTML(txtInProcessed), "PUNCTUATION WITHOUT SPACE")
 		}
 	}
-	
+
 	//==================================
 	// Process it
 	//==================================
-	
+
 	const bScriptMode = ! g_disabledWarnings.SCRIPT
 	const talkyNonTalky = bScriptMode ? [txtInProcessed] : txtInProcessed.split(kSplitOnSpeechMarks)
-
 	if ((talkyNonTalky.length & 1) == 0)
 	{
 		IssueAdd("Found odd number of quotation marks in " + FixStringHTML(txtInProcessed), "UNFINISHED QUOTE")
 	}
-	
+
 	var isSpeech = true
 	var shouldStartWithCapital = "at the start of"
 	var nextSpeechShouldStartWithCapital = true
@@ -387,16 +362,13 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 	var bIgnoreFragments = false
 	var isTreatingAsSpeech = false
 	const storeAsFragments = []
-
 	for (const eachIn of talkyNonTalky)
 	{
 		// Use | instead of . so that we can put back things like "Mr. Smith".
 		const each = eachIn.replace(kReplaceFullStops, '|').replace(kReplaceCarats, '.')
 		const firstCharacterHere = eachIn[0]
-
 		var thisBunchOfFragments = each.trim()
 		isSpeech = !isSpeech
-
 		if (bScriptMode)
 		{
 			if (firstCharacterHere == '(')
@@ -418,7 +390,6 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 			{
 				// Work out if next line is speech
 				const withValidCharsRemoved = thisBunchOfFragments.replace(/[A-Z0-9# \(\)'\.]+/g, '')
-
 				if (withValidCharsRemoved == '')
 				{
 					g_processInputWorkspace.treatNextParagraphAsSpeech = true
@@ -434,7 +405,6 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 				{
 					g_processInputWorkspace.treatNextParagraphAsSpeech = false
 				}
-
 //				NovaLog("'" + thisBunchOfFragments + "' with valid characters removed leaves '" + withValidCharsRemoved + "' therefore treatNextParagraphAsSpeech=" + g_processInputWorkspace.treatNextParagraphAsSpeech)
 			}
 		}
@@ -445,20 +415,17 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 			{
 				shouldStartWithCapital = false
 				nextSpeechShouldStartWithCapital = false
-			}				
-
+			}
 			g_processInputWorkspace.treatNextParagraphAsSpeech = false
 		}
-
 		if (isSpeech)
 		{
 			if (nextSpeechShouldStartWithCapital)
 			{
 				shouldStartWithCapital = "at the start of dialogue"
 			}
-			
-			nextSpeechShouldStartWithCapital = false
 
+			nextSpeechShouldStartWithCapital = false
 			if (! thisBunchOfFragments)
 			{
 				IssueAdd("Found empty speech in " + FixStringHTML(txtInProcessed), "EMPTY SPEECH")
@@ -469,40 +436,31 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 				{
 					IssueAdd("Found white space at beginning and/or end of speech: " + FixStringHTML(each), "SPACE IN SPEECH")
 				}
-
 				const finalCharacter = eachIn.slice(-1)
-
 				if (! endOfSpeech.includes(finalCharacter))
 				{
 					IssueAdd("Final character of dialogue " + FixStringHTML(eachIn) + " is " + FixStringHTML(finalCharacter) + " (valid characters are " + FixStringHTML(endOfSpeech.split('').join(' ')) + ")", "INVALID FINAL SPEECH CHARACTER", finalCharacter)
 				}
-
 				if (! startOfSpeech.includes(firstCharacterHere))
 				{
 					IssueAdd("First character of dialogue " + FixStringHTML(eachIn) + " is " + FixStringHTML(firstCharacterHere) + " (valid characters are " + FixStringHTML(startOfSpeech.split('').join(' ')) + ")", "INVALID FIRST SPEECH CHARACTER", firstCharacterHere)
 				}
 			}
 		}
-
 		if (!thisBunchOfFragments)
 		{
 			continue
 		}
-
 		const [sentences, joiners] = SplitIntoFragments(thisBunchOfFragments)
 		const numSentences = sentences.length
-
 		if (numSentences)
 		{
 			Tally (g_profileAnalysis, "Chunk (" + (isSpeech ? "speech" : "narrative") + (bScriptMode ? ", script)" : ")"))
-
 			if (g_stillLookingForTagText)
 			{
 				Tally (g_profileAnalysis, "Look for tag text")
-
 				const putBackTogether = sentences.join(' ').toLowerCase()
 				const entries = Object.entries(g_stillLookingForTagText)
-
 				for (var [lookForKey, lookForVal] of entries)
 				{
 					if (putBackTogether.includes(lookForVal))
@@ -518,30 +476,28 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 					}
 				}
 			}
-			
+
 			for (var s of sentences)
 			{
 				Tally (g_profileAnalysis, "Sentence")
-
 				const followedBy = joiners.shift()
-				
+
 				s = s.replace(kReplaceSentenceStartStuff, "").replace(kReplaceSentenceEndStuff, "")
 				const myListOfWords = OnlyKeepValid(s.split(g_processInputWorkspace.regexForSplittingIntoWords))
 				const numWords = myListOfWords.length
-								
+
 				if (numWords)
 				{
 					g_metaDataTally.Words += numWords
-					
+
 					if (isSpeech)
 					{
 						g_metaDataTally.Speech += numWords
 					}
-
 					for (var word of myListOfWords)
 					{
 						word = word.replace(kRemoveWordStartPunc, "").replace(kRemoveWordEndPunc, "")
-						
+
 						if (word == kCharacterEmDash)
 						{
 							shouldStartWithCapital = false
@@ -551,13 +507,12 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 							if (shouldStartWithCapital)
 							{
 								const letter = word[0]
-
 								if (letter == letter.toLowerCase())
 								{
 									IssueAdd("Expected " + FixStringHTML(word) + " to start with a capital letter " + shouldStartWithCapital + " " + FixStringHTML(thisBunchOfFragments), "CAPITALS")
 								}
 							}
-							
+
 							shouldStartWithCapital = CheckEachWord(word, s, isSpeech) && ("following " + word + " in")
 						}
 						else
@@ -565,19 +520,19 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 							IssueAdd("Empty word in " + FixStringHTML(s), "EMPTY WORD")
 						}
 					}
-					
+
 					var newElement = {text:s, followedBy:followedBy}
-					
+
 					if (isSpeech)
 					{
 						newElement.isSpeech = true
 					}
-					
+
 					storeAsFragments.push(newElement)
 				}
-				
+
 				const marksEndOfSentence = kValidJoiners[followedBy]
-				
+
 				if (marksEndOfSentence === undefined)
 				{
 					IssueAdd("Unexpected punctuation combo '" + followedBy + "' after " + FixStringHTML(s), "PUNCTUATION COMBO")
@@ -588,7 +543,7 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 					{
 						shouldStartWithCapital = "following '" + followedBy + "' in"
 					}
-					
+
 					if (isSpeech && joiners.length == 0)
 					{
 						nextSpeechShouldStartWithCapital = true
@@ -605,24 +560,22 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 			NovaLog("No sentences in " + eachIn)
 		}
 	}
-	
+
 	if (bCanCheckFinalCharacter)
 	{
 		CheckFinalCharacter(txtInProcessed, isTreatingAsSpeech)
 	}
-	
+
 	const remains = txtInRaw.replace(g_processInputWorkspace.regexForRemovingValidChars, '')
 	if (remains != '')
 	{
 		IssueAdd("Characters " + FixStringHTML(remains) + " found in " + FixStringHTML(txtInRaw), "ILLEGAL CHARACTERS", remains)
 	}
-
 	//========================
 	// STORE IT
 	//========================
-	
-	const pushThis = {allOfIt:txtInRaw, fragments:storeAsFragments, issues:g_issueCount - oldNumIssues}
 
+	const pushThis = {allOfIt:txtInRaw, fragments:storeAsFragments, issues:g_issueCount - oldNumIssues}
 	if (bIgnoreFragments)
 	{
 		pushThis.ignoreFragments = true
@@ -630,11 +583,9 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 	else
 	{
 		++ g_metaDataTally.Paragraphs
-
 		for (var eachEntity of g_nameLookup)
 		{
 			const results = txtInRaw.match(eachEntity.regex)
-
 			if (results)
 			{
 				eachEntity.grandTotal += results.length
@@ -642,33 +593,29 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 			}
 		}
 	}
-
 	if (g_metaDataGatherParagraphs.length == 0)
 	{
 		Tally (g_profileAnalysis, "Metadata section: create")
 		g_metaDataCurrentCompleteness = g_metaDataNextCompleteness
 		g_metaDataNextCompleteness = 100
 	}
-
 	g_metaDataGatherParagraphs.push(pushThis)
-	
+
 	PairDoneParagraph(pushThis)
 }
 
 function ProcessInput()
 {
 	document.getElementById("blocker").style.display="block"
-	
+
 	CallTheseFunctions(StopTalking, ProcessInputBegin)
 }
 
 function ProcessInputBegin()
 {
 	DoEvent("clear")
-
 	g_profileAnalysis = {}
 	g_checkedWords = {}
-
 	g_processInputWorkspace =
 	{
 		checkedWordsSeenInLowerCase:{},
@@ -681,36 +628,32 @@ function ProcessInputBegin()
 		inputTextArray:GetInputText().split(/[\n]+/),
 		replaceRules:SettingsGetReplacementRegularExpressionsArray()
 	}
-
 	SetUpBadWordRules()
 	SetUpNumberRules()
-	
+
 	CallTheseFunctions(TickProcessInput)
 }
 
 function TickProcessInternal()
 {
 	const txtInRaw = g_processInputWorkspace.inputTextArray.shift()
-	
+
 	if (txtInRaw)
 	{
 		try
 		{
 			Tally (g_profileAnalysis, "Input")
-
 			const oldNumIssues = g_issueCount
 			var txtInProcessed = txtInRaw.trim()
-			
+
 			if (txtInProcessed != txtInRaw)
 			{
 				IssueAdd("Paragraph starts and/or ends with space: " + FixStringHTML(txtInRaw), "LEADING OR TRAILING SPACE")
 			}
-
 			for (var {regex, replaceWith} of g_processInputWorkspace.replaceRules)
 			{
 				txtInProcessed = txtInProcessed.replace(regex, replaceWith)
 			}
-
 			if (txtInProcessed)
 			{
 				if (SettingsSayShouldProcess(txtInProcessed))
@@ -730,17 +673,16 @@ function TickProcessInternal()
 			ShowError("While parsing " + txtInRaw + ":\n\n" + error.stack)
 			return false
 		}
-		
+
 		return true
 	}
-	
+
 	return false
 }
 
 function TickProcessInput()
 {
 	Tally (g_profileAnalysis, "TimeSlice")
-
 	for (var t = 0; t < 200; ++ t)
 	{
 		if (! TickProcessInternal())
@@ -750,16 +692,14 @@ function TickProcessInput()
 			return
 		}
 	}
-	
+
 	CallTheseFunctions(TickProcessInput)
 }
-	
+
 function GatherNameSuggestions()
 {
 	const {suggestNameIfSeenThisManyTimes} = g_tweakableSettings
-
 	g_entityNewNameSuggestions = []
-
 	for (var [word, counts] of Object.entries(g_checkedWords))
 	{
 		if (word.length > 1 && counts.total >= suggestNameIfSeenThisManyTimes && ! (word in g_processInputWorkspace.checkedWordsSeenInLowerCase))
@@ -770,11 +710,9 @@ function GatherNameSuggestions()
 }
 
 function AfterProcessInput()
-{	
+{
 	DoEvent("processingDone")
-
 	g_processInputWorkspace = undefined
-
 	if (g_selectedTabName != 'settings')
 	{
 		CallTheseFunctions(ShowContentForSelectedTab)
@@ -782,7 +720,7 @@ function AfterProcessInput()
 }
 
 function RemoveClickBlocker()
-{	
+{
 	document.getElementById("blocker").style.display="none"
 }
 
@@ -790,7 +728,6 @@ function CheckFinalCharacter(txtIn, endsWithSpeech)
 {
 	const txtFull = txtIn
 	var finalCharacter = txtIn.slice(-1)
-
 	if (! endsWithSpeech)
 	{
 		while (finalCharacter.match(kSplitOnSpeechMarks) || finalCharacter == ')')
@@ -801,17 +738,14 @@ function CheckFinalCharacter(txtIn, endsWithSpeech)
 				{
 					break
 				}
-
 				endsWithSpeech = true
 			}
-			
+
 			txtIn = txtIn.slice(0, -1)
 			finalCharacter = txtIn.slice(-1)
 		}
 	}
-
 	const checkHere = endsWithSpeech ? g_tweakableSettings.endOfParagraphSpeech : g_tweakableSettings.endOfParagraphNarrative
-
 	if (! (checkHere.includes(finalCharacter)))
 	{
 		IssueAdd("Final important character of " + FixStringHTML(txtFull) + " is " + FixStringHTML(finalCharacter) + " (valid characters are " + FixStringHTML(checkHere.split('').join(" ")) + ")", "INVALID FINAL CHARACTER")

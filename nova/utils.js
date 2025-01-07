@@ -1,6 +1,6 @@
 //==============================================
 // Part of NOVA - NOVel Assistant
-// (c) Tim Furnish, 2023-2024
+// (c) Tim Furnish, 2023-2025
 //==============================================
 
 //---------------------------
@@ -10,7 +10,6 @@
 function SetUp_FixTitle()
 {
 	const location = document.location.href
-
 	if (location.substr(0, 4) == "file")
 	{
 		document.title += " (LOCAL)"
@@ -20,13 +19,23 @@ function SetUp_FixTitle()
 function TrySetElementClass(elemName, className, add)
 {
 	var elem = document.getElementById(elemName)
-	
+
 	if (elem)
 	{
 		add ? elem.classList.add(className) : elem.classList.remove(className)
 	}
-	
+
 	return elem
+}
+
+function TrySetElementContents(elemName, contents)
+{
+	const elem = document.getElementById(elemName)
+
+	if (elem)
+	{
+		elem.innerHTML = contents
+	}
 }
 
 //---------------------------
@@ -39,7 +48,7 @@ function MakeElementID(name, stringIn)
 	{
 		name += "_" + stringIn.charCodeAt(i)
 	}
-	
+
 	return name
 }
 
@@ -48,13 +57,12 @@ function UtilFormatTime(numSeconds)
 	const numWholeSeconds = Math.ceil(numSeconds)
 	const numWholeMinutes = Math.floor(numWholeSeconds / 60)
 	const numWholeHours = Math.floor(numWholeMinutes / 60)
-	
+
 	if (numWholeHours || numWholeMinutes)
 	{
 		const prefix = numWholeHours ? numWholeHours + ":" + ("0" + numWholeMinutes % 60).substr(-2) : numWholeMinutes
 		return prefix + ":" + ("0" + numWholeSeconds % 60).substr(-2)
 	}
-
 	return numWholeSeconds + " seconds"
 }
 
@@ -71,12 +79,10 @@ function EscapeRegExSpecialChars(txtIn)
 function MakeParamsString(...theParams)
 {
 	var out = []
-
 	for (var param of theParams)
 	{
 		out.push("'" + param.replace(/'/g, "\\'") + "'")
 	}
-
 	return out.join(", ")
 }
 
@@ -93,17 +99,16 @@ function AddEscapeChars(stringIn)
 function Highlighter(matched, colour, extra)
 {
 	var bits = ["span", 'class=highlighter']
-	
+
 	if (colour)
 	{
 		bits.push('style="background-color:' + colour + '"')
 	}
-
 	if (extra)
 	{
 		bits.push(extra)
 	}
-	
+
 	return '<' + bits.join(' ') + '>' + matched + '</span>'
 }
 
@@ -127,7 +132,6 @@ function GetDataTypeShared(data)
 	{
 		return "regex"
 	}
-
 	return (data === null) ? "null" : (data === undefined) ? "undefined" : data.tagName ? data.tagName + " (" + data.type + ")" : null
 }
 
@@ -158,12 +162,12 @@ function rgbToHex(rIn, gIn, bIn)
 function PickColourOffsetForString(str)
 {
 	var total = 0
-	
+
 	for (var t in str)
 	{
 		total += str.charCodeAt(t)
 	}
-	
+
 	return total
 }
 
@@ -172,27 +176,26 @@ function MakeColourLookUpTable(arr, forceMult, offset, scale)
 	var reply = {}
 	var count = 0
 	var total = arr.length
-	
+
 	offset = offset ?? 0
-	
+
 	if (scale === undefined)
 	{
 		scale = 1
 	}
-	
+
 	for (var each of arr)
 	{
 		var colourWheelAngle = Math.PI * 2 * count / total + offset
 		++ count
 		var mult = (forceMult ?? ((count & 1) ? (count & 2) ? 0.05 : 0.08 : 0.15))
 		var add = (1 - mult)
-
 		reply[each] = rgbToHex(
 			scale * Math.sqrt(add + Math.sin(colourWheelAngle) * mult),
 			scale *          (add + Math.sin(colourWheelAngle + 2) * mult),
 			scale * Math.sqrt(add + Math.sin(colourWheelAngle + 4) * mult))
 	}
-	
+
 	return reply
 }
 
@@ -227,7 +230,6 @@ function MakeSet(...theBits)
 function OnlyKeepValid(arr)
 {
 	var reply = []
-
 	for (var a of arr)
 	{
 		if (a)
@@ -235,7 +237,7 @@ function OnlyKeepValid(arr)
 			reply.push(a)
 		}
 	}
-	
+
 	return reply
 }
 
@@ -245,9 +247,8 @@ function Tally(toHere, key, num)
 	{
 		num = 1
 	}
-
 	(key in toHere) ? toHere[key] += num : (toHere[key] = num)
-	
+
 	return toHere[key]
 }
 
@@ -255,6 +256,22 @@ function SetBit(toHere, key, bit)
 {
 	(key in toHere) ? toHere[key] |= bit : (toHere[key] = bit)
 }
+
+//---------------------------
+// Sorting
+//---------------------------
+
+function SortCharactersAndRemoveDupes(inText)
+{
+	var set = {}
+	for (var each of inText)
+	{
+		set[each] = true
+	}
+	return Object.keys(set).sort().join('')
+}
+
+const SortArray = inArray => inArray.sort()
 
 //---------------------------
 // Function-calling fun
@@ -293,6 +310,7 @@ function UpdateDebugListOfRunningFunctions()
 function DescribeFunctions(arr)
 {
 	var out = []
+
 	for (var f of arr)
 	{
 		if (typeof f == "function")
@@ -304,15 +322,13 @@ function DescribeFunctions(arr)
 			out.push("[" + GetDataTypeVerbose(f) + "]")
 		}
 	}
-//	console.log(arr)
-//	console.log(out)
+
 	return out.join(", ")
 }
 
 function CallNextQueuedFunction()
 {
 	const queue = DescribeFunctions(g_functionsStillToCall)
-
 	const func = g_functionsStillToCall.shift()
 
 	UpdateDebugListOfRunningFunctions()
@@ -346,12 +362,10 @@ function QueueFunction(func)
 	}
 	else if (g_functionsStillToCall.includes(func))
 	{
-//		NovaLog("Not queueing " + DescribeFunction(func) + " at it's already in the queue")
 		return
 	}
-	
-	g_functionsStillToCall.push(func)
 
+	g_functionsStillToCall.push(func)
 	UpdateDebugListOfRunningFunctions()
 }
 
@@ -365,7 +379,7 @@ function CallTheseFunctionsNow(...list)
 	if (list?.length)
 	{
 //		NovaLog("Calling these functions immediately: " + DescribeFunctions(list))
-		
+
 		for (var func of list)
 		{
 			try

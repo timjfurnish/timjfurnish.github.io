@@ -1,6 +1,6 @@
 //==============================================
 // Part of NOVA - NOVel Assistant
-// (c) Tim Furnish, 2023-2024
+// (c) Tim Furnish, 2023-2025
 //==============================================
 
 var g_entityNewNameSuggestions
@@ -11,13 +11,12 @@ function BuildNewNameSuggestionsTable(reply)
 	TableAddHeading(reply, "Text found")
 	TableAddHeading(reply, "Times seen")
 	TableAddHeading(reply, "Add as...")
-	
+
 	for (var {word, count} of g_entityNewNameSuggestions)
 	{
 		if (! word.includes('.'))
 		{
 			var matched = undefined
-
 			for (var {regex} of g_nameLookup)
 			{
 				if (word.match(regex))
@@ -26,15 +25,14 @@ function BuildNewNameSuggestionsTable(reply)
 					break
 				}
 			}
-			
+
 			if (! matched)
 			{
 				TableNewRow(reply)
 				TableAddCell(reply, word.toUpperCase() + '&nbsp;' + CreateClickableText(kIconSearch, "SwitchToMentionsAndSearch(" + MakeParamsString(word) + ")"))
 				TableAddCell(reply, count)
-				
-				const finalCell = []
 
+				const finalCell = []
 				if (matched)
 				{
 					finalCell.push(matched)
@@ -45,38 +43,33 @@ function BuildNewNameSuggestionsTable(reply)
 					finalCell.push('<NOBR class="fixMe" onClick="AddToSetting(\'names_places\', \'' + word + '\')">PLACE</NOBR>')
 					finalCell.push('<NOBR class="fixMe" onClick="AddToSetting(\'names_other\', \'' + word + '\')">OTHER</NOBR>')
 				}
-
 				TableAddCell(reply, finalCell.join(' '), true)
 			}
 		}
 	}
-	
+
 	TableClose(reply)
 }
-
 TabDefine("entities", function(reply, thenCall)
 {
 	var theDefault = undefined
 	var beatThis = 0
 	var keys = Object.keys(g_metaDataAvailableColumns)
-
 	// Pick the default view...
 	for (var eachOne of keys)
 	{
 		countOfMe = Object.keys(g_metaDataSeenValues[eachOne]).length
-		
+
 		if (theDefault === undefined || beatThis > countOfMe)
 		{
 			beatThis = countOfMe
 			theDefault = eachOne
 		}
 	}
-
 	keys.push("SUGGESTIONS")
 	TabBuildButtonsBar(reply, keys, theDefault)
-
 	const {page} = g_currentOptions.entities
-	
+
 	if (page === "SUGGESTIONS")
 	{
 		BuildNewNameSuggestionsTable(reply)
@@ -86,55 +79,48 @@ TabDefine("entities", function(reply, thenCall)
 		var options = []
 		OptionsMakeCheckbox(options, "ShowContentForSelectedTab()", "showWithNoMentions", "Show columns with no mentions", true, true)
 		reply.push(OptionsConcat(options) + "<BR>")
-
 		TableOpen(reply)
 		reply.push("<TD BGCOLOR=lightGray>")
-
 		var allMentions = {}
 		var segments = []
 		var consolidateToHere = {}
 		var addNumbers = {}
-		
+
 		function FinishSegment()
 		{
 			if ("name" in consolidateToHere)
 			{
 				Tally(addNumbers, consolidateToHere.rawName)
-
 				if (g_currentOptions.entities.showWithNoMentions || Object.keys(consolidateToHere.entityMentions).length > 0)
 				{
 					reply.push('<TD CLASS="cellNoWrap" ALIGN=center VALIGN=bottom>')
 					reply.push((consolidateToHere.name.length > 1) ? '<DIV CLASS="rotate90">' + consolidateToHere.name + "</DIV></TD>" : (consolidateToHere.name + "</TD>"))
-					
+
 					segments.push(consolidateToHere)
 				}
 			}
 		}
-
 		for (var metaData of g_metaDataInOrder)
 		{
 			const rawElementName = metaData.info[page]
 			const elementName = rawElementName + (addNumbers[rawElementName] ? " #" + (addNumbers[rawElementName] + 1) : "")
-			
+
 			if (consolidateToHere.rawName != rawElementName)
 			{
 				FinishSegment()
 				consolidateToHere = {name:elementName, rawName:rawElementName, entityMentions:{}}
 			}
-
 			MetaDataCombine(consolidateToHere, "entityMentions", metaData.Mentions)
-
 			for (var m of Object.keys(metaData.Mentions))
 			{
 				allMentions[m] = elementName
 			}
 		}
-		
+
 		FinishSegment()
 		TableAddHeading(reply, "")
-
 		// Totals...
-		
+
 		TableNewRow(reply)
 		TableAddHeading(reply, "Num entities mentioned")
 		for (var eachSegment of segments)
@@ -142,7 +128,6 @@ TabDefine("entities", function(reply, thenCall)
 			reply.push('<TD CLASS="cellNoWrap" ALIGN="center"><small>' + Object.keys(eachSegment.entityMentions).length + "</small>")
 		}
 		TableAddHeading(reply, "")
-
 		TableNewRow(reply)
 		TableAddHeading(reply, "Total mentions")
 		var totalTotalMentions = 0
@@ -153,9 +138,7 @@ TabDefine("entities", function(reply, thenCall)
 			totalTotalMentions += num
 		}
 		TableAddHeading(reply, totalTotalMentions)
-
 		const MakeCell = (bg, txt) => '<TD CLASS="cell" BGCOLOR=' + bg + '><FONT COLOR="white"><B>' + txt + '</B></FONT>'
-
 		for (var [m,lastFoundInChapter] of Object.entries(allMentions))
 		{
 			reply.push('<TR ALIGN=CENTER><TD CLASS="cellNoWrap" ALIGN=left>' + m)
@@ -163,7 +146,6 @@ TabDefine("entities", function(reply, thenCall)
 			var empty = true
 			var totaliser = 0
 			var colCount = 0
-
 			function DrawEmptyCells()
 			{
 				if (colCount)
@@ -179,7 +161,6 @@ TabDefine("entities", function(reply, thenCall)
 					colCount = 0
 				}
 			}
-
 			for (var eachSegment of segments)
 			{
 				if (m in eachSegment.entityMentions)
@@ -206,7 +187,7 @@ TabDefine("entities", function(reply, thenCall)
 			DrawEmptyCells()
 			reply.push('<TD CLASS="cell"><B>' + totaliser + '</B>')
 		}
-		
+
 		TableClose(reply)
 	}
 }, {icon:kIconEntities})

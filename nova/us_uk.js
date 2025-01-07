@@ -1,6 +1,6 @@
 //==============================================
 // Part of NOVA - NOVel Assistant
-// (c) Tim Furnish, 2023-2024
+// (c) Tim Furnish, 2023-2025
 //==============================================
 
 var g_usWords, g_ukWords, g_ignoredUSUKWords
@@ -14,7 +14,7 @@ const g_internationalSubStrings =
 	{us:"humor",    uk:"humour"},
 	{us:"abor",     uk:"abour",     check:laboratoryCheck},
 	{us:"ghbor",    uk:"ghbour"},
-	
+
 	// i[s/z]e
 	{us:"ization",  uk:"isation",   check:izeCheck},
 	{us:"ize",      uk:"ise",       check:izeCheck},
@@ -28,17 +28,17 @@ const g_internationalSubStrings =
 	// travelled/traveled etc.
 	{us:"ele",      uk:"elle",      check:elCheck},
 	{us:"eling",    uk:"elling",    check:elCheck},
-	
+
 	// er/re
 	{us:"fiber",    uk:"fibre"},
 	{us:"theater",  uk:"theatre"},
 	{us:"meter",    uk:"metre",     check:meterCheck},
 	{us:"liter",    uk:"litre",		check:notANextCheck},
-	
+
 	// ence vs. ense
 	{us:"ense",     uk:"ence",      check:enceCheck},
 	{us:"ensing",   uk:"encing",    check:enceCheck},
-	
+
 	// misc.
 	{us:"aluminum",    uk:"aluminium"},
 	{us:"maneuver",    uk:"manoeuvre",     check:(a,b,c)=>c==""},
@@ -59,7 +59,7 @@ function laboratoryCheck(before, match, after)
 	{
 		return false
 	}
-	
+
 	return true
 }
 
@@ -84,7 +84,7 @@ function elCheck(before, match, after)
 			return false
 		}
 	}
-	
+
 	return true
 }
 
@@ -94,12 +94,12 @@ function enceCheck(before, match, after)
 	{
 		return false
 	}
-	
+
 	if (before.endsWith('f') || before.endsWith('ic') || before.endsWith('pret'))
 	{
 		return true
 	}
-	
+
 	return false
 }
 
@@ -110,7 +110,7 @@ function izeCheck(before, match, after)
 		// Ignore chisel, citizen, denizen, disengage, disingenuousness, millisecond etc.
 		return false
 	}
-	
+
 	if (before.endsWith('vert'))
 	{
 		// Ignore advertising (but allow advertize)
@@ -155,7 +155,7 @@ function izeCheck(before, match, after)
 		// Ignore noise, poise, raise, disguise, bruise, seize etc.
 		return false
 	}
-	
+
 	if (before.endsWith('m'))
 	{
 		if (! before.endsWith('tim') && ! before.endsWith('nim') && ! before.endsWith('xim'))
@@ -164,13 +164,13 @@ function izeCheck(before, match, after)
 			return false
 		}
 	}
-	
+
 	if (before == 'ar' || before == 'ir' || before == 'pen' || before.length == 1 || before.endsWith('nr'))
 	{
 		// Ignore arise, irises, misery, disengage, rise, sunrise etc. (but allow plagiarise/plagiarize etc.)
 		return false
 	}
-	
+
 	return true
 }
 
@@ -190,7 +190,7 @@ function meterCheck(before, match, after)
 	{
 		return true
 	}
-	
+
 	return false
 }
 
@@ -200,7 +200,7 @@ function DoInternationalTally(thisWord, thisCounter, deets)
 	{
 		g_usWords[thisWord] = {}
 	}
-	
+
 	Tally(g_usWords[thisWord], thisCounter, deets.inSpeech + deets.inNarrative)
 }
 
@@ -231,6 +231,7 @@ function CheckForMatch(wordIn, changeThis, intoThis, check)
 		{
 			results += changeThis
 		}
+	
 		results += nextBit
 		nextBit = brokenIntoBits.shift()
 	}
@@ -239,7 +240,6 @@ function CheckForMatch(wordIn, changeThis, intoThis, check)
 	{
 		g_ignoredUSUKWords[wordIn] = true
 	}
-
 	return results
 }
 
@@ -265,18 +265,17 @@ function CheckForInternationalTally()
 				ukVersion = CheckForMatch(ukVersion, us, uk, check)
 				usVersion = CheckForMatch(usVersion, uk, us, check)
 			}
-			
+
 			if (usVersion != ukVersion)
 			{
 				const deets = g_checkedWords[word]
-
 				g_ukWords[ukVersion] = usVersion
 
 				if (usVersion != word)
 				{
 					DoInternationalTally(usVersion, "uk", deets)
 				}
-				
+
 				if (ukVersion != word)
 				{
 					DoInternationalTally(usVersion, "us", deets)
@@ -296,9 +295,8 @@ OnEvent("clear", true, () =>
 OnEvent("processingDone", true, () =>
 {
 	var count = 0
-	
-	CheckForInternationalTally()
 
+	CheckForInternationalTally()
 	for (var {us, uk} of Object.values(g_usWords))
 	{
 		if (us && uk)
@@ -306,7 +304,6 @@ OnEvent("processingDone", true, () =>
 			++ count
 		}
 	}
-
 	SetTabTitle('international', count || undefined)
 })
 
@@ -316,7 +313,7 @@ TabDefine("international", function(reply, thenCall)
 	TableAddHeading(reply, "")
 	TableAddHeading(reply, "UK")
 	TableAddHeading(reply, "US")
-	
+
 	for (var key of Object.keys(g_ukWords).sort())
 	{
 		const val = g_ukWords[key]
@@ -325,5 +322,6 @@ TabDefine("international", function(reply, thenCall)
 		TableAddCell(reply, g_usWords[val].uk ?? '')
 		TableAddCell(reply, g_usWords[val].us ?? '')
 	}
+	
 	TableClose(reply)
 }, {icon:kIconUSA, canSelect:true, tooltipText:"UK vs. US"})

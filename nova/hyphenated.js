@@ -1,6 +1,6 @@
 //==============================================
 // Part of NOVA - NOVel Assistant
-// (c) Tim Furnish, 2023-2024
+// (c) Tim Furnish, 2023-2025
 //==============================================
 
 var g_hyphenCheckWIP = null
@@ -40,12 +40,10 @@ function HyphenCheckDrawTable()
 	TableAddHeading(reply, "With hyphens<br>(ice-cream)")
 	TableAddHeading(reply, "With spaces<br>(ice cream)")
 	TableAddHeading(reply, "With neither<br>(icecream)")
-//	TableAddHeading(reply, "Highest")
 
 	for (var phrase of Object.keys(g_hyphenCheckWIP).sort((p1, p2) => (g_hyphenCheckWIP[p2].total - g_hyphenCheckWIP[p1].total)))
 	{
-		const {total, highest, countWithHyphens, countWithNeither, countWithSpaces} = g_hyphenCheckWIP[phrase]		
-
+		const {total, highest, countWithHyphens, countWithNeither, countWithSpaces} = g_hyphenCheckWIP[phrase]
 		var colour = undefined
 
 		if (total != highest)
@@ -59,13 +57,14 @@ function HyphenCheckDrawTable()
 		}
 
 		TableNewRow(reply, colour)
+
 		const searchFor = phrase + "|" + phrase.replaceAll('-', '') + "|" + phrase.replaceAll('-', ' ')
+
 		reply.push('<TD CLASS="cell">' + phrase + '&nbsp;' + CreateClickableText(kIconSearch, "SwitchToMentionsAndSearch(" + MakeParamsString(searchFor) + ")") + '</TD>')
 		reply.push('<TD CLASS="cell">' + total + '</TD>')
 		reply.push('<TD CLASS="cell">' + (countWithHyphens ?? "") + '</TD>')
 		reply.push('<TD CLASS="cell">' + (countWithSpaces ?? "") + '</TD>')
 		reply.push('<TD CLASS="cell">' + (countWithNeither ?? "") + '</TD>')
-//		reply.push('<TD CLASS="cell">' + (highest ?? "") + '</TD>')
 	}
 
 	TableClose(reply)
@@ -78,7 +77,7 @@ function HyphenCheckCalcTotals()
 	for (var [phrase, data] of Object.entries(g_hyphenCheckWIP))
 	{
 		var total = 0
-		
+
 		for (var each of Object.values(data))
 		{
 			if (typeof each == "number")
@@ -102,7 +101,6 @@ function HyphenCheckCalcTotals()
 			delete g_hyphenCheckWIP[phrase]
 		}
 	}
-
 	QueueFunction(HyphenCheckDrawTable)
 }
 
@@ -137,7 +135,7 @@ function TimeSlicedCallFuncForAllKeys(container, markerName, thisFunction, numPe
 		NovaLog("Finished " + countDone + " calls to " + DescribeFunction(thisFunction) + " (" + markerName + ")")
 		return true
 	}
-	
+
 	return false
 }
 
@@ -147,8 +145,9 @@ function HyphenCheckFindWithNeither()
 	{
 		HuntFor(new RegExp('\\b' + TurnNovaShorthandIntoRegex(key.replaceAll('-', '')) + '\\b', 'gi'), matched => (Tally(value, "countWithNeither"), MakeOrAddToObject(g_hyphenFoundWords, key, matched, true)))
 	}
-	
+
 	const isDone = TimeSlicedCallFuncForAllKeys(g_hyphenCheckWIP, "doneNoSpaceCheck", NoSpaceCallback, 12, 0.5, 0.5)
+
 	QueueFunction(isDone ? HyphenCheckCalcTotals : HyphenCheckFindWithNeither)
 }
 
@@ -160,6 +159,7 @@ function HyphenCheckFindWithSpaces()
 	}
 
 	const isDone = TimeSlicedCallFuncForAllKeys(g_hyphenCheckWIP, "doneSpaceCheck", SpaceCallback, 12, 0, 0.5)
+
 	QueueFunction(isDone ? HyphenCheckFindWithNeither : HyphenCheckFindWithSpaces)
 }
 
@@ -169,6 +169,7 @@ function HyphenCheckAddCustom(beforeHyphen, afterHyphen, wildcardCollection)
 	{
 		const beforeHyphenSplit = beforeHyphen.split(' ')
 		const afterHyphenSplit = afterHyphen.split(' ')
+
 		for (var splitBefore of beforeHyphenSplit)
 		{
 			for (var splitAfter of afterHyphenSplit)
@@ -191,6 +192,7 @@ function HyphenCheckFirstPass()
 
 	// Find things with hyphens in document
 	var countEm = {}
+
 	HuntFor(/\b\w+[\w'\-]*-[\w']\w+\b/g, matched => Tally(countEm, matched.toLowerCase()), true)
 
 	// Build full data structure
@@ -202,7 +204,7 @@ function HyphenCheckFirstPass()
 	{
 		HyphenCheckAddCustom(...custom.split('-', 2), checksWithWildcard)
 	}
-	
+
 	for (var [key, value] of Object.entries(countEm))
 	{
 		// TO DO: see if it matches a wildcard, if so, use that as the key
@@ -211,7 +213,6 @@ function HyphenCheckFirstPass()
 	}
 
 	NovaLog("Found " + Object.keys(countEm).length + " words with hyphens in; adding in data from settings gives us " + Object.keys(g_hyphenCheckWIP).length + " hyphen check jobs")
-		
 	QueueFunction(HyphenCheckFindWithSpaces)
 }
 

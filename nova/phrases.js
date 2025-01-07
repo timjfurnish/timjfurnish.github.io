@@ -1,16 +1,15 @@
 //==============================================
 // Part of Nova - NOVel Assistant
-// (c) Tim Furnish, 2023-2024
+// (c) Tim Furnish, 2023-2025
 //==============================================
 
 function PhrasesDisplay()
 {
 	var phrasesGoHere = document.getElementById("phrasesGoHere")
-
 	if (phrasesGoHere)
 	{
 		var count = {}
-		
+
 		for (var metadata of g_metaDataInOrder)
 		{
 			for (var para of metadata.myParagraphs)
@@ -32,13 +31,11 @@ function PhrasesDisplay()
 		}
 
 		var reply = []
-
 		TableOpen(reply)
 		TableAddHeading(reply, "Phrase")
 		TableAddHeading(reply, "Times seen")
-
 		var countWithoutSingletons = {}
-		
+
 		for (var [phrase, num] of Object.entries(count))
 		{
 			if (num > 1)
@@ -46,7 +43,7 @@ function PhrasesDisplay()
 				countWithoutSingletons[phrase] = num
 			}
 		}
-		
+
 		for (var phrase of Object.keys(countWithoutSingletons).sort((p1, p2) => (countWithoutSingletons[p2] - countWithoutSingletons[p1])))
 		{
 			TableNewRow(reply)
@@ -63,8 +60,6 @@ TabDefine("phrases", function(reply, thenCall)
 	OptionsMakeCheckbox(options, "PhrasesDisplay()", "speech", "Speech", true, true)
 	OptionsMakeCheckbox(options, "PhrasesDisplay()", "narr", "Narrative", true, true)
 	reply.push(OptionsConcat(options))
-
 	MakeUpdatingArea(reply, "phrasesGoHere")
-
 	thenCall.push(PhrasesDisplay)
 }, {icon:kIconPhrase})

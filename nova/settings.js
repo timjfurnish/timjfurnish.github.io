@@ -1,6 +1,6 @@
 //==============================================
 // Part of NOVA - NOVel Assistant
-// (c) Tim Furnish, 2023-2024
+// (c) Tim Furnish, 2023-2025
 //==============================================
 
 const kHasNoEffect = ["voiceDefault", "voiceSpeech", "speakRate", "showWordCountChanges"]
@@ -12,18 +12,26 @@ var g_openTextAreas = {}
 var g_nameLookup
 var g_autoTagKeys
 var g_tagsExpectedInEverySection = []
-	
+var g_settingsName = ""
+var g_availableConfigs = []
+
+window?.localStorage?.getItem("nova_configNames")?.split('\n')?.forEach(name => g_availableConfigs.push(name))
+
+if (g_availableConfigs.length)
+{
+	g_settingsName = window.localStorage.getItem("nova_configSelected") ?? ""
+
+	if (! g_availableConfigs.includes(g_settingsName))
+	{
+		ConfigSetSelection("")
+	}
+}
+
 //=======================================================================
 // Automatic tag stuff!
 //=======================================================================
 
-// TO DO: would be good to put this into settings, but let's get it working first...
-const kAutoTagStuff =
-{
-	["T minus "]:{tag:"TMINUS", numericalCheck:"descend", includeLineInText:true, characters:",.", clearTags:"", unique:true},
-	["Document #"]:{tag:"PART", numericalCheck:"ascend", characters:"", clearTags:"", global:true, unique:true, joinNextLine:true},
-	["*"]:{tag:"CHAPTER", numericalCheck:"none", mustInclude:true, clearTags:"TMINUS", global:true, unique:true}
-}
+var kAutoTagStuff = {}
 
 const kAutoTagOptions = Object.entries(
 {
@@ -70,13 +78,12 @@ function CheckOrderOfValues(tag, value, isAscending)
 		for (var known of Object.keys(g_metaDataSeenValues[tag]))
 		{
 			const knownAsNumber = parseInt(known)
-
 			if (isAscending ? (valAsNumber <= knownAsNumber) : (valAsNumber >= knownAsNumber))
 			{
 				IssueAdd("Expected " + valAsNumber + " (from '" + value + "') to be " + (isAscending ? ">" : "<") + " " + knownAsNumber + " (from '" + known + "')", "ORDER")
 			}
 		}
-	}	
+	}
 }
 
 const kAutoTagChecks =
@@ -102,7 +109,7 @@ AutoTagFixData()
 function SettingsAddAutoTag()
 {
 	const newValue = prompt("Enter string to find in document")
-	
+
 	if (newValue && ! (newValue in kAutoTagStuff))
 	{
 		kAutoTagStuff[newValue] = {tag:"NEWTAG", numericalCheck:"none", characters:"", clearTags:""}
@@ -120,7 +127,6 @@ function AutoTagOptionToggle(line, k)
 	{
 		kAutoTagStuff[line][k] = true
 	}
-
 	AutoTagUpdate()
 }
 
@@ -128,7 +134,7 @@ function AutoTagFixData()
 {
 	g_autoTagKeys = Object.keys(kAutoTagStuff).sort()
 	g_tagsExpectedInEverySection = []
-	
+
 	for (var {tag, global} of Object.values(kAutoTagStuff))
 	{
 		if (global && !g_tagsExpectedInEverySection.includes(tag))
@@ -136,21 +142,18 @@ function AutoTagFixData()
 			g_tagsExpectedInEverySection.push(tag)
 		}
 	}
+}
 
-	// If there's anything else we can/should do to optimise analysis, do it here!
+function AutoTagSave()
+{
+	window.localStorage.setItem(GetSettingsSavePrefix() + "tags", JSON.stringify(kAutoTagStuff))
 }
 
 function AutoTagUpdate()
 {
 	AutoTagFixData()
-	
-	const elem = document.getElementById("autoTagCell")
-	
-	if (elem)
-	{
-		elem.innerHTML = BuildAutomaticTagsBox()
-	}
-	
+	TrySetElementContents("autoTagCell", BuildAutomaticTagsBox())
+	AutoTagSave()
 	CallTheseFunctions(ProcessInput)
 }
 
@@ -165,7 +168,7 @@ function AutoTagEditText(txt, thePrompt, key)
 {
 	const oldValue = key ? kAutoTagStuff[txt][key] : txt
 	const newValue = prompt(thePrompt + ":", oldValue)
-	
+
 	if (newValue != null && newValue != oldValue)
 	{
 		if (newValue == "" && key != 'characters' && key != 'clearTags')
@@ -192,7 +195,7 @@ function AutoTagEditText(txt, thePrompt, key)
 			Assert(!kAutoTagStuff[oldValue])
 			console.log(kAutoTagStuff)
 		}
-		
+
 		AutoTagUpdate()
 	}
 }
@@ -203,15 +206,15 @@ function AutoTagUpdateOrder()
 	{
 		kAutoTagStuff[k].numericalCheck = document.getElementById(MakeElementID("AutoTagOrder", k)).value
 	}
-	
+
 	CallTheseFunctions(ProcessInput)
 }
 
 function BuildAutomaticTagsBox(moreOutput)
 {
 	var reply = []
-
 	TableOpen(reply)
+
 	TableAddHeading(reply, "Tag")
 	TableAddHeading(reply, "Text")
 	TableAddHeading(reply, "Remove") // "Process")
@@ -234,8 +237,9 @@ function BuildAutomaticTagsBox(moreOutput)
 			const isOn = kAutoTagStuff[line][k]
 			optionBits.push(MakeIconWithTooltip(data.icon, -4, data.tooltip + (isOn ? ": ON" : ": OFF"), "AutoTagOptionToggle('" + line + "', '" + k + "')", undefined, isOn ? undefined : 0.15, 80))
 		}
+
 		optionBits.push(numericalCheckBits.join('') + '</select>')
-		
+
 		TableNewRow(reply)
 		TableAddCell(reply, PutBitsSideBySide([MakeIconWithTooltip(kIconTrash, 0, "Delete", "delete kAutoTagStuff['" + line + "']; AutoTagUpdate()"), "&nbsp;" + MakeClickableTextBubble(line, "Enter the name for this tag", "tag")]))
 		TableAddCell(reply, MakeClickableTextBubble(line, "Enter string to find in document"))
@@ -245,15 +249,106 @@ function BuildAutomaticTagsBox(moreOutput)
 	}
 
 	TableClose(reply)
-	
+
 	if (moreOutput)
 	{
 		moreOutput.customColumnCell = '<td valign="top" align="right" class="cellNoWrap">' + MakeIconWithTooltip(kIconNew, 0, "Add", "SettingsAddAutoTag()")
-		moreOutput.cellId = "autoTagCell"
+		moreOutput.moreArgs = 'id="autoTagCell"'
 	}
-	
+
 	return reply.join("")
 }
+
+//=======================================================================
+// Support for multiple configs
+//=======================================================================
+
+function ConfigSetSelection(name)
+{
+	window.localStorage.setItem("nova_configSelected", name)
+	g_settingsName = name
+}
+
+function ConfigDupe()
+{
+	const newName = prompt("Save configuration as").toUpperCase()
+
+	if (newName)
+	{
+		if (newName.replace(/[A-Z0-9_]/gi, '') != '')
+		{
+			alert ("Illegal name, only A-Z, 0-9 and _ are allowed!")
+		}
+		else if (newName.length > 32)
+		{
+			alert ("Illegal name, maximum length is 32 characters!")
+		}
+		else if (newName in g_availableConfigs)
+		{
+			alert ("There's already a configutation called '" + newName + "' - can't overwrite it!")
+		}
+		else
+		{
+			ConfigSetSelection(newName)
+
+			for (var [name, val] of Object.entries(g_tweakableSettings))
+			{
+				if (kTweakableDefaults[name] != val)
+				{
+					SettingSave(name)
+				}
+			}
+
+			AutoTagSave()
+
+			g_availableConfigs.push(newName)
+			window.localStorage.setItem(GetSettingsSavePrefix() + "saveVersion", kCurrentSaveFormatVersion)
+			window.localStorage.setItem("nova_configNames", g_availableConfigs.join('\n'))
+			TrySetElementContents("configCell", BuildConfigBox())
+		}
+	}
+}
+
+function OnConfigChanged()
+{
+	try
+	{
+		ConfigSetSelection(document.getElementById("configSelectBox").value)
+		Object.entries(kTweakableDefaults).forEach(InitSetting)
+		CallTheseFunctions(SettingsLoad, ProcessInput)
+	}
+	catch(error)
+	{
+		ShowError("While changing configuration:\n\n" + error.stack)
+	}
+}
+
+function BuildConfigBox(moreOutput)
+{
+	var reply = ['<select id="configSelectBox" onChange="OnConfigChanged()">']
+
+	reply.push('<option value="">Default</option>')
+
+	for (var conf of g_availableConfigs)
+	{
+		reply.push('<option value="' + conf + '"' + ((conf == g_settingsName) ? " selected" : "") + '>' + ((conf == "") ? "Default" : conf) + '</option>')
+	}
+
+	reply.push('</select><br><br>')
+	reply.push('<button onClick="ConfigDupe()">Save as</button>')
+//	reply.push('&nbsp;<button onClick="ConfigDelete()">Delete</button>')
+
+	if (moreOutput)
+	{
+		moreOutput.moreArgs = 'id="configCell"'
+	}
+
+	return '<center>' + reply.join("") + '</center>'
+}
+
+//=======================================================================
+// Default settings
+//=======================================================================
 
 const kTweakableDefaults =
 {
@@ -262,8 +357,8 @@ const kTweakableDefaults =
 	voiceDefault:"",
 	voiceSpeech:"",
 	badWords:"tg* vice-versa midair half-way part-way partway cliche* *cafes *cafe accomodation naive dance-floor dancefloor stage-show eon* *defense*",
-	allowedStartCharacters:'ABCDEFGHIJKLMNOPQRSTUVWXYZ“',
-	allowedCharacters:kCharacterElipsis + kCharacterEmDash + 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ()‘’“”?.,!',
+	allowedStartCharacters:'ABCDEFGHIJKLMNOPQRSTUVWXYZ(“',
+	allowedCharacters:kCharacterElipsis + kCharacterEmDash + 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789%[]# ()‘’“”?;:-/.,!',
 	startOfSpeech:kCharacterElipsis + "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxy’…",
 	endOfSpeech:kCharacterElipsis + kCharacterEmDash + ".!?,",
 	endOfParagraphSpeech:kCharacterElipsis + kCharacterEmDash + ".!?",
@@ -271,7 +366,7 @@ const kTweakableDefaults =
 	skip:["Contents"],
 	wordsContainingFullStops:['etc.', 'Dr.', 'Mr.', 'Mrs.', 'i.e.', 'e.g.'],
 	replace:['\\bO\\.S\\./OFFSCREEN', '([0-9]+)\\.([0-9]+)/$1^$2', '^== (.*) ==$/$1.', "[!\\?]’/’", "\\bCONT’D\\b/CONTINUED", "^EXT\\./EXTERIOR", "^INT\\./INTERIOR"],
-	hyphenCheckPairs:["sat-nav", "set-up", "under-cover", "self-reliance reliant control esteem respect awareness aware", "proof-read", "short-term", "love-bird* heart* potion*", "hand-writing written write*", "left right-hand", "sand-timer", "back-stage* hand* ground* garden", "stage-left right", "slow-motion", "some-thing where how what body one", "heart-break breaking breaks breakingly broken", "car-park parks", "brain-wave waves", "mind lip-reading reader readers read reads", "twenty thirty forty fifty sixty seventy eighty ninety-one two three four five six seven eight nine", "one two three four five six seven eight nine ten-hundred thousand million billion trillion"],
+	hyphenCheckPairs:["sat-nav*", "set-up", "under-cover", "self-reliance reliant control esteem respect awareness aware", "proof-read*", "short-term", "love-bird* heart* potion* sick*", "hand-writing written write*", "left right-hand*", "sand egg-timer*", "back-stage* hand* ground* garden*", "stage-left right", "slow-motion", "some-thing where how what body one", "heart-break* broken", "car-park*", "brain-wave*", "mind lip-read*", "twenty thirty forty fifty sixty seventy eighty ninety-one two three four five six seven eight nine", "one two three four five six seven eight nine ten-hundred thousand million billion trillion"],
 	names:[],
 	names_places:[],
 	names_other:[],
@@ -293,18 +388,6 @@ const kSettingFunctions =
 	tooltips:val => RedoToTop() + RedoTabTops() + RethinkEnabledTabs()
 }
 
-function SortCharactersAndRemoveDupes(inText)
-{
-	var set = {}
-	for (var each of inText)
-	{
-		set[each] = true
-	}
-	return Object.keys(set).sort().join('')
-}
-
-const SortArray = inArray => inArray.sort()
-
 const kMaintenanceFunctions =
 {
 	allowedStartCharacters:SortCharactersAndRemoveDupes,
@@ -313,7 +396,7 @@ const kMaintenanceFunctions =
 	endOfSpeech:SortCharactersAndRemoveDupes,
 	endOfParagraphSpeech:SortCharactersAndRemoveDupes,
 	endOfParagraphNarrative:SortCharactersAndRemoveDupes,
-	
+
 	skip:SortArray,
 	wordsContainingFullStops:SortArray,
 	hyphenCheckPairs:SortArray,
@@ -331,7 +414,6 @@ function InitSetting([key, val])
 	{
 		g_tweakableSettings[key] = OnlyKeepValid([...val])
 		SettingPerformMaintenance(key)
-//		NovaLog("Initialised setting '" + key + "' to " + g_tweakableSettings[key])
 	}
 	else if (typeof val == "object")
 	{
@@ -348,6 +430,10 @@ Object.entries(kTweakableDefaults).forEach(InitSetting)
 
 const kSettingNames =
 {
+	CONFIG:
+	{
+		[""]:BuildConfigBox,
+	},
 	INPUT:
 	{
 		replace:"Replace^(regex)|mediumTextBox",
@@ -382,11 +468,14 @@ const kSettingNames =
 		endOfSpeech:"End of speech|shortTextBox",
 		endOfParagraphSpeech:"End of paragraph speech|shortTextBox",
 		endOfParagraphNarrative:"End of paragraph narrative|shortTextBox",
+		["Enabled checks"]:moreOutput => BuildIssueDefaults(false, moreOutput),
+		["Additional settings"]:moreOutput => BuildIssueDefaults(true, moreOutput),
+	},
+	IGNORE:
+	{
 		splitInfinitiveIgnoreList:"Split infinitive check ignores|shortTextBox",
 		adverbHyphenIgnoreList:"Adverb hyphen check ignores|shortTextBox",
 		numberIgnoreList:"Number check ignores|shortTextBox",
-		["Enabled checks"]:moreOutput => BuildIssueDefaults(false, moreOutput),
-		["Additional settings"]:moreOutput => BuildIssueDefaults(true, moreOutput),
 	},
 	DISPLAY:
 	{
@@ -407,7 +496,6 @@ const kOptionCustomNames =
 OnEvent("clear", true, () =>
 {
 	g_nameLookup = []
-
 	for (var nameList of SettingsGetNamesArrays())
 	{
 		const theString = "\\b(?:" + TurnNovaShorthandIntoRegex(nameList.arr.join('|')) + ")\\b"
@@ -419,7 +507,6 @@ function UpdateSettingFromText(name, type, savedSetting, loadingVersion)
 {
 	typeof(savedSetting) == "string" || ShowError("Data '" + name + "' isn't a string")
 	const isLoading = !!loadingVersion
-
 	if (type == 'array')
 	{
 		const splitCharacter = (loadingVersion == 1) ? ',' : '\n'
@@ -447,31 +534,38 @@ function UpdateSettingFromText(name, type, savedSetting, loadingVersion)
 	}
 }
 
+function GetSettingsSavePrefix()
+{
+	return g_settingsName ? ("nova[" + g_settingsName + "].") : "nova_"
+}
+
 function SettingsLoad()
 {
-	var savedVersion = window?.localStorage?.getItem("nova_saveVersion")
+	const prefix = GetSettingsSavePrefix()
+	var savedVersion = window?.localStorage?.getItem(prefix + "saveVersion")
+
 	savedVersion = savedVersion ? parseInt(savedVersion) : 1
 
 	if (savedVersion > kCurrentSaveFormatVersion)
 	{
-		ShowError("SETTINGS: Couldn't read v" + savedVersion + ".0 settings as script only supports up to v" + kCurrentSaveFormatVersion + ".0")
+		ShowError("SETTINGS: Couldn't read v" + savedVersion + ".0 settings '" + g_settingsName + "' as script only supports up to v" + kCurrentSaveFormatVersion + ".0")
 	}
 	else
 	{
 		if (savedVersion == kCurrentSaveFormatVersion)
 		{
-			NovaLog("Reading settings (v" + savedVersion + ".0)")
+			NovaLog("Reading settings '" + g_settingsName + "' (v" + savedVersion + ".0)")
 		}
 		else
 		{
-			NovaLog("Reading and resaving settings (from v" + savedVersion + ".0 to v" + kCurrentSaveFormatVersion + ".0)")
-			window.localStorage.setItem("nova_saveVersion", kCurrentSaveFormatVersion)
+			NovaLog("Reading and resaving settings '" + g_settingsName + "' (from v" + savedVersion + ".0 to v" + kCurrentSaveFormatVersion + ".0)")
+			window.localStorage.setItem(prefix + "saveVersion", kCurrentSaveFormatVersion)
 		}
 
 		for (var [name, val] of Object.entries(g_tweakableSettings))
 		{
-			var savedSetting = window?.localStorage?.getItem("nova_" + name)
-			
+			var savedSetting = window?.localStorage?.getItem(prefix + name)
+
 			if (savedSetting === null || savedSetting === undefined)
 			{
 	//			console.log("No '" + name + "' setting saved, using default " + GetDataType(val) + " '" + val + "'")
@@ -479,20 +573,39 @@ function SettingsLoad()
 			else
 			{
 				UpdateSettingFromText(name, GetDataType(val), savedSetting, savedVersion)
-				
+
 				if (savedVersion != kCurrentSaveFormatVersion)
 				{
 					SettingSave(name)
 				}
 			}
 		}
+
+		// Custom loady things
+		const tagInfo = window?.localStorage?.getItem(prefix + "tags") ?? ""
+		kAutoTagStuff = {}
+
+		if (tagInfo != "")
+		{
+			try
+			{
+				kAutoTagStuff = JSON.parse(tagInfo)
+			}
+			catch(error)
+			{
+				ShowError("While parsing tag setting:\n\n" + error.stack)
+			}
+
+			console.log(kAutoTagStuff)
+		}
+
+		AutoTagFixData()
 	}
-	
+
 	for (var [settingName, customFunc] of Object.entries(kSettingFunctions))
 	{
 		customFunc(g_tweakableSettings[settingName])
 	}
-
 	ReadVoices()
 	PickVoicesForCurrentLanguage()
 }
@@ -502,21 +615,21 @@ function SettingSave(name)
 	var newValue = g_tweakableSettings[name]
 	var details = ""
 	const dataType = GetDataTypeVerbose(newValue)
-	
+
 	if (dataType == "number" || dataType == "string" || dataType == "boolean")
 	{
 		details = " [" + newValue + "]"
 	}
-	
+
 	NovaLog("Saving " + dataType + " '" + name + "'" + details)
-	
+
 	// Some special case fun to save things in the right format...
 	if (Array.isArray(newValue))
 	{
 		newValue = newValue.join('\n')
 	}
-	
-	window.localStorage.setItem("nova_" + name, newValue)
+
+	window.localStorage.setItem(GetSettingsSavePrefix() + name, newValue)
 }
 
 function SettingPerformMaintenance(whichOne)
@@ -536,7 +649,6 @@ function SettingUpdate(name, newValue, isLoading)
 		{
 			g_tweakableSettings[name] = newValue
 			SettingPerformMaintenance(name)
-
 			if (! isLoading)
 			{
 				SettingSave(name)
@@ -553,7 +665,7 @@ function SettingUpdate(name, newValue, isLoading)
 function SettingsGetNamesArrays()
 {
 	var reply = []
-	
+
 	for (var key of Object.keys(kSettingsWhichProvideNames))
 	{
 		for (var n of g_tweakableSettings[key])
@@ -561,7 +673,6 @@ function SettingsGetNamesArrays()
 			var inner = []
 			const quoteUnquote = n.split('"')
 			var isQuoted = false
-
 			for (var txt of quoteUnquote)
 			{
 				if (txt)
@@ -573,18 +684,15 @@ function SettingsGetNamesArrays()
 				}
 				isQuoted = !isQuoted
 			}
-
 			reply.push({arr:inner, type:key})
 		}
 	}
-
 	return reply
 }
 
 function SettingsGetReplacementRegularExpressionsArray()
 {
 	var reply = []
-
 	for (var ruleText of g_tweakableSettings.replace)
 	{
 		const bits = ruleText.split('/', 3)
@@ -599,7 +707,7 @@ function SettingsGetReplacementRegularExpressionsArray()
 				catch
 				{
 					IssueAdd("Replace rule " + FixStringHTML(ruleText) + " is invalid", "SETTINGS")
-				}					
+				}
 			}
 			else
 			{
@@ -607,11 +715,10 @@ function SettingsGetReplacementRegularExpressionsArray()
 			}
 		}
 	}
-
 	for (var wordTxt of g_tweakableSettings.wordsContainingFullStops)
 	{
 		var becomes = wordTxt.replaceAll('.', '^')
-		
+
 		if (becomes == wordTxt)
 		{
 			IssueAdd("String " + FixStringHTML(wordTxt) + " doesn't contain a full stop", "SETTINGS")
@@ -630,9 +737,7 @@ function SettingsGetReplacementRegularExpressionsArray()
 			reply.push({regex:new RegExp(findThis.replaceAll('.', '\\.'), 'g'), replaceWith:becomes})
 		}
 	}
-
 //	console.log(reply)
-
 	return reply
 }
 
@@ -645,18 +750,18 @@ function SettingsSayShouldProcess(txtIn)
 			return false
 		}
 	}
-	
+
 	return true
 }
 
 function FillInSetting(k)
 {
 	var elem = document.getElementById('setting_' + k)
-	
+
 	if (elem)
 	{
 		const data = g_tweakableSettings[k]
-	
+
 		if (Array.isArray(data))
 		{
 			elem.value = data.join('\n')
@@ -669,7 +774,7 @@ function FillInSetting(k)
 		else
 		{
 			elem.value = data
-			
+
 			if (data != elem.value)
 			{
 				NovaWarn("Mismatch! Wanted to set '" + k + "' to " + GetDataTypeVerbose(data) + " '" + data + "' but it's set to " + GetDataTypeVerbose(elem.value) + " '" + elem.value + "'")
@@ -686,11 +791,11 @@ function FillInSettings()
 function UserChangedSetting(name)
 {
 	var elem = document.getElementById('setting_' + name)
-	
+
 	UpdateSettingFromText(name, GetDataType(g_tweakableSettings[name]), (elem.type == "checkbox") ? elem.checked + "" : elem.value)
-	
+
 	const customFunc = kSettingFunctions[name]
-	
+
 	if (customFunc)
 	{
 		customFunc(g_tweakableSettings[name])
@@ -709,7 +814,6 @@ function PickVoicesForCurrentLanguage()
 {
 	const fixThese = ['voiceSpeech', 'voiceDefault']
 	const usedVoices = {}
-
 	for (var v of fixThese)
 	{
 		const currentSelection = g_tweakableSettings[v]
@@ -725,7 +829,7 @@ function PickVoicesForCurrentLanguage()
 			}
 		}
 	}
-	
+
 	const availableVoices = Object.keys(g_voiceLookUp)
 	const numAvailable = availableVoices.length
 
@@ -734,19 +838,19 @@ function PickVoicesForCurrentLanguage()
 		if (! g_tweakableSettings[v])
 		{
 			const numUsed = Object.keys(usedVoices).length
-			
+
 			var bestScore = 0
 			for (var each of availableVoices)
 			{
 				const myScore = (each.includes("Google") ? 50 : 0) + (usedVoices[each] ? 0 : 100) + each.length
-				
+
 				if (myScore > bestScore)
 				{
 					g_tweakableSettings[v] = each
 					bestScore = myScore
 				}
 			}
-			
+
 			if (g_tweakableSettings[v])
 			{
 //				NovaLog("Need to pick a new " + v + ". Already using " + numUsed + "/" + numAvailable + " " + g_tweakableSettings.language + " voices... selected '" + g_tweakableSettings[v] + "'")
@@ -767,16 +871,23 @@ function SettingsMakeCustomColumn_Add(callThis)
 	return '<td valign="top" align="right" class="cellNoWrap">ADD</td>'
 }
 
-function SettingsAdd(reply, txt, formBits, className, customColumnCell, id)
+function SettingsAdd(reply, txt, formBits, className, customColumnCell, moreArgs)
 {
-	var args = 'td class="' + className + '"'
-	if (id)
+	var args = ['td class="' + className + '"']
+	if (moreArgs)
 	{
-		args += ' id="' + id + '"'
+		args.push(moreArgs)
 	}
-	reply.push('<tr><td valign="top" align="right" class="cellNoWrap">' + txt.replaceAll('^', "<BR>") + '</td>')
-	reply.push(customColumnCell ?? '<td class="cellNoWrap">')
-	reply.push('</td><' + args + '>' + formBits + "</td></tr>")
+	if (txt != '')
+	{
+		reply.push('<tr><td valign="top" align="right" class="cellNoWrap">' + txt.replaceAll('^', "<BR>") + '</td>')
+		reply.push(customColumnCell ?? '<td class="cellNoWrap">')
+	}
+	else
+	{
+		args.push("colspan=3")
+	}
+	reply.push('</td><' + args.join(' ') + '>' + formBits + "</td></tr>")
 }
 
 function MakeOpenCloseButton(k)
@@ -785,7 +896,7 @@ function MakeOpenCloseButton(k)
 	{
 		return MakeIconWithTooltip(kIconOpen, 0, "Close", "SettingsOpenClose('" + k + "')")
 	}
-	
+
 	return MakeIconWithTooltip(kIconClosed, 0, "Open", "SettingsOpenClose('" + k + "')")
 }
 
@@ -801,7 +912,6 @@ function SettingsOpenClose(whichOne)
 {
 	const elem = document.getElementById("expandButton_" + whichOne)
 	const textArea = document.getElementById("setting_" + whichOne)
-
 	if (whichOne in g_openTextAreas)
 	{
 		// It's open, so close it
@@ -814,7 +924,6 @@ function SettingsOpenClose(whichOne)
 		textArea.classList.remove("closedTextArea")
 		g_openTextAreas[whichOne] = true
 	}
-
 	elem.innerHTML = MakeOpenCloseButton(whichOne)
 }
 
@@ -831,7 +940,6 @@ function SettingAskRevert(whichOne)
 function SettingFixArray(whichOne)
 {
 	var didAnything = false
-
 	for (var a of kTweakableDefaults[whichOne])
 	{
 		if (! g_tweakableSettings[whichOne].includes(a))
@@ -840,7 +948,7 @@ function SettingFixArray(whichOne)
 			didAnything = true
 		}
 	}
-	
+
 	if (didAnything)
 	{
 		FillInSetting(whichOne)
@@ -851,7 +959,6 @@ function SettingFixArray(whichOne)
 function SettingsIssueToggleAll(doSettings)
 {
 	var turnThingsOn = false
-
 	for (var warningID of Object.keys(g_warningNames))
 	{
 		if ((warningID in kOptionCustomNames) == doSettings && !g_currentOptions.settings[warningID])
@@ -860,7 +967,6 @@ function SettingsIssueToggleAll(doSettings)
 			break
 		}
 	}
-
 	for (var warningID of Object.keys(g_warningNames))
 	{
 		if ((warningID in kOptionCustomNames) == doSettings && turnThingsOn == !g_currentOptions.settings[warningID])
@@ -868,18 +974,15 @@ function SettingsIssueToggleAll(doSettings)
 			const elem = document.getElementById("settings." + warningID)
 			Assert(elem)
 			elem.checked = turnThingsOn
-
 			g_currentOptions.settings[warningID] = turnThingsOn
 		}
 	}
-
 	CallTheseFunctions(ProcessInput)
 }
 
 function BuildIssueDefaults(doSettings, moreOutput)
 {
 	var reply = []
-
 	for (var warningID of Object.keys(g_warningNames))
 	{
 		if ((warningID in kOptionCustomNames) == doSettings)
@@ -887,19 +990,18 @@ function BuildIssueDefaults(doSettings, moreOutput)
 			OptionsMakeCheckbox(reply, "ProcessInput()", warningID, doSettings ? kOptionCustomNames[warningID] : ("Check for " + warningID.toLowerCase()), !doSettings, true)
 		}
 	}
-	
+
 	if (moreOutput)
 	{
 		moreOutput.customColumnCell = '<td valign="top" align="right" class="cellNoWrap">' + MakeIconWithTooltip(kIconCheckbox, 0, "Toggle all", "SettingsIssueToggleAll(" + doSettings + ")")
 	}
-
 	return OptionsConcat(reply)
 }
 
 function AddToSetting(whichOne, addThis)
 {
 	NovaLog("Adding " + addThis + " to " + whichOne + " which is currently " + g_tweakableSettings[whichOne])
-	
+
 	if (Array.isArray(g_tweakableSettings[whichOne]))
 	{
 		g_tweakableSettings[whichOne].push(addThis)
@@ -908,21 +1010,20 @@ function AddToSetting(whichOne, addThis)
 	{
 		g_tweakableSettings[whichOne] += addThis
 	}
-	
+
 	SettingPerformMaintenance(whichOne)
 	SettingSave(whichOne)
 	CallTheseFunctions(ProcessInput)
 }
-
 function InitSettings()
 {
 	for (var val of Object.values(kAutoTagStuff))
 	{
 		val.tidyRegEx = val.removeCharacters ? new RegExp('[' + EscapeRegExSpecialChars(val.removeCharacters) + ']', 'g') : null
 	}
-	
+
 	Object.keys(g_warningNames).forEach(id => OptionsMakeKey("settings", id, ! (id in kOptionCustomNames)))
-	
+
 	IssueAutoFixDefine("ILLEGAL CHARACTERS", "Ignore characters", characters => AddToSetting("allowedCharacters", characters))
 	IssueAutoFixDefine("ILLEGAL START CHARACTER", "Ignore characters", characters => AddToSetting("allowedStartCharacters", characters))
 	IssueAutoFixDefine("NUMBERS", "Add to allow list", characters => AddToSetting("numberIgnoreList", characters))
@@ -931,11 +1032,9 @@ function InitSettings()
 	IssueAutoFixDefine("INVALID FIRST SPEECH CHARACTER", "Ignore characters", characters => AddToSetting("startOfSpeech", characters))
 	IssueAutoFixDefine("INVALID FINAL SPEECH CHARACTER", "Ignore characters", characters => AddToSetting("endOfSpeech", characters))
 }
-
 TabDefine("settings", function(reply, thenCall)
 {
 	TabBuildButtonsBar(reply, Object.keys(kSettingNames))
-
 	reply.push("<table>")
 	for (var [k, display] of Object.entries(kSettingNames[g_currentOptions.settings.page]))
 	{
@@ -946,9 +1045,8 @@ TabDefine("settings", function(reply, thenCall)
 			var theMiddle = ""
 			var theEditBits = []
 			var customColumnCell = undefined
-			
-			classList = classList ? classList.split(' ') : []
 
+			classList = classList ? classList.split(' ') : []
 			if (classList == 'voice')
 			{
 				theType = 'select'
@@ -987,17 +1085,16 @@ TabDefine("settings", function(reply, thenCall)
 			else
 			{
 				theEditBits.push(MakeIconWithTooltip(kIconRevert, 0, "Revert", "SettingAskRevert('" + k + "')"))
-
 				if (Array.isArray(g_tweakableSettings[k]))
 				{
 					theType = 'textarea onFocus="CheckItsOpen(\'' + k + '\')"'
 					customColumnCell = SettingsMakeCustomColumn_Expand(k)
-					
+
 					if (! (k in g_openTextAreas))
 					{
 						classList.push('closedTextArea')
 					}
-					
+
 					if (kTweakableDefaults[k].length)
 					{
 						theEditBits.push(MakeIconWithTooltip(kIconFix, 0, "Repair", "SettingFixArray('" + k + "')"))
@@ -1008,7 +1105,6 @@ TabDefine("settings", function(reply, thenCall)
 					theEditBits.push("<B>TO DO: SUPPORT THIS OBJECT</B>")
 				}
 			}
-
 			const tagBits = theType + ' onChange="UserChangedSetting(\'' + k + '\')" ' + (classList.length ? 'class="' + classList.join(' ') + '" ' : '') + 'id="setting_' + k + '"'
 			if (theEditBits.length)
 			{
@@ -1021,11 +1117,11 @@ TabDefine("settings", function(reply, thenCall)
 		{
 			const moreOutput = {}
 			const showThisInCell = display(moreOutput)
-			SettingsAdd(reply, k, showThisInCell, "cell", moreOutput.customColumnCell, moreOutput.cellId)
+			SettingsAdd(reply, k, showThisInCell, "cell", moreOutput.customColumnCell, moreOutput.moreArgs)
 		}
 	}
-	
+
 	TableClose(reply)
-	
+
 	thenCall.push(FillInSettings)
 }, {icon:kIconSettings})

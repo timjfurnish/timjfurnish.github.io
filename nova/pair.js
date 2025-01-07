@@ -1,6 +1,6 @@
 //==============================================
 // Part of Nova - NOVel Assistant
-// (c) Tim Furnish, 2023-2024
+// (c) Tim Furnish, 2023-2025
 //==============================================
 
 var g_currentPairName
@@ -33,11 +33,10 @@ OnEvent("processingDone", false, () =>
 	{
 		PairEndReadingSection()
 	}
-	
+
 	for (var myData of Object.values(g_pairData))
 	{
 		var needColourFor = []
-
 		for (var [name, value] of Object.entries(myData.fragmentCounts))
 		{
 			if (value & (value - 1))
@@ -45,7 +44,7 @@ OnEvent("processingDone", false, () =>
 				needColourFor.push(name)
 			}
 		}
-		
+
 		myData.colours = MakeColourLookUpTable(needColourFor, 0.2)
 		delete myData.fragmentCounts
 	}
@@ -56,28 +55,27 @@ TabDefine("pairs", function(reply, thenCall)
 	if (TabBuildButtonsBar(reply, Object.keys(g_pairData)))
 	{
 		const myData = g_pairData[g_currentOptions.pairs.page]
-		
+
 		Assert(myData, "Found no pair data")
-		
+
 		TableOpen(reply)
 		TableAddHeading(reply, "")
-		
+
 		for (var elem of myData.arr)
 		{
 			TableAddHeading(reply, elem.where)
 		}
-		
+
 		for (var r of Object.keys(myData.allSectionNames))
 		{
 			var myBit = 1
 			TableNewRow(reply)
 			TableAddHeading(reply, r)
-			
+
 			for (var columnData of myData.arr)
 			{
 				var cellContents = []
 				const showThisText = columnData.contents[r]
-
 				if (showThisText)
 				{
 					for (var eachLine of showThisText)
@@ -86,11 +84,10 @@ TabDefine("pairs", function(reply, thenCall)
 						var wasSpeech = undefined
 						var lastFollowedBy = undefined
 						var joiner = ''
-
 						for (var eachFrag of eachLine)
 						{
 							var {text, isSpeech, followedBy} = eachFrag
-							
+
 							if (wasSpeech != isSpeech)
 							{
 								if (wasSpeech)
@@ -113,20 +110,17 @@ TabDefine("pairs", function(reply, thenCall)
 									joiner += '"'
 								}
 							}
-
 							const colour = myData.colours[text.toLowerCase().trim()]
-							
+
 							if (colour)
 							{
 								text = Highlighter(text, colour)
 							}
-
 							paraContents.push(joiner + text + followedBy)
 							wasSpeech = isSpeech
 							joiner = ' '
 							lastFollowedBy = followedBy
 						}
-
 						cellContents.push(kIndent + paraContents.join('') + (wasSpeech ? lastFollowedBy ? '"' : (kCharacterEmDash + '"') : ''))
 					}
 				}
@@ -134,13 +128,13 @@ TabDefine("pairs", function(reply, thenCall)
 				myBit <<= 1
 			}
 		}
-		
+
 		TableClose(reply)
 	}
 	else
 	{
 		reply.push("No pair data found")
-	}	
+	}
 }, {icon:kIconPair, canSelect:true})
 
 function PairDoneParagraph(pushThis)
@@ -151,7 +145,7 @@ function PairDoneParagraph(pushThis)
 		{
 			SetBit(g_pairFragmentTally, fragment.text.toLowerCase().trim(), g_pairBit)
 		}
-		
+
 		if (g_currentPairSectionName in g_collectPairStuffToHere)
 		{
 			g_collectPairStuffToHere[g_currentPairSectionName].push(pushThis.fragments)
@@ -166,14 +160,14 @@ function PairDoneParagraph(pushThis)
 SetMarkupFunction('^', txt =>
 {
 	const [key, value] = txt.split(':', 2)
-	
+
 	if (key)
 	{
 		if (g_currentPairName && (key != g_currentPairName || !value))
 		{
 			PairEndReadingSection()
 		}
-		
+
 		if (value)
 		{
 			if (g_currentPairName == undefined)
@@ -181,7 +175,6 @@ SetMarkupFunction('^', txt =>
 				g_collectPairStuffToHere = []
 				const whereAreWe = g_metaDataCurrent.CHAPTER
 				const newElement = {where:whereAreWe, contents:g_collectPairStuffToHere}
-
 				if (key in g_pairData)
 				{
 					g_pairBit = 1 << g_pairData[key].arr.length
@@ -194,10 +187,9 @@ SetMarkupFunction('^', txt =>
 					g_pairFragmentTally = {}
 					g_pairData[key] = {arr:[newElement], allSectionNames:{}, fragmentCounts:g_pairFragmentTally}
 				}
-
 				g_currentPairName = key
 			}
-			
+
 			if (value == '-')
 			{
 				g_currentPairSectionName = undefined
@@ -205,15 +197,13 @@ SetMarkupFunction('^', txt =>
 			else
 			{
 				g_currentPairSectionName = value
-				
+
 				if (value in g_collectPairStuffToHere)
 				{
 					g_collectPairStuffToHere[value].push([{text:"<HR WIDTH=50%>", followedBy:""}])
 				}
-
 				g_pairData[key].allSectionNames[value] = true
 			}
 		}
 	}
 })
-

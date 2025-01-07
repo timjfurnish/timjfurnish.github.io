@@ -1,6 +1,6 @@
 //==============================================
 // Part of NOVA - NOVel Assistant
-// (c) Tim Furnish, 2023-2024
+// (c) Tim Furnish, 2023-2025
 //==============================================
 
 const g_wordSortModes = {Alphabetical:"Alphabetical", WordLength:"Word length (descending)", WordLengthUp:"Word length (ascending)", Count:"Count", InSpeech:"In speech", InNarrative:"In narrative", Score:"Score"}
@@ -15,7 +15,6 @@ TabDefine("words", function(reply, thenCall)
 	if (! g_calculatedScores)
 	{
 		NovaLog("Calculating word count scores!")
-
 		for (var [key, data] of Object.entries(g_checkedWords))
 		{
 			if (key.length > 2)
@@ -28,19 +27,15 @@ TabDefine("words", function(reply, thenCall)
 				data.score = 0
 			}
 		}
-
 		g_calculatedScores = true
 	}
-
 	var options = []
 	OptionsMakeSelect(options, "ChangedWordCountSettings()", "Sort", "sortMode", g_wordSortModes, "Score")
 	OptionsMakeSelect(options, "ChangedWordCountSettings()", "Show", "displayUnique", g_displayUnique, "Repeated")
 	OptionsMakeSelect(options, "ChangedWordCountSettings()", "Include", "showNames", g_showNameModes, "NoNames")
 	OptionsMakeCheckbox(options, "ChangedWordCountSettings()", "includeHyphens", "Include words containing hyphens", true, true)
-
 	reply.push(options.join('&nbsp;&nbsp;'))
 	MakeUpdatingArea(reply, "wordTableHere")
-
 	thenCall.push(ChangedWordCountSettings)
 }, {icon:kIconAbacus, tooltipText:"Word counter"})
 
@@ -56,9 +51,7 @@ function RedrawWordTable()
 {
 	var reply = []
 	var wordsInOrder = Object.keys(g_checkedWords).filter(word => word.length > 1)
-
 	NovaLog("wordsInOrder length=" + wordsInOrder.length)
-
 	if (wordsInOrder.length)
 	{
 		var sortFunctions =
@@ -70,38 +63,35 @@ function RedrawWordTable()
 			InNarrative:(p1, p2) => ((g_checkedWords[p2].inNarrative - g_checkedWords[p1].inNarrative) ?? (p2.length - p1.length)),
 			Score:(p1, p2) => ((g_checkedWords[p2].score - g_checkedWords[p1].score) ?? (p2.length - p1.length)),
 		}
-		
+
 		TableOpen(reply)
 		TableAddHeading(reply, "Word")
 		TableAddHeading(reply, "Count")
 		TableAddHeading(reply, "In speech")
 		TableAddHeading(reply, "In narrative")
 		TableAddHeading(reply, "Score")
-
 		var limitFunctions =
 		{
 			All:num => true,
 			Unique:num => num == 1,
 			Repeated:num => num > 1,
 		}
-
 		const limitFunc = limitFunctions[document.getElementById("words.displayUnique").value]
 		const nameMode = document.getElementById("words.showNames").value
 		const sortMode = document.getElementById('words.sortMode').value
 		const includeHyphens = document.getElementById("words.includeHyphens").checked
 		const whichVar = "total"
 		wordsInOrder.sort(sortFunctions[sortMode])
-
 		var thereWasMore = false;
 		var numRows = 0;
-		
+
 		for (var w of wordsInOrder)
 		{
-			const wordInfo = g_checkedWords[w]			
+			const wordInfo = g_checkedWords[w]
 			if (limitFunc(wordInfo[whichVar]))
 			{
 				var isAName = false
-				
+
 				for (var each of g_nameLookup)
 				{
 					if (w.match(each.regex))
@@ -110,7 +100,7 @@ function RedrawWordTable()
 						break
 					}
 				}
-				
+
 				if (nameMode != (isAName ? "NoNames" : "JustNames"))
 				{
 					if (includeHyphens || !w.includes('-'))
@@ -120,26 +110,23 @@ function RedrawWordTable()
 							thereWasMore = true;
 							break;
 						}
-
 						TableNewRow(reply, kSettingsWhichProvideNames[isAName])
 						TableAddCell(reply, MakeMentionLink(w))
 						TableAddCell(reply, wordInfo.total)
 						TableAddCell(reply, wordInfo.inSpeech)
-						TableAddCell(reply, wordInfo.inNarrative)				
+						TableAddCell(reply, wordInfo.inNarrative)
 						TableAddCell(reply, wordInfo.score)
-
 						++ numRows
 					}
 				}
 			}
 		}
 		TableClose(reply)
-		
+
 		if (thereWasMore)
 		{
 			reply.push('<P><BUTTON ONCLICK="g_maxWordCountRows += 100; RedrawWordTable()">Show more</BUTTON></P>')
 		}
 	}
-
 	document.getElementById("wordTableHere").innerHTML = reply.join("")
 }

@@ -1,6 +1,6 @@
 //==============================================
 // Part of NOVA - NOVel Assistant
-// (c) Tim Furnish, 2023-2024
+// (c) Tim Furnish, 2023-2025
 //==============================================
 
 var g_tabFunctions = {}
@@ -29,13 +29,10 @@ function SetIfMissing(container, name, value)
 function TabDefine(tabName, myFunction, settings)
 {
 	const readableName = CapitaliseFirstLetter(tabName).replace(/_/g, " ")
-
 	var storeThis = settings ?? {}
-
 	SetIfMissing(storeThis, "func", myFunction)
 	SetIfMissing(storeThis, "tooltipText", readableName)
 	SetIfMissing(storeThis, "icon", readableName)
-
 	g_tabFunctions[tabName] = storeThis
 }
 
@@ -58,25 +55,21 @@ function MakeIconWithTooltip(icon, angle, tooltipText, clickyFunc, id, alpha, xO
 	//------------------
 	// Build extraArgs
 	//------------------
-
 	var extraArgs = clickyFunc ? ' onClick="' + clickyFunc + '"' : ''
 	var styleBits = []
-
 	if (id)
 	{
 		extraArgs += ' id="' + id + '"'
 	}
-
 	if (fontSize)
 	{
 		styleBits.push('font-size:' + fontSize)
 	}
-	
+
 	if (alpha != undefined)
 	{
 		styleBits.push('opacity:' + alpha)
 	}
-
 	if (styleBits.length)
 	{
 		extraArgs += ' style="' + styleBits.join('; ') + '"'
@@ -85,14 +78,11 @@ function MakeIconWithTooltip(icon, angle, tooltipText, clickyFunc, id, alpha, xO
 	//------------------------------------
 	// Build transformBits (for tooltip)
 	//------------------------------------
-
 	if (xOffset === undefined)
 	{
 		xOffset = 50
 	}
-
 	var transformBits = ['translate(-' + xOffset + '%, 0px)']
-
 	if (angle)
 	{
 		transformBits.push('rotate(' + angle + 'deg)')
@@ -101,9 +91,7 @@ function MakeIconWithTooltip(icon, angle, tooltipText, clickyFunc, id, alpha, xO
 	//----------------------
 	// Put it all together
 	//----------------------
-
 	const tooltipHTML = (g_tweakableSettings.tooltips && tooltipText) ? '<br><span class="tooltipBubble" STYLE="transform:' + transformBits.join(' ') + '">' + tooltipText + '</span>' : ""
-
 	return '<center CLASS="iconWithTooltip"><FONT' + extraArgs + '>' + icon + '</FONT>' + tooltipHTML + '</center>'
 }
 
@@ -115,20 +103,17 @@ function ShowTabs()
 function RedoTabTops()
 {
 	var tilty = -1
-
 	for (var tabName of Object.keys(g_tabFunctions))
 	{
 		document.getElementById('tab_' + tabName).innerHTML = MakeIconWithTooltip(g_tabFunctions[tabName].icon, Math.round(Math.sin(tilty) * 10), g_tabFunctions[tabName].tooltipText, undefined, "tabText_" + tabName, undefined, undefined, "175%")
-
 		const title = g_cacheTabTitles[tabName]
 		if (title)
 		{
 			SetTabTitle(tabName, title)
 		}
-
 		tilty += 3
 	}
-	
+
 	g_canSelectTabs = true
 }
 
@@ -136,36 +121,32 @@ function BuildTabs()
 {
 	var infoPanel = document.getElementById("infoPanel")
 	var output = []
-
 	output.push('<TABLE BORDER="0" CELLPADDING="3" CELLSPACING="0"><TR>')
-	
+
 	var spanCols = 1
 	var endCell = '<TD STYLE="border-bottom:' + kTabLine + '">&nbsp;&nbsp;&nbsp;&nbsp;</TD>'
 	var joiner = endCell
-	
-//	console.log(g_tabFunctions)
-	
+
 	for (var tabName of Object.keys(g_tabFunctions))
 	{
 		if (! g_selectedTabName)
 		{
 			g_selectedTabName = tabName
 		}
-
 		if (tabName != 'settings' && tabName != 'issues')
 		{
 			g_tabIconsToDisableWhenNoText.push(tabName)
 		}
-		
+
 		spanCols += 2
 		output.push(joiner + '<TD WIDTH="10" ID="tab_' + tabName + '" TABINDEX=0 ONCLICK="SetTab(\'' + tabName + '\')" CLASS="tabDeselected"></TD>')
 		joiner = '<TD WIDTH="1" STYLE="border-bottom:' + kTabLine + '"></TD>'
 	}
-	
+
 	output.push(endCell)
 	output.push('<TR><TD COLSPAN="' + spanCols + '" ALIGN=center ID="tabContents"></TABLE>')
 	infoPanel.innerHTML = output.join('')
-	
+
 	ShowTab(g_selectedTabName)
 }
 
@@ -179,10 +160,9 @@ function ShowContentForSelectedTab()
 {
 	g_hoverControls.innerHTML = ""
 	g_hoverControls.style.display = "none"
-
 	var displayThis = []
 	var thenCall = []
-	
+
 	const page = g_currentOptions[g_selectedTabName]?.page
 	if (page === undefined)
 	{
@@ -192,21 +172,18 @@ function ShowContentForSelectedTab()
 	{
 		NovaLog("Showing contents for '" + g_selectedTabName + "' tab, page '" + page + "'")
 	}
-
 	const {func, canSelect, alignment, tooltipText} = g_tabFunctions[g_selectedTabName]
-	
+
 	displayThis.push('<CENTER STYLE="color:#888888; font-weight:1000; font-size:150%">' + tooltipText + '<HR></CENTER>')
-	
+
 	func(displayThis, thenCall)
-	
+
 	const elem = document.getElementById('tabContents')
 	elem.innerHTML = displayThis.join('')
 	elem.style.userSelect = canSelect ? "text" : "none"
 	elem.style.textAlign = alignment ?? ""
-
 	StopTalking()
 	SetOptions()
-
 	CallTheseFunctions(...thenCall)
 }
 
@@ -217,12 +194,10 @@ function ShowTab(name)
 		var oldTab = document.getElementById("tab_" + g_selectedTabName)
 		oldTab.className = "tabDeselected"
 	}
-
 	g_selectedTabName = name
-
 	var newTab = document.getElementById("tab_" + g_selectedTabName)
 	newTab.className = "tabSelected"
-	
+
 	CallTheseFunctions(ShowContentForSelectedTab)
 	NovaLogClear("Selected tab '" + name + "'")
 }
@@ -274,7 +249,6 @@ function TabBuildButtonsBar(toHere, array, theDefault)
 	{
 		OptionsMakeKey(g_selectedTabName, "page", theDefault ?? array[0], array)
 		array.forEach(pageName => TabBuildButtonBarAdd(toHere, pageName, "ButtonsBarSet('" + pageName + "')", g_currentOptions[g_selectedTabName].page != pageName))
-
 		if (toHere.length >= 1)
 		{
 			if (toHere.slice(-1) == '&nbsp;')
@@ -282,28 +256,25 @@ function TabBuildButtonsBar(toHere, array, theDefault)
 				toHere.pop()
 			}
 		}
-
 		toHere.push("<br><br>")
 		return true
 	}
-	
+
 	return false
 }
 
 function RethinkEnabledTabs()
 {
 	const hasNoDataNow = !g_metaDataInOrder?.length
-
 	if (g_canSelectTabs == hasNoDataNow)
 	{
 		g_canSelectTabs = !hasNoDataNow
 		const newOpacity = hasNoDataNow ? 0.25 : 1
-
 		for (var name of g_tabIconsToDisableWhenNoText)
 		{
 			document.getElementById("tabText_" + name).style.opacity = newOpacity
 		}
-		
+
 		if (hasNoDataNow && g_tabIconsToDisableWhenNoText.includes(g_selectedTabName))
 		{
 			SetTab("settings")

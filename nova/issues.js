@@ -1,6 +1,6 @@
 //==============================================
 // Part of NOVA - NOVel Assistant
-// (c) Tim Furnish, 2023-2024
+// (c) Tim Furnish, 2023-2025
 //==============================================
 
 var g_issues = {}
@@ -14,7 +14,7 @@ function BuildWarningNamesList()
 	[
 		// Start off
 		'SCRIPT', 'ISSUE SUMMARY', 'UNSEEN NAMES',
-		
+
 		// Start on
 		'NUMBERS', 'TODO', 'DISALLOWED WORD', 'ILLEGAL CHARACTERS', 'UNIQUE', 'ORDER',
 		'LEADING OR TRAILING SPACE', 'PUNCTUATION COMBO', 'BRACKETS',
@@ -24,12 +24,11 @@ function BuildWarningNamesList()
 		'MARKUP ERROR', 'SPACE IN SPEECH', 'EMPTY SPEECH', 'SETTINGS',
 		'PUNCTUATION WITHOUT SPACE', 'ILLEGAL START CHARACTER', 'EMPTY WORD'
 	]
-
 	for (var [autoErrName] of kIllegalSubstrings)
 	{
 		list.push(autoErrName.toUpperCase())
 	}
-	
+
 	return MakeColourLookUpTable(list)
 }
 
@@ -51,7 +50,6 @@ TabDefine("issues", function(reply, thenCall)
 		{
 			reply.push("<H3>" + heading + "</H3>" + issueList.join(""))
 		}
-
 		if (! g_disabledWarnings["ISSUE SUMMARY"])
 		{
 			reply.push("<CENTER><HR>" + TableShowTally(g_issueStats, {colours:g_warningNames, colourEntireLine:true, showTotal:true}) + "</CENTER>")
@@ -69,16 +67,12 @@ function ClearEarlyIssues()
 	g_issues = {}
 	g_disabledWarnings = {}
 	g_issueStats = {}
-
 //	console.log("Reset issue count to " + g_issueCount)
-
 	function InitOneStat(theName)
 	{
 		(theName in kOptionCustomNames) || (g_issueStats[theName] = 0)
 	}
-
 	Object.keys(g_warningNames).forEach(InitOneStat)
-
 	if (g_currentOptions.settings)
 	{
 		for (var [key, val] of Object.entries(g_currentOptions.settings))
@@ -89,7 +83,6 @@ function ClearEarlyIssues()
 			}
 		}
 	}
-
 //	NovaLog("Reset disabled warnings to defaults: " + Object.keys(g_disabledWarnings))
 }
 
@@ -104,29 +97,26 @@ function AutoFix(theType, param)
 function IssueAdd(addThis, theType, fixMeParam, overrideIssueHeading)
 {
 	var storeThis = []
-
 	if (theType)
 	{
 		var col = g_warningNames[theType]
-
 		if (! col)
 		{
 			ShowError("Please add " + theType + " to list of warning types")
 			col = g_warningNames[theType] = "#FF2222"
 		}
-		
+
 		if (g_disabledWarnings[theType])
 		{
 			return
 		}
-		
+
 		storeThis.push(MakeIconWithTooltip(kIconRedCross, 0, "Disable " + theType + " check", "DisableIssueCheck('" + theType + "')", undefined, undefined, 10), '&nbsp;')
 		addThis = '<NOBR class="issueType" style="background:' + col + '">' + theType + '</NOBR> ' + addThis
-		
+
 		if (fixMeParam)
 		{
 			const autoFix = g_autoFixIssues[theType]
-
 			if (autoFix)
 			{
 				const callThis = 'AutoFix(\'' + theType + '\', \'' + AddEscapeChars(fixMeParam.replace("'", "\\'")) + '\')'
@@ -134,18 +124,13 @@ function IssueAdd(addThis, theType, fixMeParam, overrideIssueHeading)
 			}
 		}
 	}
-
 	storeThis.push(addThis)
-	
+
 	// Turn array into a single string...
 	storeThis = PutBitsSideBySide(storeThis, "valign=top")
-
 	Tally(g_issueStats, theType ?? "NO TYPE")
-
 	++ g_issueCount
-
 	const issueHeading = overrideIssueHeading ?? MetaDataMakeFragmentDescription()
-
 	if (issueHeading in g_issues)
 	{
 		g_issues[issueHeading].push(storeThis)
@@ -162,7 +147,6 @@ function DisableIssueCheck(theType)
 	g_currentOptions.settings[theType] = false
 	CallTheseFunctions(ProcessInput)
 }
-
 OnEvent("processingDone", false, () =>
 {
 	if (! g_disabledWarnings["UNSEEN NAMES"])
@@ -176,15 +160,12 @@ OnEvent("processingDone", false, () =>
 		}
 	}
 })
-
 OnEvent("processingDone", true, () => SetTabTitle('issues', g_issueCount || undefined))
-
 SetMarkupFunction('@', strIn =>
 {
 	var [key, val] = strIn.split(':', 2)
 	key = key.toUpperCase()
 	val = val.toUpperCase()
-
 	if (key in g_warningNames)
 	{
 		if (val == "ON")

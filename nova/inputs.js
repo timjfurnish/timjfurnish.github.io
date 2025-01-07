@@ -1,6 +1,6 @@
 //==============================================
 // Part of NOVA - NOVel Assistant
-// (c) Tim Furnish, 2023-2024
+// (c) Tim Furnish, 2023-2025
 //==============================================
 
 var g_numInputBoxes = 0
@@ -16,7 +16,7 @@ function AddAllInputBoxes()
 function addInputBox(saveIt)
 {
 	document.getElementById('inputs').innerHTML += '<textarea class="docIn" id="txtIn' + ++ g_numInputBoxes + '" onChange="ProcessInput()"></textarea><BR>'
-	
+
 	if (saveIt)
 	{
 		SettingUpdate('numTextBoxes', g_numInputBoxes)
@@ -26,11 +26,10 @@ function addInputBox(saveIt)
 function mergeInputBoxes()
 {
 	const contents = GetInputText()
-
 	document.getElementById('inputs').innerHTML = ''
 	g_numInputBoxes = 0
 	addInputBox(true)
-	
+
 	document.getElementById('txtIn1').value = contents
 }
 
@@ -61,12 +60,10 @@ function hideShowInputs(checked)
 function GetInputText()
 {
 	var reply = []
-
 	for (var n = 1; n <= g_numInputBoxes; ++ n)
 	{
 		reply.push(document.getElementById('txtIn' + n).value)
 	}
-	
+
 	return reply.join('\n').replace(/\</g, '[').replace(/\>/g, ']')
 }
-

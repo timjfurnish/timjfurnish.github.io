@@ -1,7 +1,9 @@
 //==============================================
 // Part of NOVA - NOVel Assistant
-// (c) Tim Furnish, 2023-2024
+// (c) Tim Furnish, 2023-2025
 //==============================================
+
+const g_currentOptions = {}
 
 //=======================
 // ICONS
@@ -10,18 +12,18 @@
 const kIconSearch = "&#128269;"
 const kIconPaste = "&#128203;"
 const kIconFix = "&#128736;&#xFE0F;"
-const kIconSpeech = "&#128172;" // "&#128266;"
+const kIconSpeech = "&#128172;"
 const kIconPhrase = "&#128209;"
-const kIconToTop = "&#9757;&#65039;" // "&#128285;" // "&#8679;"
-const kIconRevert = "&#x21A9;&#xFE0F;" // "&hookleftarrow;"
+const kIconToTop = "&#9757;&#65039;"
+const kIconRevert = "&#x21A9;&#xFE0F;"
 const kIconSettings = "&#128736;&#65039;"
 const kIconIssues = "&#9888;&#65039;"
 const kIconEntities = "&#129333;"
 const kIconHyphen = "&#127846;"
 const kIconBooks = "&#128218;"
 const kIconSpeaker = "&#x1F50A;"
-const kIconEar = "&#x1F442;"
-const kIconMute = "&#x274C;" // "&#128263;"
+const kIconOpenBook = "&#x1F4D6;"
+const kIconMute = "&#x274C;"
 const kIconOpen = "&#x1f53d;"
 const kIconClosed = "&#x25B6;&#xFE0F;"
 const kIconText = "&#128263;"
@@ -79,7 +81,7 @@ function TableAddCell(reply, txt, canWrap)
 
 function TableClose(reply)
 {
-	reply.push("</TABLE>")	
+	reply.push("</TABLE>")
 }
 
 function TableShowTally(tally, options)
@@ -99,12 +101,12 @@ function TableShowTally(tally, options)
 	{
 		TableAddHeading(reply, "Colour")
 	}
-	
+
 	if (custom)
 	{
 		TableAddHeading(reply, customHeading ?? "Custom")
 	}
-	
+
 	NovaLog("Building tally table containing " + keysInOrder.length + " values")
 
 	for (var key of keysInOrder)
@@ -112,17 +114,17 @@ function TableShowTally(tally, options)
 		TableNewRow(reply, colourEntireLine ? colours[key] : undefined)
 		TableAddCell(reply, key)
 		reply.push('<td align=right class=cell>' + tally[key] + '</td>')
-		
+
 		if (addColourColumn)
 		{
 			reply.push('<td class=cell bgcolor="' + colours[key] + '" width=30></td>')
 		}
-		
+
 		if (custom)
 		{
 			reply.push('<td class=cell>' + custom(key) + '</td>')
 		}
-		
+
 		total += tally[key]
 	}
 
@@ -130,15 +132,14 @@ function TableShowTally(tally, options)
 	{
 		TableNewRow(reply)
 		reply.push('<td class=cellNoWrap><b>TOTAL</b></td><td align=right class=cell>' + total + '</td>')
-		
+
 		if (addColourColumn)
 		{
 			reply.push('<td class=cellNoWrap></td>')
 		}
 	}
-	
-	TableClose(reply)
 
+	TableClose(reply)
 	return reply.join('')
 }
 
@@ -161,6 +162,7 @@ function RenderBarFor(val, scale, dp, suffix)
 	const num = val * scale
 	const greenness = num * 2
 	const col = "rgb(" + Math.floor(300 - greenness) + ", " + Math.floor(greenness) + ", " + Math.floor(255 - greenness) + ")"
+
 	return '<DIV STYLE="width:' + Math.floor(num) + 'px;background:' + col + '" CLASS="colourBar"><b>' + ((dp === undefined) ? val : val.toFixed(dp)) + "</b><small>" + (suffix ?? '') + '</small></DIV>'
 }
 
@@ -172,7 +174,7 @@ function MakeUpdatingArea(toHere, name, extra)
 function UpdateArea(name, contents)
 {
 	const elem = document.getElementById(name)
-	
+
 	if (elem)
 	{
 		elem.innerHTML = Array.isArray(contents) ? contents.join('') : contents
@@ -194,6 +196,7 @@ var g_toTopVisible = false
 function AfterScroll()
 {
 	const showToTop = window.scrollY > 0
+
 	if (showToTop != g_toTopVisible)
 	{
 		g_toTopElem.style.display = showToTop ? "block" : "none"
@@ -210,7 +213,6 @@ function RedoToTop()
 function InitToTop()
 {
 	RedoToTop()
-
 	document.addEventListener("scroll", AfterScroll)
 	window.addEventListener("resize", AfterScroll)
 }
@@ -218,10 +220,6 @@ function InitToTop()
 //=======================
 // Options
 //=======================
-
-const g_currentOptions =
-{
-}
 
 function UpdateOptions()
 {
@@ -234,7 +232,6 @@ function UpdateOptions()
 			if (elem)
 			{
 				myTabOptions[key] = ((typeof myTabOptions[key]) == "boolean") ? elem.checked : elem.value
-//				console.log("UpdateOptions: found " + g_selectedTabName + "." + key + " set to [" + myTabOptions[key] + "]")
 			}
 		}
 	}
@@ -268,7 +265,6 @@ function OptionsMakeKey(tab, id, defVal, overwrite)
 	{
 		NovaWarn("Can't make key '" + id + "' - current tab is " + tab)
 	}
-
 	if (tab in g_currentOptions)
 	{
 		// If overwrite is an array it means use default value should the current value not feature in the array
@@ -280,7 +276,7 @@ function OptionsMakeKey(tab, id, defVal, overwrite)
 				overwrite = !checkThisArray.includes(g_currentOptions[tab][id])
 			}
 		}
-		
+
 		if (overwrite || ! (id in g_currentOptions[tab]))
 		{
 			g_currentOptions[tab][id] = defVal
@@ -290,13 +286,13 @@ function OptionsMakeKey(tab, id, defVal, overwrite)
 	{
 		g_currentOptions[tab] = {[id]:defVal}
 	}
-
 	return tab + "." + id
 }
 
 function OptionsCommon(id, funcName, callFuncLate)
 {
 	var onChange = "UpdateOptions()"
+
 	if (funcName)
 	{
 		if (callFuncLate)
@@ -343,6 +339,7 @@ function OptionsMakeButtons(toHere, info)
 function OptionsMakeSelect(toHere, funcName, heading, id, options, defaultVal, callFuncLate)
 {
 	id = OptionsMakeKey(g_selectedTabName, id, defaultVal, Object.keys(options))
+
 	var reply = [heading + ': <select ' + OptionsCommon(id, funcName, callFuncLate) + '>']
 
 	for (var [key, val] of Object.entries(options))
@@ -365,6 +362,7 @@ function OptionsMakeNumberBox(toHere, funcName, heading, id, defVal)
 	const smallerButton = '<button onClick="OptionModifyNumber(\'' + id + '\', -1, ' + funcName + ')">&lt;</button>'
 	const biggerButton = '<button onClick="OptionModifyNumber(\'' + id + '\', 1, ' + funcName + ')">&gt;</button>'
 	const muchBiggerButton = '<button onClick="OptionModifyNumber(\'' + id + '\', 5, ' + funcName + ')">&gt;&gt;</button>'
+
 	id = OptionsMakeKey(g_selectedTabName, id, defVal ?? "")
 	toHere.push(heading + ': <SMALL>' + muchSmallerButton + smallerButton + '</SMALL><input id="' + id + '" style="text-align:center;" readOnly=true size=3 type=text></input><SMALL>' + biggerButton + muchBiggerButton + '</SMALL>')
 }
