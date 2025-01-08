@@ -62,13 +62,13 @@ function MatchCompare()
 			else if (issuesWithThisRow.length)
 			{
 				TableNewRow(reply, "#FFEEEE", "valign=top")
-				TableAddCell(reply, currentChunkName)
+				TableAddCell(reply, currentChunkName, true)
 				TableAddCell(reply, issuesWithThisRow.join("<HR>"), true)
 			}
 			else
 			{
 				TableNewRow(reply)
-				TableAddCell(reply, currentChunkName)
+				TableAddCell(reply, currentChunkName, true)
 				TableAddCell(reply, "OK (" + numOkParagraphs + " paragraphs)", true)
 			}
 			issuesWithThisRow = []
