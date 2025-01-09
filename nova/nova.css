@@ -38,19 +38,19 @@ input[type=text]
 canvas
 {
 	border:1px solid #000000;
-	box-shadow: 0px 0px 3px rgba(0, 0, 0, 0.75);
+	box-shadow:0px 0px 3px rgba(0, 0, 0, 0.75);
 }
 .MatchAdd
 {
 	font-weight:700;
-	color: rgba(10, 150, 10, 1);
+	color:rgba(10, 150, 10, 1);
 	background-color:rgba(10, 150, 10, 0.1);
 }
 .MatchRemove
 {
-	text-decoration: line-through;
-	color: rgba(200, 10, 10, 0.5);
-	background-color: rgba(200, 10, 10, 0.07);
+	text-decoration:line-through;
+	color:rgba(200, 10, 10, 0.5);
+	background-color:rgba(200, 10, 10, 0.07);
 }
 #issueText
 {
@@ -91,10 +91,10 @@ canvas
 }
 #blocker img
 {
-	left: 50%;
-    position: absolute;
-    top: 50%;
-    transform: translate(-50%, -50%);
+	left:50%;
+    position:absolute;
+    top:50%;
+    transform:translate(-50%, -50%);
 }
 #hoverControls
 {
@@ -151,15 +151,15 @@ canvas
 }
 .closedTextArea
 {
-	mask: linear-gradient(to bottom,
+	mask:linear-gradient(to bottom,
       rgba(0,0,0, 1) 0,   rgba(0,0,0, 1) 20%,
       rgba(0,0,0, 0) 95%, rgba(0,0,0, 0) 0
   ) 100% 50% / 100% 100% repeat-x;
-	max-height: 80px
+	max-height:80px
 }
 .textFadeOut
 {
-	mask: linear-gradient(to bottom,
+	mask:linear-gradient(to bottom,
       rgba(0,0,0, 1) 0,   rgba(0,0,0, 1) 20%,
       rgba(0,0,0, 0) 95%, rgba(0,0,0, 0) 0
   ) 100% 50% / 100% 100% repeat-x;
@@ -251,7 +251,7 @@ canvas
 	padding-left:2px;
 	font-weight:750;
 	white-space:nowrap;
-	text-shadow: 0px 0px 1px #FFFFFF, 0px 0px 1px #FFFFFF, 0px 0px 1px #FFFFFF, 0px 0px 1px #FFFFFF;
+	text-shadow:0px 0px 1px #FFFFFF, 0px 0px 1px #FFFFFF, 0px 0px 1px #FFFFFF, 0px 0px 1px #FFFFFF;
 }
 .colourBar b
 {
@@ -281,10 +281,9 @@ button
 	background-size:200px 200px;
 	text-shadow:1px 1px 1px rgba(0, 0, 0, 0.5);
 	color:black;
-	margin-left:4px;
-	margin-right:4px;
+	margin:4px;
 	transition:background 0.3s ease-out, opacity 0.3s ease-out;
-	box-shadow: 0px 2px 3px rgba(0, 0, 0, 0.75);
+	box-shadow:0px 2px 3px rgba(0, 0, 0, 0.75);
 	opacity:0.95;
 }
 button:hover
@@ -296,7 +295,7 @@ button:disabled, button[disabled]
 {
 	font-weight:750;
 	color:#224422;
-	box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.75);
+	box-shadow:0px 1px 2px rgba(0, 0, 0, 0.75);
 	background:#DDFFDD;
 	background-position:0px;
 	opacity:1;
@@ -319,8 +318,8 @@ button:disabled, button[disabled]
 	position:absolute;
 	z-index:12;
 	white-space:nowrap;
-	pointer-events: none;
-	box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.5);
+	pointer-events:none;
+	box-shadow:5px 5px 5px rgba(0, 0, 0, 0.5);
 }
 .iconWithTooltip .tooltipBubble
 {
@@ -338,45 +337,28 @@ button:disabled, button[disabled]
 	font-size:100%;
 	opacity:0.95;
 }
-/*
 @media screen and (max-width:1000px)
 {
 	body
 	{
-		font-size:25px;
-		margin:10px 25px 70px 25px;
-	}
-	input[type=checkbox]
-	{
-		transform:scale(1.5);
-	}
-	input, select, .clicky, button
-	{
-		font-size:25px;
+		font-size:12px;
+		margin:5px 10px 50px 10px;
 	}
 	.longTextBox, .mediumTextBox, .shortTextBox
 	{
-		width:400px;
-	}
-	label
-	{
-		font-size:20px;
-	}
-	textArea
-	{
-		font-size:25px;
-	}
-	.docIn
-	{
-		width:95%;
-		height:125px;
+		width:300px;
 	}
 	.iconWithTooltip
 	{
-		font-size:16pt;
+		font-size:8pt;
+	}
+	.tabSelected, .tabDeselected
+	{
+		padding-top:3px;
+		padding-left:3px;
+		padding-right:3px;
 	}
 }
-*/
 .alertBubble
 {
 	border:1px solid rgba(0, 0, 0, 0.5);
@@ -393,5 +375,5 @@ button:disabled, button[disabled]
 	white-space:nowrap;
 	z-index:9;
 	opacity:1;
-	box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.25);
+	box-shadow:2px 2px 2px rgba(0, 0, 0, 0.25);
 }

@@ -124,7 +124,7 @@ function BuildTabs()
 	output.push('<TABLE BORDER="0" CELLPADDING="3" CELLSPACING="0"><TR>')
 
 	var spanCols = 1
-	var endCell = '<TD STYLE="border-bottom:' + kTabLine + '">&nbsp;&nbsp;&nbsp;&nbsp;</TD>'
+	var endCell = '<TD STYLE="border-bottom:' + kTabLine + '">&nbsp;</TD>'
 	var joiner = endCell
 
 	for (var tabName of Object.keys(g_tabFunctions))

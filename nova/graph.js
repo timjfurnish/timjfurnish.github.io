@@ -175,7 +175,7 @@ function DrawSmoothedGraph(graphData, backgroundData)
 
 function CalcGraphCanvasWidth()
 {
-	return Math.max(window.innerWidth - 125, 870)
+	return Math.max(window.innerWidth - 125, 400)
 }
 
 function GraphMouseMove(e)

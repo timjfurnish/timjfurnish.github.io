@@ -146,7 +146,7 @@ function AutoTagFixData()
 
 function AutoTagSave()
 {
-	window.localStorage.setItem(GetSettingsSavePrefix() + "tags", JSON.stringify(kAutoTagStuff))
+	window.localStorage.setItem(GetSettingsSavePrefix(g_settingsName) + "tags", JSON.stringify(kAutoTagStuff))
 }
 
 function AutoTagUpdate()
@@ -309,6 +309,57 @@ function ConfigDupe()
 	}
 }
 
+function ConfigDelete()
+{
+	const index = g_availableConfigs.indexOf(g_settingsName)
+
+	if (index != -1)
+	{
+		if (! confirm ("Are you sure you want to delete the " + g_settingsName + " configuration?"))
+		{
+			return
+		}
+
+		g_availableConfigs.splice(index, 1)
+	}
+	else if (! confirm ("Are you sure you want to revert the default settings?"))
+	{
+		return
+	}
+
+	RemoveConfig(g_settingsName)
+	window.localStorage.setItem("nova_configNames", g_availableConfigs.join('\n'))
+	ConfigSetSelection("")
+	Object.entries(kTweakableDefaults).forEach(InitSetting)
+	CallTheseFunctions(SettingsLoad, ProcessInput)
+	TrySetElementContents("configCell", BuildConfigBox())
+}
+
+function RemoveConfig(configName)
+{
+	try
+	{
+		const prefix = GetSettingsSavePrefix(configName)
+		const removeThese = []
+
+		for (var num = 0; num < window.localStorage.length; ++ num)
+		{
+			const nthKey = window.localStorage.key(num)
+
+			if (nthKey.startsWith(prefix))
+			{
+				removeThese.push(nthKey)
+			}
+		}
+		
+		removeThese.forEach(k => window.localStorage.removeItem(k))
+	}
+	catch(error)
+	{
+		ShowError("While removing configuration '" + configName + "':\n\n" + error.stack)
+	}
+}
+
 function OnConfigChanged()
 {
 	try
@@ -336,7 +387,7 @@ function BuildConfigBox(moreOutput)
 
 	reply.push('</select><br><br>')
 	reply.push('<button onClick="ConfigDupe()">Save as</button>')
-//	reply.push('&nbsp;<button onClick="ConfigDelete()">Delete</button>')
+	reply.push('&nbsp;<button onClick="ConfigDelete()">Delete</button>')
 
 	if (moreOutput)
 	{
@@ -534,14 +585,14 @@ function UpdateSettingFromText(name, type, savedSetting, loadingVersion)
 	}
 }
 
-function GetSettingsSavePrefix()
+function GetSettingsSavePrefix(name)
 {
-	return g_settingsName ? ("nova[" + g_settingsName + "].") : "nova_"
+	return name ? ("nova[" + name + "].") : "nova_"
 }
 
 function SettingsLoad()
 {
-	const prefix = GetSettingsSavePrefix()
+	const prefix = GetSettingsSavePrefix(g_settingsName)
 	var savedVersion = window?.localStorage?.getItem(prefix + "saveVersion")
 
 	savedVersion = savedVersion ? parseInt(savedVersion) : 1
@@ -629,7 +680,7 @@ function SettingSave(name)
 		newValue = newValue.join('\n')
 	}
 
-	window.localStorage.setItem(GetSettingsSavePrefix() + name, newValue)
+	window.localStorage.setItem(GetSettingsSavePrefix(g_settingsName) + name, newValue)
 }
 
 function SettingPerformMaintenance(whichOne)
