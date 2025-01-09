@@ -341,8 +341,8 @@ button:disabled, button[disabled]
 {
 	body
 	{
-		font-size:12px;
-		margin:5px 10px 50px 10px;
+		font-size:10px;
+		margin:4px 8px 40px 8px;
 	}
 	.longTextBox, .mediumTextBox, .shortTextBox
 	{
@@ -350,13 +350,14 @@ button:disabled, button[disabled]
 	}
 	.iconWithTooltip
 	{
-		font-size:8pt;
+		font-size:7pt;
 	}
 	.tabSelected, .tabDeselected
 	{
-		padding-top:3px;
-		padding-left:3px;
-		padding-right:3px;
+		padding-top:1px;
+		padding-left:2px;
+		padding-right:2px;
+		padding-bottom:5px;
 	}
 }
 .alertBubble
