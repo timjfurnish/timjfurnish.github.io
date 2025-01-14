@@ -6,15 +6,17 @@
 const g_wordSortModes = {Alphabetical:"Alphabetical", WordLength:"Word length (descending)", WordLengthUp:"Word length (ascending)", Count:"Count", InSpeech:"In speech", InNarrative:"In narrative", Score:"Score"}
 const g_displayUnique = {All:"Everything", Repeated:"Repeated words only", Unique:"Unique words only"}
 const g_showNameModes = {All:"Everything", JustNames:"Just names", NoNames:"No names"}
+const g_counterFunctions = {WORDS:Counter_Words, PHRASES:Counter_Phrases}
 
 var g_maxWordCountRows = 100
 var g_calculatedScores = true
 
-TabDefine("words", function(reply, thenCall)
+function Counter_Words(reply, thenCall)
 {
 	if (! g_calculatedScores)
 	{
 		NovaLog("Calculating word count scores!")
+
 		for (var [key, data] of Object.entries(g_checkedWords))
 		{
 			if (key.length > 2)
@@ -27,17 +29,27 @@ TabDefine("words", function(reply, thenCall)
 				data.score = 0
 			}
 		}
+
 		g_calculatedScores = true
 	}
+
 	var options = []
-	OptionsMakeSelect(options, "ChangedWordCountSettings()", "Sort", "sortMode", g_wordSortModes, "Score")
-	OptionsMakeSelect(options, "ChangedWordCountSettings()", "Show", "displayUnique", g_displayUnique, "Repeated")
-	OptionsMakeSelect(options, "ChangedWordCountSettings()", "Include", "showNames", g_showNameModes, "NoNames")
+
+	OptionsMakeSelect(options, "ChangedWordCountSettings()", "Sort", "sortMode", g_wordSortModes, "Score", true)
+	OptionsMakeSelect(options, "ChangedWordCountSettings()", "Show", "displayUnique", g_displayUnique, "Repeated", true)
+	OptionsMakeSelect(options, "ChangedWordCountSettings()", "Include", "showNames", g_showNameModes, "NoNames", true)
 	OptionsMakeCheckbox(options, "ChangedWordCountSettings()", "includeHyphens", "Include words containing hyphens", true, true)
+
 	reply.push(options.join('&nbsp;&nbsp;'))
 	MakeUpdatingArea(reply, "wordTableHere")
 	thenCall.push(ChangedWordCountSettings)
-}, {icon:kIconAbacus, tooltipText:"Word counter"})
+}
+
+TabDefine("counters", function(reply, thenCall)
+{
+	TabBuildButtonsBar(reply, Object.keys(g_counterFunctions))
+	g_counterFunctions[g_currentOptions.counters.page](reply, thenCall)
+}, {icon:kIconAbacus, tooltipText:"Counters"})
 
 function ChangedWordCountSettings()
 {
@@ -56,6 +68,7 @@ function RedrawWordTable()
 	{
 		var sortFunctions =
 		{
+			Alphabetical:(p1, p2) => (p1.localeCompare(p2)),
 			WordLength:(p1, p2) => (p2.length - p1.length),
 			WordLengthUp:(p1, p2) => (p1.length - p2.length),
 			Count:(p1, p2) => ((g_checkedWords[p2].total - g_checkedWords[p1].total) ?? (p2.length - p1.length)),
@@ -76,19 +89,18 @@ function RedrawWordTable()
 			Unique:num => num == 1,
 			Repeated:num => num > 1,
 		}
-		const limitFunc = limitFunctions[document.getElementById("words.displayUnique").value]
-		const nameMode = document.getElementById("words.showNames").value
-		const sortMode = document.getElementById('words.sortMode').value
-		const includeHyphens = document.getElementById("words.includeHyphens").checked
-		const whichVar = "total"
+		const limitFunc = limitFunctions[document.getElementById("counters.displayUnique").value]
+		const {showNames, includeHyphens, sortMode} = g_currentOptions.counters
+
 		wordsInOrder.sort(sortFunctions[sortMode])
+
 		var thereWasMore = false;
 		var numRows = 0;
 
 		for (var w of wordsInOrder)
 		{
 			const wordInfo = g_checkedWords[w]
-			if (limitFunc(wordInfo[whichVar]))
+			if (limitFunc(wordInfo.total))
 			{
 				var isAName = false
 
@@ -101,7 +113,7 @@ function RedrawWordTable()
 					}
 				}
 
-				if (nameMode != (isAName ? "NoNames" : "JustNames"))
+				if (showNames != (isAName ? "NoNames" : "JustNames"))
 				{
 					if (includeHyphens || !w.includes('-'))
 					{

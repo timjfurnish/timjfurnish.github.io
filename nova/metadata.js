@@ -45,12 +45,15 @@ function MakeClearTally(createMentions)
 function MetaDataCombine(container, name, addThisValue)
 {
 	const addThisType = GetDataType(addThisValue)
+
 	if (! (name in container))
 	{
 		NovaLog("Adding " + name + " data '" + addThisValue + "' of type " + addThisType + " to container that only contains this data: [" + Object.keys(container).join(", ") + "]")
 		container[name] = (addThisType == "number") ? 0 : {}
 	}
+
 	const toHereType = GetDataType(container[name])
+
 	if (toHereType == addThisType)
 	{
 		if (toHereType == "number")
@@ -114,7 +117,7 @@ function MetaDataDoneProcessing()
 		}
 		else
 		{
-			alert("Word count has stayed at " + Words + ".")
+//			alert("Word count has stayed at " + Words + ".")
 		}
 	}
 	g_lastReportedWordCount = Words
@@ -172,6 +175,7 @@ function MetaDataEndSection()
 				}
 			}
 		}
+
 		g_metaDataTally = MakeClearTally(true)
 		g_metaDataInOrder.push(storeThis)
 		g_metaDataGatherParagraphs = []
@@ -428,7 +432,7 @@ function MetaDataDrawTable()
 		}
 
 		const colourLookUp = colourBasedOn ? MakeColourLookUpTable(Object.keys(seenThings[colourBasedOn])) : null
-		const kSecondsPerWord = (60 / 210) // Average WPM apparently 183 out loud, 238 in head
+		const kSecondsPerWord = (60 / g_tweakableSettings.wordsPerMinute)
 
 		// Calculate derived values (e.g. percentages) and max values
 		for (var data of dataToDisplay)

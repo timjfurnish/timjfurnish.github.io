@@ -74,10 +74,10 @@ function CheckOrderOfValues(tag, value, isAscending)
 {
 	if (tag in g_metaDataSeenValues)
 	{
-		const valAsNumber = parseInt(value)
+		const valAsNumber = parseInt(value.replace(/,/g, ''))
 		for (var known of Object.keys(g_metaDataSeenValues[tag]))
 		{
-			const knownAsNumber = parseInt(known)
+			const knownAsNumber = parseInt(known.replace(/,/g, ''))
 			if (isAscending ? (valAsNumber <= knownAsNumber) : (valAsNumber >= knownAsNumber))
 			{
 				IssueAdd("Expected " + valAsNumber + " (from '" + value + "') to be " + (isAscending ? ">" : "<") + " " + knownAsNumber + " (from '" + known + "')", "ORDER")
@@ -112,8 +112,14 @@ function SettingsAddAutoTag()
 
 	if (newValue && ! (newValue in kAutoTagStuff))
 	{
-		kAutoTagStuff[newValue] = {tag:"NEWTAG", numericalCheck:"none", characters:"", clearTags:""}
-		AutoTagUpdate()
+		const suggestTag = newValue.toUpperCase().replace(/[^A-Z0-9]/g, '')
+		const useTag = PromptForNameAndCheckIfAllowed("Enter the name for this tag:", (suggestTag != "") ? suggestTag : "NEWTAG", null, "tag")
+
+		if (useTag)
+		{
+			kAutoTagStuff[newValue] = {tag:useTag, numericalCheck:"none", clearTags:""}
+			AutoTagUpdate()
+		}
 	}
 }
 
@@ -167,11 +173,11 @@ function MakeClickableTextBubble(txt, thePrompt, key)
 function AutoTagEditText(txt, thePrompt, key)
 {
 	const oldValue = key ? kAutoTagStuff[txt][key] : txt
-	const newValue = prompt(thePrompt + ":", oldValue)
+	const newValue = (key == "tag") ? PromptForNameAndCheckIfAllowed(thePrompt + ":", oldValue, null, key) : prompt(thePrompt + ":", oldValue)
 
 	if (newValue != null && newValue != oldValue)
 	{
-		if (newValue == "" && key != 'characters' && key != 'clearTags')
+		if (newValue == "" && key != 'clearTags')
 		{
 			NovaWarn("User tried to set " + (key ?? "text to find in document") + " to empty string - ignore")
 			return
@@ -217,7 +223,6 @@ function BuildAutomaticTagsBox(moreOutput)
 
 	TableAddHeading(reply, "Tag")
 	TableAddHeading(reply, "Text")
-	TableAddHeading(reply, "Remove") // "Process")
 	TableAddHeading(reply, "Clear")
 	TableAddHeading(reply, "Options")
 
@@ -243,7 +248,6 @@ function BuildAutomaticTagsBox(moreOutput)
 		TableNewRow(reply)
 		TableAddCell(reply, PutBitsSideBySide([MakeIconWithTooltip(kIconTrash, 0, "Delete", "delete kAutoTagStuff['" + line + "']; AutoTagUpdate()"), "&nbsp;" + MakeClickableTextBubble(line, "Enter the name for this tag", "tag")]))
 		TableAddCell(reply, MakeClickableTextBubble(line, "Enter string to find in document"))
-		TableAddCell(reply, MakeClickableTextBubble(line, "Enter characters to remove from line before storing tag text", "characters"))
 		TableAddCell(reply, MakeClickableTextBubble(line, "Enter space-seperated list of tags to clear when this text is found", "clearTags"))
 		TableAddCell(reply, PutBitsSideBySide(optionBits))
 	}
@@ -259,6 +263,33 @@ function BuildAutomaticTagsBox(moreOutput)
 	return reply.join("")
 }
 
+function PromptForNameAndCheckIfAllowed(thePrompt, oldValue, checkHere, whatIsIt, checkHereWarning)
+{
+	const newName = prompt(thePrompt, oldValue)?.toUpperCase()
+
+	if (newName && newName != "")
+	{
+		if (newName.replace(/[A-Z0-9_]/gi, '') != '')
+		{
+			alert ("Illegal " + whatIsIt + " name, only A-Z, 0-9 and _ are allowed!")
+		}
+		else if (newName.length > 32)
+		{
+			alert ("Illegal " + whatIsIt + " name, maximum length is 32 characters!")
+		}
+		else if (checkHere && newName in checkHere)
+		{
+			alert (checkHereWarning + " '" + newName + "'")
+		}
+		else
+		{
+			return newName
+		}
+	}
+	
+	return null
+}
+
 //=======================================================================
 // Support for multiple configs
 //=======================================================================
@@ -271,41 +302,26 @@ function ConfigSetSelection(name)
 
 function ConfigDupe()
 {
-	const newName = prompt("Save configuration as").toUpperCase()
+	const newName = PromptForNameAndCheckIfAllowed("Save configuration as:", "", g_availableConfigs, "config", "There's already a config called")
 
 	if (newName)
 	{
-		if (newName.replace(/[A-Z0-9_]/gi, '') != '')
-		{
-			alert ("Illegal name, only A-Z, 0-9 and _ are allowed!")
-		}
-		else if (newName.length > 32)
-		{
-			alert ("Illegal name, maximum length is 32 characters!")
-		}
-		else if (newName in g_availableConfigs)
-		{
-			alert ("There's already a configutation called '" + newName + "' - can't overwrite it!")
-		}
-		else
-		{
-			ConfigSetSelection(newName)
+		ConfigSetSelection(newName)
 
-			for (var [name, val] of Object.entries(g_tweakableSettings))
+		for (var [name, val] of Object.entries(g_tweakableSettings))
+		{
+			if (kTweakableDefaults[name] != val)
 			{
-				if (kTweakableDefaults[name] != val)
-				{
-					SettingSave(name)
-				}
+				SettingSave(name)
 			}
-
-			AutoTagSave()
-
-			g_availableConfigs.push(newName)
-			window.localStorage.setItem(GetSettingsSavePrefix() + "saveVersion", kCurrentSaveFormatVersion)
-			window.localStorage.setItem("nova_configNames", g_availableConfigs.join('\n'))
-			TrySetElementContents("configCell", BuildConfigBox())
 		}
+
+		AutoTagSave()
+
+		g_availableConfigs.push(newName)
+		window.localStorage.setItem(GetSettingsSavePrefix() + "saveVersion", kCurrentSaveFormatVersion)
+		window.localStorage.setItem("nova_configNames", g_availableConfigs.join('\n'))
+		TrySetElementContents("configCell", BuildConfigBox())
 	}
 }
 
@@ -430,12 +446,13 @@ const kTweakableDefaults =
 	showWordCountChanges:true,
 	debugListQueuedFunctions:false,
 	debugLog:false,
+	wordsPerMinute:210,  // Average WPM apparently 183 out loud, 238 in head
 }
 
 const kSettingFunctions =
 {
 	debugListQueuedFunctions:val => document.getElementById("debugOut").style.display = val ? "block" : "none",
-	debugLog:val => document.getElementById("debugLog").style.display = val ? "block" : "none",
+	debugLog:val => document.getElementById("debugLogWrapper").style.display = val ? "block" : "none",
 	tooltips:val => RedoToTop() + RedoTabTops() + RethinkEnabledTabs()
 }
 
@@ -524,9 +541,9 @@ const kSettingNames =
 	},
 	IGNORE:
 	{
-		splitInfinitiveIgnoreList:"Split infinitive check ignores|shortTextBox",
-		adverbHyphenIgnoreList:"Adverb hyphen check ignores|shortTextBox",
-		numberIgnoreList:"Number check ignores|shortTextBox",
+		splitInfinitiveIgnoreList:"Split infinitive^check ignores|shortTextBox",
+		adverbHyphenIgnoreList:"Adverb hyphen^check ignores|shortTextBox",
+		numberIgnoreList:"Number check^ignores|shortTextBox",
 	},
 	DISPLAY:
 	{
@@ -534,6 +551,7 @@ const kSettingNames =
 		showWordCountChanges:"Show word count changes",
 		debugListQueuedFunctions:"List queued functions",
 		debugLog:"Show log",
+		wordsPerMinute:"Words per minute (for time^estimates in Stats tab)",
 	}
 }
 
@@ -1068,11 +1086,6 @@ function AddToSetting(whichOne, addThis)
 }
 function InitSettings()
 {
-	for (var val of Object.values(kAutoTagStuff))
-	{
-		val.tidyRegEx = val.removeCharacters ? new RegExp('[' + EscapeRegExSpecialChars(val.removeCharacters) + ']', 'g') : null
-	}
-
 	Object.keys(g_warningNames).forEach(id => OptionsMakeKey("settings", id, ! (id in kOptionCustomNames)))
 
 	IssueAutoFixDefine("ILLEGAL CHARACTERS", "Ignore characters", characters => AddToSetting("allowedCharacters", characters))

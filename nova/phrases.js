@@ -20,7 +20,7 @@ function PhrasesDisplay()
 					{
 						if (! fragment.heading && fragment.text.includes(" "))
 						{
-							if (fragment.isSpeech ? g_currentOptions.phrases.speech : g_currentOptions.phrases.narr)
+							if (fragment.isSpeech ? g_currentOptions.counters.speech : g_currentOptions.counters.narr)
 							{
 								Tally(count, fragment.text)
 							}
@@ -31,10 +31,11 @@ function PhrasesDisplay()
 		}
 
 		var reply = []
+		var countWithoutSingletons = {}
+
 		TableOpen(reply)
 		TableAddHeading(reply, "Phrase")
 		TableAddHeading(reply, "Times seen")
-		var countWithoutSingletons = {}
 
 		for (var [phrase, num] of Object.entries(count))
 		{
@@ -54,7 +55,7 @@ function PhrasesDisplay()
 	}
 }
 
-TabDefine("phrases", function(reply, thenCall)
+function Counter_Phrases(reply, thenCall)
 {
 	var options = []
 	OptionsMakeCheckbox(options, "PhrasesDisplay()", "speech", "Speech", true, true)
@@ -62,4 +63,4 @@ TabDefine("phrases", function(reply, thenCall)
 	reply.push(OptionsConcat(options))
 	MakeUpdatingArea(reply, "phrasesGoHere")
 	thenCall.push(PhrasesDisplay)
-}, {icon:kIconPhrase})
+}

@@ -10,9 +10,6 @@ var g_canSelectTabs = true
 var g_tabIconsToDisableWhenNoText = []
 var g_cacheTabTitles = {}
 
-const kTabLine = "1px solid #000000"
-const kTabSelected = "#F5F5F5"
-
 function InitTabs()
 {
 	g_hoverControls = document.getElementById('hoverControls')
@@ -57,10 +54,12 @@ function MakeIconWithTooltip(icon, angle, tooltipText, clickyFunc, id, alpha, xO
 	//------------------
 	var extraArgs = clickyFunc ? ' onClick="' + clickyFunc + '"' : ''
 	var styleBits = []
+
 	if (id)
 	{
 		extraArgs += ' id="' + id + '"'
 	}
+
 	if (fontSize)
 	{
 		styleBits.push('font-size:' + fontSize)
@@ -70,6 +69,7 @@ function MakeIconWithTooltip(icon, angle, tooltipText, clickyFunc, id, alpha, xO
 	{
 		styleBits.push('opacity:' + alpha)
 	}
+
 	if (styleBits.length)
 	{
 		extraArgs += ' style="' + styleBits.join('; ') + '"'
@@ -124,7 +124,7 @@ function BuildTabs()
 	output.push('<TABLE BORDER="0" CELLPADDING="3" CELLSPACING="0"><TR>')
 
 	var spanCols = 1
-	var endCell = '<TD STYLE="border-bottom:' + kTabLine + '">&nbsp;</TD>'
+	var endCell = '<TD CLASS="tabGap"></TD>'
 	var joiner = endCell
 
 	for (var tabName of Object.keys(g_tabFunctions))
@@ -140,14 +140,22 @@ function BuildTabs()
 
 		spanCols += 2
 		output.push(joiner + '<TD WIDTH="10" ID="tab_' + tabName + '" TABINDEX=0 ONCLICK="SetTab(\'' + tabName + '\')" CLASS="tabDeselected"></TD>')
-		joiner = '<TD WIDTH="1" STYLE="border-bottom:' + kTabLine + '"></TD>'
+		joiner = '<TD WIDTH="1" CLASS="tabGap"></TD>'
 	}
 
 	output.push(endCell)
 	output.push('<TR><TD COLSPAN="' + spanCols + '" ALIGN=center ID="tabContents"></TABLE>')
 	infoPanel.innerHTML = output.join('')
 
+	document.getElementById("debugLogWrapper").innerHTML = '<div id=screenDims style="padding-bottom:5px"></div><div id=debugLog></div>'
+	window.addEventListener("resize", LogWindowDims)
+	LogWindowDims()
 	ShowTab(g_selectedTabName)
+}
+
+function LogWindowDims()
+{
+	TrySetElementContents("screenDims", "<b>Window:</b> " + window.innerWidth + " x " + window.innerHeight)
 }
 
 function ShowHoverControls(arr)

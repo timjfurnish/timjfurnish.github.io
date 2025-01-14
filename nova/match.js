@@ -201,7 +201,7 @@ TabDefine("match", function(reply, thenCall)
 {
 	var options = []
 	var chunkOptions = {[""]:""}
-	Object.keys(g_metaDataAvailableColumns).forEach(name => chunkOptions[name] = name)
+	Object.values(kAutoTagStuff).forEach(data => chunkOptions[data.tag] = data.tag)
 	OptionsMakeSelect(options, "MatchCompare()", "Chunk using", "chunks", chunkOptions, "", true)
 	OptionsMakeButtons(options, {Clear:"document.getElementById('compareWithThis').value = ''; MatchCompare()", Paste:"MatchInputPaste()"})
 	reply.push(OptionsConcat(options) + "<BR>")

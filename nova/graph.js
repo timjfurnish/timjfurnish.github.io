@@ -16,11 +16,13 @@ function Smoother(arr)
 	const len = arr.length
 	const midIndex = (len + 1) / 2
 	const div = midIndex * midIndex
+
 	for (var t in arr)
 	{
 		const frac = (+t + 1) * (len - t) / (div)
 		total += arr[t] * frac * frac
 	}
+
 	return total
 }
 
@@ -37,10 +39,12 @@ function GraphCreateStandardOptions(options, graphFuncName, addColourUsing)
 	if (addColourUsing)
 	{
 		var nameData = {[""]:""}
+
 		for (var eachCol of Object.keys(g_metaDataAvailableColumns))
 		{
 			nameData[eachCol] = eachCol
 		}
+
 		OptionsMakeSelect(options, graphFuncName + "()", "Colour background using", "colourUsing", nameData, "", true)
 	}
 }
@@ -150,23 +154,32 @@ function DrawSmoothedGraph(graphData, backgroundData)
 		for (var spelling of colourEntries)
 		{
 			const {drawThis} = drawData[spelling]
-			// Remove the first smoothingCount entries and the last smoothingCount entries so that we end up the same size as the data passed in
-			drawThis.splice(0, smoothingCount)
-			drawThis.splice(-smoothingCount)
-			var numDone = 0
-			const scaleX = canvas.width / (drawThis.length + 1)
-			const scaleY = canvas.height * 0.95 / biggestVal
-			drawToHere.fillStyle = colours[spelling]
-			drawToHere.beginPath()
-			drawToHere.moveTo(0, canvas.height)
 
-			for (var t of drawThis)
+			if (smoothingCount > 1)
 			{
-				++ numDone
-				drawToHere.lineTo(numDone * scaleX, canvas.height - t * scaleY)
+				// Remove the first smoothingCount - 1 entries and the last smoothingCount entries so that we end up the same size as the data passed in
+				drawThis.splice(0, smoothingCount - 1)
+				drawThis.splice(1 - smoothingCount)
 			}
-			drawToHere.lineTo(canvas.width, canvas.height)
-			drawToHere.fill()
+
+			if (drawThis.length > 1)
+			{
+				var numDone = 0
+				const scaleX = canvas.width / (drawThis.length - 1)
+				const scaleY = canvas.height * 0.95 / biggestVal
+				drawToHere.fillStyle = colours[spelling]
+				drawToHere.beginPath()
+				drawToHere.moveTo(0, canvas.height)
+
+				for (var t of drawThis)
+				{
+					drawToHere.lineTo(numDone * scaleX, canvas.height - t * scaleY)
+					++ numDone
+				}
+
+				drawToHere.lineTo(canvas.width, canvas.height)
+				drawToHere.fill()
+			}
 		}
 	}
 

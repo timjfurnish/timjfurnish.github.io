@@ -58,6 +58,7 @@ const kIllegalSubstrings =
 	["split infinitive", /\bto (not|never|always|almost|[a-z][a-z]+ly) [a-z][a-z]+/gi, txt => g_tweakableSettings.splitInfinitiveIgnoreList.includes(txt)],
 	["adverb with hyphen", /\b[a-z]+ly\-[a-z]+\b/gi, txt => g_tweakableSettings.adverbHyphenIgnoreList.includes(txt)]
 ]
+
 function SetUp()
 {
 	g_onQueueEmpty.push(ShowTabs)
@@ -162,12 +163,8 @@ function ShouldProcessPara(txtInProcessed)
 		if (withoutKey != txtInProcessed)
 		{
 			const autoTagSettings = kAutoTagStuff[t]
-			const {tag, characters, numericalCheck, clearTags, includeLineInText, joinNextLine} = autoTagSettings
+			const {tag, numericalCheck, clearTags, includeLineInText, joinNextLine} = autoTagSettings
 			var storeAs = withoutKey.trim()
-			if (characters)
-			{
-				storeAs = storeAs.replace(new RegExp('[' + EscapeRegExSpecialChars(characters) + ']', 'g'), "")
-			}
 
 			if (joinNextLine)
 			{
