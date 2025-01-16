@@ -344,7 +344,7 @@ button:disabled, button[disabled]
 	font-size:100%;
 	opacity:0.95;
 }
-@media screen and (max-width:1000px)
+@media screen and (max-width:700px)
 {
 	body
 	{
