@@ -51,72 +51,78 @@ function GraphCreateStandardOptions(options, graphFuncName, addColourUsing)
 
 function DrawSmoothedGraph(graphData, backgroundData)
 {
-	const {colours, data} = graphData
-	const smoothingCount = g_currentOptions[g_selectedTabName][GetGraphSmoothingValueName()]
-	const colourEntries = Object.keys(colours)
-	const drawData = {}
-	const sizeX = data.length
-	NovaLog("Drawing graph of width " + sizeX + " for " + colourEntries.length + " values [" + colourEntries.join(', ') + "] smooth=" + smoothingCount)
-
-	for (var spelling of colourEntries)
-	{
-		drawData[spelling] = {smoothing:[0], drawThis:[]}
-		for (var i = 0; i < smoothingCount; ++ i)
-		{
-			drawData[spelling].smoothing.push(0, 0)
-		}
-	}
-	//================================================
-	// Calculate largest value and fill in drawData
-	//================================================
-	var biggestVal = 0
-	for (var t of data)
-	{
-		var totalHere = 0
-
-		for (var spelling of colourEntries)
-		{
-			const incomingValue = t?.[spelling] ?? 0
-			drawData[spelling].smoothing.push(incomingValue)
-			drawData[spelling].smoothing.shift()
-			const myVal = Smoother(drawData[spelling].smoothing)
-			totalHere += myVal
-			drawData[spelling].drawThis.push(totalHere)
-		}
-
-		if (biggestVal < totalHere)
-		{
-			biggestVal = totalHere
-		}
-	}
-
-	for (var i = 0; i < smoothingCount * 2; ++ i)
-	{
-		var totalHere = 0
-		for (var spelling of colourEntries)
-		{
-			drawData[spelling].smoothing.push(0)
-			drawData[spelling].smoothing.shift()
-			const myVal = Smoother(drawData[spelling].smoothing)
-			totalHere += myVal
-			drawData[spelling].drawThis.push(totalHere)
-		}
-
-		if (biggestVal < totalHere)
-		{
-			biggestVal = totalHere
-		}
-	}
-	colourEntries.reverse()
-	//=========================================
-	// DONE GATHERING DATA! DRAW IT!
-	//=========================================
-
 	const canvas = document.getElementById("graphCanvas")
 	const drawToHere = canvas?.getContext("2d")
 
 	if (drawToHere)
 	{
+		const {colours, data} = graphData
+		const smoothingCount = g_currentOptions[g_selectedTabName][GetGraphSmoothingValueName()]
+		const colourEntries = Object.keys(colours)
+		const drawData = {}
+		const sizeX = data.length
+
+		NovaLog("Drawing graph (canvas=" + canvas.width + " data=" + sizeX + ") for " + colourEntries.length + " values [" + colourEntries.join(', ') + "] smooth=" + smoothingCount)
+
+		for (var spelling of colourEntries)
+		{
+			drawData[spelling] = {smoothing:[0], drawThis:[]}
+			for (var i = 0; i < smoothingCount; ++ i)
+			{
+				drawData[spelling].smoothing.push(0, 0)
+			}
+		}
+
+		//================================================
+		// Calculate largest value and fill in drawData
+		//================================================
+
+		var biggestVal = 0
+
+		for (var t of data)
+		{
+			var totalHere = 0
+
+			for (var spelling of colourEntries)
+			{
+				const incomingValue = t?.[spelling] ?? 0
+				drawData[spelling].smoothing.push(incomingValue)
+				drawData[spelling].smoothing.shift()
+				const myVal = Smoother(drawData[spelling].smoothing)
+				totalHere += myVal
+				drawData[spelling].drawThis.push(totalHere)
+			}
+
+			if (biggestVal < totalHere)
+			{
+				biggestVal = totalHere
+			}
+		}
+
+		for (var i = 0; i < smoothingCount * 2; ++ i)
+		{
+			var totalHere = 0
+			for (var spelling of colourEntries)
+			{
+				drawData[spelling].smoothing.push(0)
+				drawData[spelling].smoothing.shift()
+				const myVal = Smoother(drawData[spelling].smoothing)
+				totalHere += myVal
+				drawData[spelling].drawThis.push(totalHere)
+			}
+
+			if (biggestVal < totalHere)
+			{
+				biggestVal = totalHere
+			}
+		}
+
+		colourEntries.reverse()
+
+		//=========================================
+		// DONE GATHERING DATA! DRAW IT!
+		//=========================================
+
 		drawToHere.fillStyle = "#444444"
 		drawToHere.fillRect(0, 0, canvas.width, canvas.height)
 
@@ -188,7 +194,7 @@ function DrawSmoothedGraph(graphData, backgroundData)
 
 function CalcGraphCanvasWidth()
 {
-	return Math.max(window.innerWidth - 125, 400)
+	return Math.max(Math.floor(window.innerWidth * 0.825), 200)
 }
 
 function GraphMouseMove(e)
@@ -199,6 +205,7 @@ function GraphMouseMove(e)
 	const frac = (e.clientX - rect.left) / width
 	const contents = []
 	const index = Math.round(frac * (g_graphHoverData.data.length + 1))
+
 	for (var each of Object.keys(g_graphHoverData.colours))
 	{
 		const val = g_graphHoverData.data[index]?.[each];
@@ -250,7 +257,12 @@ window.addEventListener('resize', function(theEvent)
 
 	if (elem)
 	{
-		elem.width = CalcGraphCanvasWidth()
-		TabRedrawGraph()
+		const newWidth = CalcGraphCanvasWidth()
+
+		if (newWidth != elem.width)
+		{
+			elem.width = newWidth
+			TabRedrawGraph()
+		}
 	}
 }, true);
