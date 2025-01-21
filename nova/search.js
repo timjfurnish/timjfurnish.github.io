@@ -186,11 +186,14 @@ TabDefine("search", function(reply, thenCall)
 
 	nameData["twent*|thirt*|forty|fortie*|fift*|eight*|one|ones|two*|three*|four*|five*|six*|seven*|nine*|ten|tens|tenth*|third*|fourth*|ninth*|eleven*|twelfth*|twelve*|hundred*|thousand*|billion*|million*|trillion*"] = "Numbers (words)"
 	nameData["*[0-9]*"] = "Numbers (digits)"
+	nameData["totally|utterly|fully|completely|literally"] = "Redundant adverbs"
+	
 	var options = []
 	OptionsMakeSelect(options, "RedrawSearchResults()", "Entity", "entity", nameData, "")
 	OptionsMakeTextBox(options, "RedrawSearchResults()", "Search for", "custom")
 	OptionsMakeCheckbox(options, "RedrawSearchResults()", "compress", "Compress empty areas", false, true)
 	GraphCreateStandardOptions(options, "RedrawSearchResults", true)
+
 	reply.push(OptionsConcat(options))
 	GraphAddCanvas(reply, 200, thenCall)
 	MakeUpdatingArea(reply, "searchResultsHere", 'align="left" style="user-select:text"')
