@@ -597,7 +597,7 @@ function TabFunctionStats(reply, thenCall)
 	{
 		var wordsInDoc = 0
 		g_metaDataInOrder.forEach(metaData => wordsInDoc += metaData.Words)
-		var bookList = {["War and Peace"]:561304, ["Les Miserables"]:530982, ["David Copperfield"]:358000, ["Moby Dick"]:206052, ["Jane Eyre"]:183858, ["Great Expectations"]:183349, ["Dracula"]:160363, ["Emma"]:155887, ["Oliver Twist"]:155960, ["The Night Watch"]:146965, ["The Da Vinci Code"]:144330, ["A Tale of Two Cities"]:135420, ["Pride and Prejudice"]:120697, ["Sense and Sensibility"]:126194, ["Wuthering Heights"]:107945, ["To Kill A Mockingbird"]:100388, ["The Picture of Dorian Gray"]:78462, ["Frankenstein"]:74800, ["The Catcher in the Rye"]:73404, ["Treasure Island"]:66950, ["The War of the Worlds"]:59796, ["The Jungle Book"]:54178, ["Peter Pan"]:50844, ["The Great Gatsby"]:47094, ["Beowulf"]:43092, ["The Wonderful Wizard of Oz"]:42636, ["Pygmalion"]:36718, ["A Christmas Carol"]:31650, ["Alice’s Adventures in Wonderland"]:29610, ["The Importance of Being Earnest"]:23760}
+		var bookList = {["War and Peace"]:561304, ["Les Miserables"]:530982, ["David Copperfield"]:358000, ["Moby Dick"]:206052, ["Jane Eyre"]:183858, ["Great Expectations"]:183349, ["Dracula"]:160363, ["Emma"]:160376, ["Oliver Twist"]:155960, ["The Night Watch"]:146965, ["The Da Vinci Code"]:144330, ["A Tale of Two Cities"]:135420, ["Pride and Prejudice"]:120697, ["Sense and Sensibility"]:126194, ["Wuthering Heights"]:107945, ["To Kill A Mockingbird"]:100388, ["The Picture of Dorian Gray"]:78462, ["Frankenstein"]:74800, ["The Catcher in the Rye"]:73404, ["Treasure Island"]:66950, ["The War of the Worlds"]:59796, ["The Jungle Book"]:54178, ["Peter Pan"]:50844, ["The Great Gatsby"]:47094, ["Beowulf"]:43092, ["The Wonderful Wizard of Oz"]:42636, ["Pygmalion"]:36718, ["A Christmas Carol"]:31650, ["Alice’s Adventures in Wonderland"]:29610, ["The Importance of Being Earnest"]:23760}
 		bookList["THIS BOOK"] = wordsInDoc
 		reply.push(TableShowTally(bookList, {colours:{["THIS BOOK"]:"#DDFFDD"}, colourEntireLine:true, keyHeading:"Book name", valueHeading:"Words", customHeading:"Ratio", custom:line =>
 			{
@@ -610,6 +610,24 @@ function TabFunctionStats(reply, thenCall)
 }
 
 TabDefine("graph", TabFunctionGraph, {icon:"&#x1F4C8;"})
+
+function AddColourUsingData(graphThis, name, brightness)
+{
+	if (name in g_metaDataSeenValues)
+	{
+		graphThis.background = []
+		const colours = MakeColourLookUpTable(Object.keys(g_metaDataSeenValues[name]), 0.4, undefined, brightness)
+
+		for (var elem of g_metaDataInOrder)
+		{
+			graphThis.background.push({width:elem.Paragraphs, colour:colours[elem.info[name]] ?? "#666666"})
+		}
+	}
+	else
+	{
+		NovaWarn("name='" + name + "' isn't in [" + Object.keys(g_metaDataSeenValues) + "]")
+	}
+}
 
 function MetaDataDrawGraph()
 {
@@ -643,7 +661,7 @@ function MetaDataDrawGraph()
 	else if (g_currentOptions.graph.data == "SPEECH")
 	{
 		const graphThis = {colours:{SPEECH:"rgba(255,255,255,0.3)", NARRATIVE:"rgba(0,0,0,0.6)"}, data:[]}
-
+		
 		for (var elem of g_metaDataInOrder)
 		{
 			for (var para of elem.myParagraphs)
@@ -668,7 +686,9 @@ function MetaDataDrawGraph()
 				}
 			}
 		}
-		DrawSmoothedGraph(graphThis, {colourUsing:g_currentOptions.graph.colourUsing})
+		
+		AddColourUsingData(graphThis, g_currentOptions.graph.colourUsing)
+		DrawSmoothedGraph(graphThis)
 	}
 	else if (g_currentOptions.graph.data == "SPEECHFRAC")
 	{
@@ -695,7 +715,9 @@ function MetaDataDrawGraph()
 				}
 			}
 		}
-		DrawSmoothedGraph(graphThis, {colourUsing:g_currentOptions.graph.colourUsing})
+
+		AddColourUsingData(graphThis, g_currentOptions.graph.colourUsing)
+		DrawSmoothedGraph(graphThis)
 	}
 	else if (g_currentOptions.graph.data)
 	{
@@ -719,7 +741,9 @@ function MetaDataDrawGraph()
 				}
 			}
 		}
-		DrawSmoothedGraph(graphThis, {colourUsing:g_currentOptions.graph.colourUsing, brightness:0.4})
+
+		AddColourUsingData(graphThis, g_currentOptions.graph.colourUsing, 0.4)
+		DrawSmoothedGraph(graphThis)
 	}
 }
 

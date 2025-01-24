@@ -88,10 +88,12 @@ function TableShowTally(tally, options)
 {
 	var reply = []
 	var total = 0
+	var totalIgnored = 0
 
 	const {colours, colourEntireLine, showTotal, keyHeading, valueHeading, custom, customHeading} = options ?? {}
 	const keysInOrder = Object.keys(tally).sort((p1, p2) => (tally[p2] - tally[p1]))
 	const addColourColumn = colours && !colourEntireLine
+	const ignoreWhenThisLow = options?.ignoreWhenThisLow ?? 0
 
 	TableOpen(reply)
 	TableAddHeading(reply, keyHeading ?? "Text")
@@ -111,31 +113,46 @@ function TableShowTally(tally, options)
 
 	for (var key of keysInOrder)
 	{
-		TableNewRow(reply, colourEntireLine ? colours[key] : undefined)
-		TableAddCell(reply, key)
-		reply.push('<td align=right class=cell>' + tally[key] + '</td>')
-
-		if (addColourColumn)
+		const value = tally[key]
+		
+		if (value > ignoreWhenThisLow)
 		{
-			reply.push('<td class=cell bgcolor="' + colours[key] + '" width=30></td>')
+			TableNewRow(reply, colourEntireLine ? colours[key] : undefined)
+			TableAddCell(reply, key)
+			reply.push('<td align=right class=cell>' + value + '</td>')
+
+			if (addColourColumn)
+			{
+				reply.push('<td class=cell bgcolor="' + colours[key] + '" width=30></td>')
+			}
+
+			if (custom)
+			{
+				reply.push('<td class=cell>' + custom(key) + '</td>')
+			}
+		}
+		else
+		{
+			totalIgnored += value
 		}
 
-		if (custom)
-		{
-			reply.push('<td class=cell>' + custom(key) + '</td>')
-		}
-
-		total += tally[key]
+		total += value
 	}
 
-	if (keysInOrder.length > 1 && showTotal)
+	if (total)
 	{
-		TableNewRow(reply)
-		reply.push('<td class=cellNoWrap><b>TOTAL</b></td><td align=right class=cell>' + total + '</td>')
+		const addExtraCell = addColourColumn ? '<td class=cellNoWrap></td>' : ''
 
-		if (addColourColumn)
+		if (totalIgnored)
 		{
-			reply.push('<td class=cellNoWrap></td>')
+			TableNewRow(reply)
+			reply.push('<td class=cellNoWrap>Values <= ' + ignoreWhenThisLow + '</td><td align=right class=cell>' + totalIgnored + '</td>' + addExtraCell)
+		}
+
+		if (keysInOrder.length > 1 && totalIgnored != total && showTotal)
+		{
+			TableNewRow(reply)
+			reply.push('<td class=cellNoWrap><b>TOTAL</b></td><td align=right class=cell>' + total + '</td>' + addExtraCell)
 		}
 	}
 
@@ -338,11 +355,12 @@ function OptionsMakeButtons(toHere, info)
 
 function OptionsMakeSelect(toHere, funcName, heading, id, options, defaultVal, callFuncLate)
 {
-	id = OptionsMakeKey(g_selectedTabName, id, defaultVal, Object.keys(options))
+	const entries = Object.entries(options)
+	id = OptionsMakeKey(g_selectedTabName, id, (defaultVal === undefined) ? entries[0][0] : defaultVal, Object.keys(options))
 
 	var reply = [heading + ': <select ' + OptionsCommon(id, funcName, callFuncLate) + '>']
 
-	for (var [key, val] of Object.entries(options))
+	for (var [key, val] of entries)
 	{
 		reply.push('<option value="' + key + '">' + val + '</option>')
 	}

@@ -51,11 +51,12 @@ const kIllegalSubstrings =
 [
 	["numbers", /#?[A-Z\/\-\.]*[0-9]+[A-Z\/\-0-9]*/gi, ShouldIgnoreNumberFoundInText],
 	["misused hyphen", /( \-)|(\- )/g],
+	["irregular dash spacing", /( —[^ ])|([^ ]— )/g],
 	["misused opening quote", /[^“\( ][‘“]/g],
 	["double space", "  "],
 	["dubious punctuation combo", /[;:\-,\.\!\?][;:\-,\.\!\?]/g, txt => txt == "!?"],
 	["space before punctuation", / [;:,\.\!\?]/g],
-	["split infinitive", /\bto (not|never|always|almost|[a-z][a-z]+ly) [a-z][a-z]+/gi, txt => g_tweakableSettings.splitInfinitiveIgnoreList.includes(txt)],
+	["split infinitive", /\bto (not|never|always|almost|[a-z][a-z]+ly) [a-z][a-z]+/gi, txt => (g_tweakableSettings.splitInfinitiveIgnoreList.includes(txt) || txt.toLowerCase().endsWith(" the"))],
 	["adverb with hyphen", /\b[a-z]+ly\-[a-z]+\b/gi, txt => g_tweakableSettings.adverbHyphenIgnoreList.includes(txt)]
 ]
 

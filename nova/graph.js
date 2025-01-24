@@ -16,11 +16,17 @@ function Smoother(arr)
 	const len = arr.length
 	const midIndex = (len + 1) / 2
 	const div = midIndex * midIndex
+	var t = 0
 
-	for (var t in arr)
+	for (var val of arr)
 	{
-		const frac = (+t + 1) * (len - t) / (div)
-		total += arr[t] * frac * frac
+		if (val)
+		{
+			const frac = (+t + 1) * (len - t) / (div)
+			total += val * frac * frac
+		}
+
+		++ t
 	}
 
 	return total
@@ -49,7 +55,70 @@ function GraphCreateStandardOptions(options, graphFuncName, addColourUsing)
 	}
 }
 
-function DrawSmoothedGraph(graphData, backgroundData)
+function CreateDrawData(drawData, smoothingCount, colourEntries, data)
+{
+	for (var spelling of colourEntries)
+	{
+		drawData[spelling] = {smoothing:[0], drawThis:[]}
+		for (var i = 0; i < smoothingCount; ++ i)
+		{
+			drawData[spelling].smoothing.push(0, 0)
+		}
+	}
+
+	//================================================
+	// Calculate largest value and fill in drawData
+	//================================================
+
+	var biggestVal = 0
+
+	for (var t of data)
+	{
+		var totalHere = 0
+
+		for (var spelling of colourEntries)
+		{
+			const incomingValue = t?.[spelling] ?? 0
+			const smoo = drawData[spelling].smoothing
+			smoo.push(incomingValue)
+			smoo.shift()
+			const myVal = Smoother(smoo)
+			totalHere += myVal
+			drawData[spelling].drawThis.push(totalHere)
+		}
+
+		if (biggestVal < totalHere)
+		{
+			biggestVal = totalHere
+		}
+	}
+
+	for (var i = 0; i < smoothingCount * 2; ++ i)
+	{
+		var totalHere = 0
+
+		for (var spelling of colourEntries)
+		{
+			const smoo = drawData[spelling].smoothing
+			smoo.push(0)
+			smoo.shift()
+			const myVal = Smoother(smoo)
+			totalHere += myVal
+			drawData[spelling].drawThis.push(totalHere)
+		}
+
+		if (biggestVal < totalHere)
+		{
+			biggestVal = totalHere
+		}
+	}
+
+	colourEntries.reverse()
+	
+	return biggestVal
+}
+
+function DrawSmoothedGraph(graphData)
 {
 	const canvas = document.getElementById("graphCanvas")
 	const drawToHere = canvas?.getContext("2d")
@@ -64,60 +133,7 @@ function DrawSmoothedGraph(graphData, backgroundData)
 
 		NovaLog("Drawing graph (canvas=" + canvas.width + " data=" + sizeX + ") for " + colourEntries.length + " values [" + colourEntries.join(', ') + "] smooth=" + smoothingCount)
 
-		for (var spelling of colourEntries)
-		{
-			drawData[spelling] = {smoothing:[0], drawThis:[]}
-			for (var i = 0; i < smoothingCount; ++ i)
-			{
-				drawData[spelling].smoothing.push(0, 0)
-			}
-		}
-
-		//================================================
-		// Calculate largest value and fill in drawData
-		//================================================
-
-		var biggestVal = 0
-
-		for (var t of data)
-		{
-			var totalHere = 0
-
-			for (var spelling of colourEntries)
-			{
-				const incomingValue = t?.[spelling] ?? 0
-				drawData[spelling].smoothing.push(incomingValue)
-				drawData[spelling].smoothing.shift()
-				const myVal = Smoother(drawData[spelling].smoothing)
-				totalHere += myVal
-				drawData[spelling].drawThis.push(totalHere)
-			}
-
-			if (biggestVal < totalHere)
-			{
-				biggestVal = totalHere
-			}
-		}
-
-		for (var i = 0; i < smoothingCount * 2; ++ i)
-		{
-			var totalHere = 0
-			for (var spelling of colourEntries)
-			{
-				drawData[spelling].smoothing.push(0)
-				drawData[spelling].smoothing.shift()
-				const myVal = Smoother(drawData[spelling].smoothing)
-				totalHere += myVal
-				drawData[spelling].drawThis.push(totalHere)
-			}
-
-			if (biggestVal < totalHere)
-			{
-				biggestVal = totalHere
-			}
-		}
-
-		colourEntries.reverse()
+		const biggestVal = CreateDrawData(drawData, smoothingCount, colourEntries, data)
 
 		//=========================================
 		// DONE GATHERING DATA! DRAW IT!
@@ -126,34 +142,28 @@ function DrawSmoothedGraph(graphData, backgroundData)
 		drawToHere.fillStyle = "#444444"
 		drawToHere.fillRect(0, 0, canvas.width, canvas.height)
 
-		const colourUsing = backgroundData?.colourUsing
-		if (colourUsing)
+		const colourUsingData = graphData.background
+		if (colourUsingData)
 		{
-			if (colourUsing in g_metaDataSeenValues)
-			{
-				const colours = MakeColourLookUpTable(Object.keys(g_metaDataSeenValues[colourUsing]), 0.4, undefined, backgroundData.brightness)
-				var countParagraphs = 0
-				var lastX = 0
-				// TO DO: get this via backgroundData
-				for (var elem of g_metaDataInOrder)
-				{
-					countParagraphs += elem.Paragraphs
-					const x = (countParagraphs / sizeX) * canvas.width
-					drawToHere.beginPath()
-					drawToHere.fillStyle = colours[elem.info[colourUsing]] ?? "#666666"
-					drawToHere.rect(lastX, 0, x - lastX + 1, canvas.height)
-					drawToHere.fill()
-					lastX = x
-				}
+			var countParagraphs = 0
+			var lastX = 0
 
-				if (countParagraphs != sizeX)
-				{
-					NovaWarn("Counted " + countParagraphs + " paragraphs when drawing background but sizeX is " + sizeX)
-				}
-			}
-			else
+			for (var elem of colourUsingData)
 			{
-				NovaWarn("colourUsing='" + colourUsing + "' which isn't in [" + Object.keys(g_metaDataSeenValues) + "]")
+				countParagraphs += elem.width
+
+				const x = (countParagraphs / sizeX) * canvas.width
+				drawToHere.beginPath()
+				drawToHere.fillStyle = elem.colour
+				drawToHere.rect(lastX, 0, x - lastX + 1, canvas.height)
+				drawToHere.fill()
+				
+				lastX = x
+			}
+
+			if (countParagraphs != sizeX)
+			{
+				NovaWarn("Counted " + countParagraphs + " paragraphs when drawing background but sizeX is " + sizeX)
 			}
 		}
 
