@@ -44,13 +44,12 @@ function RedrawSearchResults()
 		const showThis = g_currentOptions.search["showThis_" + page]
 		const gapValue = +g_currentOptions.search["smoothing_" + page] * 4 + 2
 		const bgData = g_metaDataSeenValues[colourUsing]
-		const bgColours = bgData ? MakeColourLookUpTable(Object.keys(bgData), 0.4, undefined, 0.6) : undefined
 
 		var countdownUntilNoAdd = gapValue
 
 //		NovaLog("Searching for '" + entityNames + "' in sections where " + page + "='" + showThis + "'")
 
-		if (bgColours)
+		if (bgData)
 		{
 			g_searchDataForGraph.background = []
 		}
@@ -70,9 +69,9 @@ function RedrawSearchResults()
 				if (((page == "ALL") || ((page == "MENTIONS") ? metadata.Mentions[showThis] : (info[page] == showThis))))
 				{
 					// Build up background info
-					if (bgColours)
+					if (bgData)
 					{
-						g_searchDataForGraph.background.push({width:metadata.Paragraphs, colour:bgColours[info[colourUsing]] ?? "#666666"})
+						g_searchDataForGraph.background.push({width:metadata.Paragraphs, colourID:info[colourUsing]})
 					}
 					
 					var addAfterSkippedLines = "<H3>" + MetaDataMakeFragmentDescription(metadata) + "</H3>"
@@ -159,13 +158,17 @@ function RedrawSearchResults()
 			{
 				const upperKeys = Object.keys(grabEmHere)
 				const colours = MakeColourLookUpTable(upperKeys, 0.3, PickColourOffsetForString(entityNames))
+
 				var realOutput = []
 				var recolour = []
+
 				g_searchDataForGraph.colours = colours
+
 				for (var key of upperKeys)
 				{
 					recolour.push(['highlightFor="' + key + '"', 'style="background-color:' + g_searchDataForGraph.colours[key] + '"'])
 				}
+
 				for (var eachLine of output)
 				{
 					for (var [searchFor, becomes] of recolour)
@@ -174,11 +177,12 @@ function RedrawSearchResults()
 					}
 					realOutput.push(eachLine)
 				}
+
 				displayThis = "<center>" + TableShowTally(grabEmHere, {ignoreWhenThisLow:1, colours:g_searchDataForGraph.colours, showTotal:true}) + "</center>" + realOutput.join('<BR>')
 				graphVisible = true
 			}
 		}
-
+		
 		searchResultsHere.innerHTML = displayThis
 
 		const graphShowHide = document.getElementById("graphShowHide")

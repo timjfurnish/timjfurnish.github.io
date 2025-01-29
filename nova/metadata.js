@@ -616,11 +616,11 @@ function AddColourUsingData(graphThis, name, brightness)
 	if (name in g_metaDataSeenValues)
 	{
 		graphThis.background = []
-		const colours = MakeColourLookUpTable(Object.keys(g_metaDataSeenValues[name]), 0.4, undefined, brightness)
+		graphThis.bgColours = MakeColourLookUpTable(Object.keys(g_metaDataSeenValues[name]), 0.4, undefined, brightness)
 
 		for (var elem of g_metaDataInOrder)
 		{
-			graphThis.background.push({width:elem.Paragraphs, colour:colours[elem.info[name]] ?? "#666666"})
+			graphThis.background.push({width:elem.Paragraphs, colourID:elem.info[name]})
 		}
 	}
 	else

@@ -13,10 +13,11 @@ function OnChangeTab()
 function Smoother(arr)
 {
 	var total = 0
+	var t = 0
+
 	const len = arr.length
 	const midIndex = (len + 1) / 2
 	const div = midIndex * midIndex
-	var t = 0
 
 	for (var val of arr)
 	{
@@ -79,12 +80,11 @@ function CreateDrawData(drawData, smoothingCount, colourEntries, data)
 		for (var spelling of colourEntries)
 		{
 			const incomingValue = t?.[spelling] ?? 0
-			const smoo = drawData[spelling].smoothing
-			smoo.push(incomingValue)
-			smoo.shift()
-			const myVal = Smoother(smoo)
-			totalHere += myVal
-			drawData[spelling].drawThis.push(totalHere)
+			const {smoothing, drawThis} = drawData[spelling]
+			smoothing.push(incomingValue)
+			smoothing.shift()
+			totalHere += Smoother(smoothing)
+			drawThis.push(totalHere)
 		}
 
 		if (biggestVal < totalHere)
@@ -99,12 +99,11 @@ function CreateDrawData(drawData, smoothingCount, colourEntries, data)
 
 		for (var spelling of colourEntries)
 		{
-			const smoo = drawData[spelling].smoothing
-			smoo.push(0)
-			smoo.shift()
-			const myVal = Smoother(smoo)
-			totalHere += myVal
-			drawData[spelling].drawThis.push(totalHere)
+			const {smoothing, drawThis} = drawData[spelling]
+			smoothing.push(0)
+			smoothing.shift()
+			totalHere += Smoother(smoothing)
+			drawThis.push(totalHere)
 		}
 
 		if (biggestVal < totalHere)
@@ -125,7 +124,7 @@ function DrawSmoothedGraph(graphData)
 
 	if (drawToHere)
 	{
-		const {colours, data} = graphData
+		const {colours, data, background} = graphData
 		const smoothingCount = g_currentOptions[g_selectedTabName][GetGraphSmoothingValueName()]
 		const colourEntries = Object.keys(colours)
 		const drawData = {}
@@ -142,22 +141,42 @@ function DrawSmoothedGraph(graphData)
 		drawToHere.fillStyle = "#444444"
 		drawToHere.fillRect(0, 0, canvas.width, canvas.height)
 
-		const colourUsingData = graphData.background
-		if (colourUsingData)
+		if (background)
 		{
+			if (! graphData.bgColours)
+			{
+				const colourIDs = {}
+
+				for (var elem of background)
+				{
+					if (elem.colourID !== undefined)
+					{
+						colourIDs[elem.colourID] = true
+					}
+				}
+				
+				console.log(Object.keys(colourIDs))
+				graphData.bgColours = MakeColourLookUpTable(Object.keys(colourIDs), 0.4, undefined, 0.6)
+			}
+			
 			var countParagraphs = 0
 			var lastX = 0
 
-			for (var elem of colourUsingData)
+			for (var elem of background)
 			{
 				countParagraphs += elem.width
 
 				const x = (countParagraphs / sizeX) * canvas.width
-				drawToHere.beginPath()
-				drawToHere.fillStyle = elem.colour
-				drawToHere.rect(lastX, 0, x - lastX + 1, canvas.height)
-				drawToHere.fill()
+				const colour = graphData.bgColours[elem.colourID]
 				
+				if (colour)
+				{
+					drawToHere.beginPath()
+					drawToHere.fillStyle = colour
+					drawToHere.rect(lastX, 0, x - lastX + 1, canvas.height)
+					drawToHere.fill()
+				}
+
 				lastX = x
 			}
 
@@ -227,7 +246,7 @@ function GraphMouseMove(e)
 
 	elem.innerHTML = '<TT>' + contents.join("<BR>") + '</TT>'
 	elem.style.left = e.clientX + "px"
-	elem.style.top = e.clientY + "px"
+	elem.style.top = (e.clientY + window.scrollY) + "px"
 }
 
 function GraphMouseOver(e)
