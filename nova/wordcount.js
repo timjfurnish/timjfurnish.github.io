@@ -40,7 +40,7 @@ function Counter_Words(reply, thenCall)
 	OptionsMakeSelect(options, "ChangedWordCountSettings()", "Include", "showNames", g_showNameModes, "NoNames", true)
 	OptionsMakeCheckbox(options, "ChangedWordCountSettings()", "includeHyphens", "Include words containing hyphens", true, true)
 
-	reply.push(options.join('&nbsp;&nbsp;'))
+	reply.push(OptionsConcat(options))
 	MakeUpdatingArea(reply, "wordTableHere")
 	thenCall.push(ChangedWordCountSettings)
 }

@@ -68,7 +68,6 @@ TabDefine("pairs", function(reply, thenCall)
 
 		for (var r of Object.keys(myData.allSectionNames))
 		{
-			var myBit = 1
 			TableNewRow(reply)
 			TableAddHeading(reply, r)
 
@@ -80,52 +79,15 @@ TabDefine("pairs", function(reply, thenCall)
 				{
 					for (var eachLine of showThisText)
 					{
-						var paraContents = []
-						var wasSpeech = undefined
-						var lastFollowedBy = undefined
-						var joiner = ''
-						for (var eachFrag of eachLine)
+						FormatParagraphForDisplay(cellContents, eachLine, fragment =>
 						{
-							var {text, isSpeech, followedBy} = eachFrag
-
-							if (wasSpeech != isSpeech)
-							{
-								if (wasSpeech)
-								{
-									if (lastFollowedBy == '')
-									{
-										joiner = ',"' + joiner
-									}
-									else
-									{
-										joiner = '"' + joiner
-									}
-								}
-								else if (text[0] == ' ')
-								{
-									joiner += '"' + kCharacterElipsis
-								}
-								else
-								{
-									joiner += '"'
-								}
-							}
-							const colour = myData.colours[text.toLowerCase().trim()]
-
-							if (colour)
-							{
-								text = Highlighter(text, colour)
-							}
-							paraContents.push(joiner + text + followedBy)
-							wasSpeech = isSpeech
-							joiner = ' '
-							lastFollowedBy = followedBy
-						}
-						cellContents.push(kIndent + paraContents.join('') + (wasSpeech ? lastFollowedBy ? '"' : (kCharacterEmDash + '"') : ''))
+							const colour = myData.colours[fragment.text.toLowerCase()]
+							return (colour ? Highlighter(fragment.text, colour) : fragment.text) + fragment.followedBy
+						})
 					}
 				}
+
 				TableAddCell(reply, cellContents.join('<BR>'), true)
-				myBit <<= 1
 			}
 		}
 
@@ -143,7 +105,7 @@ function PairDoneParagraph(pushThis)
 	{
 		for (var fragment of pushThis.fragments)
 		{
-			SetBit(g_pairFragmentTally, fragment.text.toLowerCase().trim(), g_pairBit)
+			SetBit(g_pairFragmentTally, fragment.text.toLowerCase(), g_pairBit)
 		}
 
 		if (g_currentPairSectionName in g_collectPairStuffToHere)

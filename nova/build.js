@@ -44,6 +44,7 @@ const kIconAbacus = "&#x1F9EE;"
 const kIconUSA = "&#x1F985;"
 const kIconMatch = "&#x1F525;"
 const kIconThesaurus = "&#x1F4D4;"
+const kIconNumberSign = "&#x23;&#xFE0F;&#x20E3;"
 
 const kCharacterElipsis = "\u2026"
 const kCharacterEmDash = "\u2014"
@@ -90,8 +91,9 @@ function TableShowTally(tally, options)
 	var total = 0
 	var totalIgnored = 0
 
-	const {colours, colourEntireLine, showTotal, keyHeading, valueHeading, custom, customHeading} = options ?? {}
+	const {colours, colourEntireLine, showTotal, keyHeading, valueHeading, custom, customHeading, addSearchIcon} = options ?? {}
 	const keysInOrder = Object.keys(tally).sort((p1, p2) => (tally[p2] - tally[p1]))
+	const {length} = keysInOrder
 	const addColourColumn = colours && !colourEntireLine
 	const ignoreWhenThisLow = options?.ignoreWhenThisLow ?? 0
 
@@ -109,7 +111,7 @@ function TableShowTally(tally, options)
 		TableAddHeading(reply, customHeading ?? "Custom")
 	}
 
-	NovaLog("Building tally table containing " + keysInOrder.length + " values")
+	NovaLog("Building tally table containing " + length + " values")
 
 	for (var key of keysInOrder)
 	{
@@ -118,7 +120,16 @@ function TableShowTally(tally, options)
 		if (value > ignoreWhenThisLow)
 		{
 			TableNewRow(reply, colourEntireLine ? colours[key] : undefined)
-			TableAddCell(reply, key)
+			
+			if (addSearchIcon && length > 1)
+			{
+				TableAddCell(reply, key + '&nbsp;' + CreateClickableText(kIconSearch, "SwitchToMentionsAndSearch(" + MakeParamsString(key) + ")"))
+			}
+			else
+			{
+				TableAddCell(reply, key)
+			}
+			
 			reply.push('<td align=right class=cell>' + value + '</td>')
 
 			if (addColourColumn)
@@ -149,7 +160,7 @@ function TableShowTally(tally, options)
 			reply.push('<td class=cellNoWrap>Values <= ' + ignoreWhenThisLow + '</td><td align=right class=cell>' + totalIgnored + '</td>' + addExtraCell)
 		}
 
-		if (keysInOrder.length > 1 && totalIgnored != total && showTotal)
+		if (length > 1 && totalIgnored != total && showTotal)
 		{
 			TableNewRow(reply)
 			reply.push('<td class=cellNoWrap><b>TOTAL</b></td><td align=right class=cell>' + total + '</td>' + addExtraCell)
@@ -396,4 +407,42 @@ function OptionModifyNumber(myId, change, func)
 		g_currentOptions[g_selectedTabName][myId] = newValue
 		func()
 	}
+}
+
+//=======================
+// Formatting paragraphs
+//=======================
+
+function FormatParagraphForDisplay(toHere, paragraph, customFunc)
+{
+	var paraContents = []
+	var wasSpeech = undefined
+	var joiner = ''
+	
+	for (var eachFrag of paragraph)
+	{
+		if (wasSpeech != eachFrag.isSpeech)
+		{
+			if (wasSpeech)
+			{
+				joiner = '"' + joiner
+			}
+			else
+			{
+				joiner += '"'
+			}
+
+			wasSpeech = eachFrag.isSpeech
+		}
+
+		paraContents.push(joiner + customFunc(eachFrag))
+		joiner = ' '
+	}
+
+	if (wasSpeech)
+	{
+		paraContents.push('"')
+	}
+	
+	toHere.push(kIndent + paraContents.join(''))
 }

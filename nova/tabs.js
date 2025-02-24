@@ -230,7 +230,7 @@ function TabRedrawGraph()
 	}
 	else if (g_selectedTabName == "search")
 	{
-		SearchDrawGraph()
+		DrawSmoothedGraph(g_searchDataForGraph)
 	}
 }
 

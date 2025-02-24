@@ -3,7 +3,7 @@
 // (c) Tim Furnish, 2023-2025
 //==============================================
 
-const kHasNoEffect = ["voiceDefault", "voiceSpeech", "speakRate", "showWordCountChanges"]
+const kHasNoEffect = ["voiceDefault", "voiceSpeech", "speakRate", "showWordCountChanges", "warningPopUp"]
 const kCurrentSaveFormatVersion = 2
 const kSettingsWhichProvideNames = MakeColourLookUpTable(["names", "names_places", "names_other"], 0.25)
 
@@ -53,6 +53,11 @@ const kAutoTagOptions = Object.entries(
 			}
 		}
 	},
+	number:
+	{
+		tooltip:"Trim out everything except numerical digits",
+		icon:kIconNumberSign
+	},
 	includeLineInText:
 	{
 		tooltip:"Include this text in<BR>the document",
@@ -77,7 +82,7 @@ function CheckOrderOfValues(tag, value, isAscending)
 		const valAsNumber = parseInt(value.replace(/,/g, ''))
 		for (var known of Object.keys(g_metaDataSeenValues[tag]))
 		{
-			const knownAsNumber = parseInt(known.replace(/,/g, ''))
+			const knownAsNumber = parseInt(known)
 			if (isAscending ? (valAsNumber <= knownAsNumber) : (valAsNumber >= knownAsNumber))
 			{
 				IssueAdd("Expected " + valAsNumber + " (from '" + value + "') to be " + (isAscending ? ">" : "<") + " " + knownAsNumber + " (from '" + known + "')", "ORDER")
@@ -432,6 +437,8 @@ const kTweakableDefaults =
 	endOfParagraphNarrative:kCharacterElipsis + ".!?:",
 	skip:["Contents"],
 	wordsContainingFullStops:['etc.', 'Dr.', 'Mr.', 'Mrs.', 'i.e.', 'e.g.'],
+	wordJoiners:[' ', ', ', ' ' + kCharacterEmDash + ' ', kCharacterElipsis + ' '],
+	wordJoinersStart:[],
 	replace:['\\bO\\.S\\./OFFSCREEN', '([0-9]+)\\.([0-9]+)/$1^$2', '^== (.*) ==$/$1.', "[!\\?]’/’", "\\bCONT’D\\b/CONTINUED", "^EXT\\./EXTERIOR", "^INT\\./INTERIOR"],
 	hyphenCheckPairs:["sat-nav*", "set-up", "under-cover", "self-reliance reliant control esteem respect awareness aware", "proof-read*", "short-term", "love-bird* heart* potion* sick*", "hand-writing written write*", "left right-hand*", "sand egg-timer*", "back-stage* hand* ground* garden*", "stage-left right", "slow-motion", "some-thing where how what body one", "heart-break* broken", "car-park*", "brain-wave*", "mind lip-read*", "twenty thirty forty fifty sixty seventy eighty ninety-one two three four five six seven eight nine", "one two three four five six seven eight nine ten-hundred thousand million billion trillion"],
 	names:[],
@@ -440,12 +447,17 @@ const kTweakableDefaults =
 	splitInfinitiveIgnoreList:[],
 	adverbHyphenIgnoreList:[],
 	numberIgnoreList:[],
+	warnParagraphAmountPunctuation:30,
+	warnParagraphAmountDifferentPunctuation:9,
+	warnParagraphLength:250,
+	warnPhraseLength:100,
 	suggestNameIfSeenThisManyTimes:5,
 	numTextBoxes:1,
 	tooltips:true,
 	showWordCountChanges:true,
 	debugListQueuedFunctions:false,
 	debugLog:false,
+	warningPopUp:false,
 	wordsPerMinute:210,  // Average WPM apparently 183 out loud, 238 in head
 }
 
@@ -536,6 +548,12 @@ const kSettingNames =
 		endOfSpeech:"End of speech|shortTextBox",
 		endOfParagraphSpeech:"End of paragraph speech|shortTextBox",
 		endOfParagraphNarrative:"End of paragraph narrative|shortTextBox",
+		wordJoinersStart:"Valid punctuation^(start of phrase)|shortTextBox",
+		wordJoiners:"Valid punctuation^(between words)|shortTextBox",
+		warnParagraphAmountPunctuation:"Warn when paragraph contains this^many total punctuation marks",
+		warnParagraphAmountDifferentPunctuation:"Warn when paragraph contains this^many different punctuation marks",
+		warnParagraphLength:"Warn when paragraph contains this^many characters",
+		warnPhraseLength:"Warn when phrase contains this^many characters",
 		["Enabled checks"]:moreOutput => BuildIssueDefaults(false, moreOutput),
 		["Additional settings"]:moreOutput => BuildIssueDefaults(true, moreOutput),
 	},
@@ -551,6 +569,7 @@ const kSettingNames =
 		showWordCountChanges:"Show word count changes",
 		debugListQueuedFunctions:"List queued functions",
 		debugLog:"Show log",
+		warningPopUp:"Show warnings in dialog box",
 		wordsPerMinute:"Words per minute (for time^estimates in Stats tab)",
 	}
 }
@@ -1093,6 +1112,8 @@ function InitSettings()
 	IssueAutoFixDefine("NUMBERS", "Add to allow list", characters => AddToSetting("numberIgnoreList", characters))
 	IssueAutoFixDefine("SPLIT INFINITIVE", "Add to allow list", characters => AddToSetting("splitInfinitiveIgnoreList", characters))
 	IssueAutoFixDefine("ADVERB WITH HYPHEN", "Add to allow list", characters => AddToSetting("adverbHyphenIgnoreList", characters))
+	IssueAutoFixDefine("PUNCTUATION: MID-PHRASE", "Add to allow list", characters => AddToSetting("wordJoiners", characters))
+	IssueAutoFixDefine("PUNCTUATION: PHRASE START", "Add to allow list", characters => AddToSetting("wordJoinersStart", characters))
 	IssueAutoFixDefine("INVALID FIRST SPEECH CHARACTER", "Ignore characters", characters => AddToSetting("startOfSpeech", characters))
 	IssueAutoFixDefine("INVALID FINAL SPEECH CHARACTER", "Ignore characters", characters => AddToSetting("endOfSpeech", characters))
 }

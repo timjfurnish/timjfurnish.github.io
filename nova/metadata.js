@@ -208,7 +208,7 @@ function MetaDataSet(key, val)
 	g_metaDataCurrentContainsToDo = false
 }
 
-SetMarkupFunction('~', txt => g_metaDataGatherSummaries.push({allOfIt:txt}))
+SetMarkupFunction('~', txt => g_metaDataGatherSummaries.push({fragments:[{text:txt, followedBy:""}]}))
 
 SetMarkupFunction('#', txt =>
 {
@@ -615,15 +615,15 @@ function AddColourUsingData(graphThis, name, brightness)
 {
 	if (name in g_metaDataSeenValues)
 	{
-		graphThis.background = []
+		graphThis.backgroundBlocks = []
 		graphThis.bgColours = MakeColourLookUpTable(Object.keys(g_metaDataSeenValues[name]), 0.4, undefined, brightness)
 
 		for (var elem of g_metaDataInOrder)
 		{
-			graphThis.background.push({width:elem.Paragraphs, colourID:elem.info[name]})
+			GraphAddBackgroundBlock(graphThis, elem.Paragraphs, elem.info[name])
 		}
 	}
-	else
+	else if (name)
 	{
 		NovaWarn("name='" + name + "' isn't in [" + Object.keys(g_metaDataSeenValues) + "]")
 	}

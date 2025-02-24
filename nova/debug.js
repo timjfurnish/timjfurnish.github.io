@@ -25,6 +25,7 @@ function NovaLogWithCaller(message, caller, type)
 	}
 
 	const elem = document.getElementById("debugLog")
+
 	if (elem)
 	{
 		elem.innerHTML += '<div><b>' + (Date.now() - g_baseTime) + '</b> ' + message + "</div>"
@@ -39,6 +40,11 @@ function NovaLog(message)
 function NovaWarn(message)
 {
 	NovaLogWithCaller(message, NovaWarn.caller?.name, "warn")
+	
+	if (g_tweakableSettings.warningPopUp)
+	{
+		alert(message)
+	}
 }
 
 function NovaLogClear(message)
@@ -50,6 +56,7 @@ function NovaLogClear(message)
 function ShowError(message)
 {
 	NovaWarn("ERROR: " + message)
+
 	if (g_canShowError)
 	{
 		g_canShowError = confirm(message + "\n\n" + new Error().stack + "\n\nKeep showing errors?")
@@ -63,4 +70,9 @@ function Assert(condition, err)
 		err = err ? (typeof(err) == "function") ? err() : err : "No additional details provided"
 		ShowError("Assert failed! " + err)
 	}
+}
+
+function AssertSame(thingA, thingB)
+{
+	Assert(thingA == thingB, () => "Expected '" + thingA + "' to equal '" + thingB + "'")
 }

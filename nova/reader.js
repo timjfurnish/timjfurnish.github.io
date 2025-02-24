@@ -14,11 +14,15 @@ const OnReaderEnd    = e         => e?.target?.myNovaOnEndCallback?.()
 function SpeakUsingVoice(thingToSay, voiceType, onEnd)
 {
 	StopTalking()
+
 	g_currentSpeaky = new SpeechSynthesisUtterance(thingToSay)
+
 	if (onEnd)
 	{
 		g_currentSpeaky.myNovaOnEndCallback = onEnd
+		console.log("<" + voiceType + "> " + thingToSay)
 	}
+
 	g_currentSpeaky.onend = OnReaderEnd
 	g_currentSpeaky.rate = g_tweakableSettings.speakRate
 	g_currentSpeaky.voice = g_voiceLookUp[g_tweakableSettings[voiceType]]

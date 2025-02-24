@@ -88,7 +88,8 @@ function MakeParamsString(...theParams)
 
 function FixStringHTML(stringIn)
 {
-	return "<B ID=issueText>" + AddEscapeChars(stringIn + "") + "</B>"
+	stringIn += ""
+	return "<B ID=issueText>" + AddEscapeChars(stringIn.replaceAll('^', '.')) + "</B>"
 }
 
 function AddEscapeChars(stringIn)

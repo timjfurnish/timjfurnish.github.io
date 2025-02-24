@@ -6,7 +6,6 @@
 var g_threadSections = []
 var g_searchDataForGraph = {colours:{}, data:{}}
 var g_threadSectionSelected = 0
-var g_threadSectionFragment = 0
 var g_recentlyHighlightedReadToMeText = []
 
 const kIndent = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
@@ -27,7 +26,7 @@ function RedrawSearchResults()
 		var graphVisible = false
 		var entityNames = document.getElementById("search.entity")?.value
 
-		g_searchDataForGraph = {colours:{}, data:[]}
+		g_searchDataForGraph = {colours:{}, data:[], doStripes:true}
 
 		if (entityNames)
 		{
@@ -40,18 +39,16 @@ function RedrawSearchResults()
 			customTextBox.readOnly = false
 		}
 
-		const {page, compress, colourUsing} = g_currentOptions.search
+		const {page, colourUsing} = g_currentOptions.search
 		const showThis = g_currentOptions.search["showThis_" + page]
 		const gapValue = +g_currentOptions.search["smoothing_" + page] * 4 + 2
 		const bgData = g_metaDataSeenValues[colourUsing]
-
-		var countdownUntilNoAdd = gapValue
 
 //		NovaLog("Searching for '" + entityNames + "' in sections where " + page + "='" + showThis + "'")
 
 		if (bgData)
 		{
-			g_searchDataForGraph.background = []
+			g_searchDataForGraph.backgroundBlocks = []
 		}
 
 		if (entityNames && g_metaDataInOrder.length)
@@ -68,11 +65,7 @@ function RedrawSearchResults()
 
 				if (((page == "ALL") || ((page == "MENTIONS") ? metadata.Mentions[showThis] : (info[page] == showThis))))
 				{
-					// Build up background info
-					if (bgData)
-					{
-						g_searchDataForGraph.background.push({width:metadata.Paragraphs, colourID:info[colourUsing]})
-					}
+					GraphAddBackgroundBlock(g_searchDataForGraph, metadata.Paragraphs, info[colourUsing])
 					
 					var addAfterSkippedLines = "<H3>" + MetaDataMakeFragmentDescription(metadata) + "</H3>"
 					var keepShowingCountdown = 0
@@ -95,19 +88,8 @@ function RedrawSearchResults()
 							var s2 = para.allOfIt.replace(exp, GotAMatch)
 							const foundTextHere = (para.allOfIt != s2)
 							var allowedToAdd = true
-							if (foundTextHere)
-							{
-								countdownUntilNoAdd = gapValue
-							}
-							else if (countdownUntilNoAdd && compress)
-							{
-								-- countdownUntilNoAdd
-							}
 
-							if (countdownUntilNoAdd)
-							{
-								g_searchDataForGraph.data.push(grabForPara)
-							}
+							g_searchDataForGraph.data.push(grabForPara)
 
 							if (foundTextHere || keepShowingCountdown)
 							{
@@ -178,7 +160,7 @@ function RedrawSearchResults()
 					realOutput.push(eachLine)
 				}
 
-				displayThis = "<center>" + TableShowTally(grabEmHere, {ignoreWhenThisLow:1, colours:g_searchDataForGraph.colours, showTotal:true}) + "</center>" + realOutput.join('<BR>')
+				displayThis = "<center>" + TableShowTally(grabEmHere, {ignoreWhenThisLow:1, addSearchIcon:true, colours:g_searchDataForGraph.colours, showTotal:true}) + "</center>" + realOutput.join('<BR>')
 				graphVisible = true
 			}
 		}
@@ -191,7 +173,7 @@ function RedrawSearchResults()
 			if (graphVisible)
 			{
 				graphShowHide.style.display = "block"
-				SearchDrawGraph()
+				DrawSmoothedGraph(g_searchDataForGraph)
 			}
 			else
 			{
@@ -227,33 +209,26 @@ TabDefine("search", function(reply, thenCall)
 
 	nameData["twent*|thirt*|forty|fortie*|fift*|eight*|one|ones|two*|three*|four*|five*|six*|seven*|nine*|ten|tens|tenth*|third*|fourth*|ninth*|eleven*|twelfth*|twelve*|hundred*|thousand*|billion*|million*|trillion*"] = "Numbers (words)"
 	nameData["*[0-9]*"] = "Numbers (digits)"
+	nameData["in fact|of course|in many ways|for some reason|some kind|no doubt|certainly|definitely"] = "&quot;In fact&quot;"
 	nameData["entire|entirely|total|totally|utter|utterly|fully|complete|completely|whole|wholly|altogether|literal|literally|somewhat|quite|really|very"] = "&quot;Completely&quot;"
 	nameData["beg*n* to|b*g*n* *ing|start* to|start* *ing|proceed* to|proceed* *ing|set about"] = "&quot;Started to&quot;"
 	nameData["sudden*|instant*|immediate*"] = "&quot;Suddenly&quot;"
-	nameData["stood up|stand* up|sat down|sit* down|lay* down|lie* down|lying down|jump* up|rais* up|ris* up|lift* up"] = "&quot;Sat down&quot;"
+	nameData["stood up|stand* up|sat down|sit* down|lay* down|lie* down|lying down|jump* up|rais* up|ris* up|lift* up|gather* up|collect* up|print* out"] = "&quot;Sat down&quot;"
 	
 	OptionsMakeSelect(options, "RedrawSearchResults()", "Entity", "entity", nameData, "")
 	OptionsMakeTextBox(options, "RedrawSearchResults()", "Search for", "custom")
-	OptionsMakeCheckbox(options, "RedrawSearchResults()", "compress", "Compress empty areas", false, true)
 	GraphCreateStandardOptions(options, "RedrawSearchResults", true)
 
 	reply.push(OptionsConcat(options))
-	GraphAddCanvas(reply, 200, thenCall)
+	GraphAddCanvas(reply, 250, thenCall)
 	MakeUpdatingArea(reply, "searchResultsHere", 'align="left" style="user-select:text"')
 
 	thenCall.push(RedrawSearchResults)
 }, {icon:kIconSearch})
 
-function SearchDrawGraph()
-{
-	DrawSmoothedGraph(g_searchDataForGraph)
-}
-
-function HighlightThreadSection(num, bCanScroll)
+function HighlightThreadSection(num)
 {
 	StopTalking()
-
-	console.log("Want to change highlight from " + typeof(g_threadSectionSelected) + " " + g_threadSectionSelected + " to " + typeof(num) + " " + num)
 
 	if (num >= 0 && num < g_threadSections.length)
 	{
@@ -261,21 +236,11 @@ function HighlightThreadSection(num, bCanScroll)
 		{
 			TrySetElementClass("threadSection" + g_threadSectionSelected, "highlighter", false)
 		}
+
 		g_threadSectionSelected = num
-		g_threadSectionFragment = 0
-		const theElement = TrySetElementClass("threadSection" + num, "highlighter", true)
 
-		if (theElement && bCanScroll)
-		{
-			const rect = theElement.getBoundingClientRect()
+		const stashThis = TrySetElementClass("threadSection" + num, "highlighter", true)?.innerHTML
 
-			if (rect.bottom > window.innerHeight * 0.8)
-			{
-				window.scrollTo(0, rect.top + window.scrollY - window.innerHeight * 0.2)
-			}
-		}
-
-		const stashThis = theElement?.innerHTML
 		if (stashThis)
 		{
 			g_recentlyHighlightedReadToMeText.unshift(stashThis)
@@ -323,6 +288,7 @@ function RedrawThread(goToTop)
 		{
 			const info = metadata.info
 			const displayTheseThings = summary ? metadata.mySummaries : metadata.myParagraphs
+
 			if (displayTheseThings.length && ((page == "ALL") || ((page == "MENTIONS") ? metadata.Mentions[showThis] : (info[page] == showThis))))
 			{
 				if (skippedASection)
@@ -338,19 +304,27 @@ function RedrawThread(goToTop)
 					if (lastChapterName != thisChapterName)
 					{
 						headingText = '<SPAN CLASS="clicky" ONCLICK="HighlightThreadSection(' + g_threadSections.length + ')" ID="threadSection' + g_threadSections.length + '">' + headingText + '</SPAN>'
-						g_threadSections.push({allOfIt:thisChapterName})
+						g_threadSections.push({sayThisText:thisChapterName})
 						lastChapterName = thisChapterName
 					}
+
 					output.push("<H3>" + headingText + "</H3>")
 				}
 				else if (addWhenSkipASection)
 				{
 					output.push("<BR>")
 				}
+
 				for (var para of displayTheseThings)
 				{
-					output.push(kIndent + '<SPAN CLASS="clicky" ONCLICK="HighlightThreadSection(' + g_threadSections.length + ')" ID="threadSection' + g_threadSections.length + '">' + TurnRedIf(para.allOfIt, para.issues) + '</SPAN><BR>')
-					g_threadSections.push(para)
+					FormatParagraphForDisplay(output, para.fragments, fragment =>
+					{
+						const theTxt = fragment.text + fragment.followedBy
+						const reply = '<SPAN CLASS="clicky" ONCLICK="HighlightThreadSection(' + g_threadSections.length + ')" ID="threadSection' + g_threadSections.length + '">' + theTxt + '</SPAN>'
+						g_threadSections.push({sayThisText:theTxt, useSpeechVoice:fragment.isSpeech})
+						return reply
+					})
+					output.push("<BR>")
 				}
 				addWhenSkipASection = "<BR><HR WIDTH=45%>"
 				skippedASection = false
@@ -364,6 +338,7 @@ function RedrawThread(goToTop)
 		// Add a button which goes to next section if there is one!
 		var addNext = false
 		var nameData = {[""]:""}
+
 		for (var {info} of g_metaDataInOrder)
 		{
 			if (page in info)
@@ -381,7 +356,7 @@ function RedrawThread(goToTop)
 				{
 					const escapedText = txt.replaceAll("'", "\\'")
 	//				console.log("Escaped: " + escapedText)
-					output.push('<P ALIGN=center><BUTTON ID=nextChunk ONCLICK="' + AddEscapeChars('window.scrollTo(0,0); document.getElementById(\'voice.showThis_' + page + '\').value = \'' + escapedText + '\'; UpdateOptions(); RedrawThread(true)') + '">Next: ' + txt + '</BUTTON></p>')
+					output.push('<P ALIGN=right STYLE="padding-right:20px"><BUTTON ID=nextChunk ONCLICK="' + AddEscapeChars('window.scrollTo(0,0); document.getElementById(\'voice.showThis_' + page + '\').value = \'' + escapedText + '\'; UpdateOptions(); RedrawThread(true)') + '">Next: ' + txt + '</BUTTON></p>')
 					break
 				}
 				else if (txt == showThis)
@@ -413,57 +388,42 @@ function RedrawThread(goToTop)
 
 function OnDoneThreadSpeakingFragment()
 {
-	++ g_threadSectionFragment
-	ThreadRead()
+	if (HighlightThreadSection(g_threadSectionSelected + 1))
+	{
+		CallTheseFunctions(ThreadRead)
+	}
+	else if (g_currentOptions.voice.autoAdvance)
+	{
+		var nextChunkButton = document.getElementById("nextChunk")
+
+		if (nextChunkButton)
+		{
+			nextChunkButton.click()
+			CallTheseFunctions(ThreadRead)
+		}
+	}
 }
 
 function ThreadRead()
 {
 	const thingToSay = g_threadSections[g_threadSectionSelected]
+
 	if (thingToSay)
 	{
-		if (thingToSay.fragments)
+		// Scroll to element...
+		const theElement = document.getElementById("threadSection" + g_threadSectionSelected)
+
+		if (theElement)
 		{
-			// When reading actual text
-			const fragment = thingToSay.fragments[g_threadSectionFragment]
-			if (fragment)
+			const rect = theElement.getBoundingClientRect()
+
+			if (rect.bottom > window.innerHeight * 0.8 || rect.top < window.innerHeight * 0.2)
 			{
-				if (g_currentOptions.voice.onlyReadSpeech && !fragment.isSpeech)
-				{
-					CallTheseFunctions(OnDoneThreadSpeakingFragment)
-				}
-				else
-				{
-					SpeakUsingVoice(fragment.text + fragment.followedBy, fragment.isSpeech ? "voiceSpeech" : "voiceDefault", OnDoneThreadSpeakingFragment)
-				}
-				return
+				window.scrollTo(0, rect.top + window.scrollY - window.innerHeight * 0.3)
 			}
 		}
-		else if (g_threadSectionFragment == 0)
-		{
-			// When reading summaries
-			SpeakUsingVoice(thingToSay.allOfIt, "voiceDefault", OnDoneThreadSpeakingFragment)
-			return
-		}
-		if (HighlightThreadSection(g_threadSectionSelected + 1, true))
-		{
-			CallTheseFunctions(ThreadRead)
-		}
-		else
-		{
-//			NovaLog("Reading done - autoAdvance=" + g_currentOptions.voice.autoAdvance)
 
-			if (g_currentOptions.voice.autoAdvance)
-			{
-				var nextChunkButton = document.getElementById("nextChunk")
-
-				if (nextChunkButton)
-				{
-					nextChunkButton.click()
-					CallTheseFunctions(ThreadRead)
-				}
-			}
-		}
+		SpeakUsingVoice(thingToSay.sayThisText, thingToSay.useSpeechVoice ? "voiceSpeech" : "voiceDefault", OnDoneThreadSpeakingFragment)
 	}
 }
 
