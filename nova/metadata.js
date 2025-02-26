@@ -563,7 +563,6 @@ function TabFunctionStats(reply, thenCall)
 	{
 		var options = []
 		var optionsDisplay = []
-		var optionsTextRow = []
 
 		const selectedColumns = Object.keys(g_metaDataAvailableColumns)
 
@@ -581,14 +580,14 @@ function TabFunctionStats(reply, thenCall)
 		}
 
 		OptionsMakeCheckbox(optionsDisplay, "MetaDataDrawTable()", "display_Mentions", "Mentions", false, true)
-		OptionsMakeSelect(optionsTextRow, "MetaDataDrawTable()", "Sort", "sort", sortData, "none")
-		OptionsMakeCheckbox(optionsTextRow, "MetaDataDrawTable()", "totalise", "Show running totals", false, true)
+		optionsDisplay.push("|")
+		OptionsMakeSelect(optionsDisplay, "MetaDataDrawTable()", "Sort", "sort", sortData, "none")
+		OptionsMakeCheckbox(optionsDisplay, "MetaDataDrawTable()", "totalise", "Show running totals", false, true)
 
 		reply.push("<B>Split into rows using:</B><BR>")
 		reply.push(OptionsConcat(options) + "<BR>")
 		reply.push("<B>Show data columns:</B><BR>")
-		reply.push(OptionsConcat(optionsDisplay) + "<BR>")
-		reply.push(OptionsConcat(optionsTextRow))
+		reply.push(OptionsConcat(optionsDisplay))
 
 		MakeUpdatingArea(reply, "metaDataOutput")
 		thenCall.push(MetaDataDrawTable)

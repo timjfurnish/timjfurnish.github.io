@@ -3,7 +3,7 @@
 // (c) Tim Furnish, 2023-2025
 //==============================================
 
-var g_graphHoverData
+var g_graphClickData
 
 function Smoother(arr)
 {
@@ -36,7 +36,7 @@ function GetGraphSmoothingValueName()
 
 function GraphCreateStandardOptions(options, graphFuncName, addColourUsing)
 {
-	OptionsMakeNumberBox(options, graphFuncName, "Smoothing", GetGraphSmoothingValueName(), 30)
+	OptionsMakeNumberBox(options, graphFuncName, "Smoothing", GetGraphSmoothingValueName(), 5)
 
 	if (addColourUsing)
 	{
@@ -100,6 +100,11 @@ function CreateDrawData(drawData, smoothingCount, colourEntries, data)
 			totalHere += Smoother(smoothing)
 			drawThis.push(totalHere)
 		}
+
+		if (biggestVal < totalHere)
+		{
+			biggestVal = totalHere
+		}
 	}
 
 	colourEntries.reverse()
@@ -128,6 +133,22 @@ function GraphAddBackgroundBlock({backgroundBlocks}, count, colourID)
 	}
 }
 
+function CreateGraphBackgroundColours(graphData)
+{
+	const colourIDs = {}
+	const {backgroundBlocks} = graphData
+
+	for (var elem of backgroundBlocks)
+	{
+		if (elem.colourID !== undefined)
+		{
+			colourIDs[elem.colourID] = true
+		}
+	}
+	
+	graphData.bgColours = MakeColourLookUpTable(Object.keys(colourIDs), 0.4, undefined, 0.6)
+}
+
 function DrawSmoothedGraph(graphData)
 {
 	const canvas = document.getElementById("graphCanvas")
@@ -136,12 +157,14 @@ function DrawSmoothedGraph(graphData)
 	if (drawToHere)
 	{
 		const {colours, data, backgroundBlocks, doStripes} = graphData
-		const smoothingCount = g_currentOptions[g_selectedTabName][GetGraphSmoothingValueName()]
+		const smoothingCountRaw = g_currentOptions[g_selectedTabName][GetGraphSmoothingValueName()]
+		const smoothingCount = (smoothingCountRaw * (smoothingCountRaw + 1)) >> 1
 		const colourEntries = Object.keys(colours)
 		const drawData = {}
 		const sizeX = data.length
+		const {width, height} = canvas
 
-		NovaLog("Drawing graph (canvas=" + canvas.width + " data=" + sizeX + ") for " + colourEntries.length + " values [" + colourEntries.join(', ') + "] smooth=" + smoothingCount)
+		NovaLog("Drawing graph (canvas=" + width + " data=" + sizeX + ") for " + colourEntries.length + " values [" + colourEntries.join(', ') + "] smooth=" + smoothingCount)
 
 		const biggestVal = CreateDrawData(drawData, smoothingCount, colourEntries, data)
 
@@ -150,7 +173,7 @@ function DrawSmoothedGraph(graphData)
 		//=========================================
 
 		drawToHere.fillStyle = "#444444"
-		drawToHere.fillRect(0, 0, canvas.width, canvas.height)
+		drawToHere.fillRect(0, 0, width, height)
 		
 		const drawText = []
 
@@ -158,23 +181,12 @@ function DrawSmoothedGraph(graphData)
 		{
 			if (! graphData.bgColours)
 			{
-				const colourIDs = {}
-
-				for (var elem of backgroundBlocks)
-				{
-					if (elem.colourID !== undefined)
-					{
-						colourIDs[elem.colourID] = true
-					}
-				}
-				
-				console.log(Object.keys(colourIDs))
-				graphData.bgColours = MakeColourLookUpTable(Object.keys(colourIDs), 0.4, undefined, 0.6)
+				CreateGraphBackgroundColours(graphData)
 			}
 			
 			var countParagraphs = 0
 			var lastX = 0
-			const multiplier = canvas.width / sizeX
+			const multiplier = width / sizeX
 
 			for (var elem of backgroundBlocks)
 			{
@@ -186,7 +198,7 @@ function DrawSmoothedGraph(graphData)
 				if (colour && lastX != x)
 				{
 					drawToHere.beginPath()
-					drawToHere.rect(lastX, 0, x - lastX + 1, canvas.height)
+					drawToHere.rect(lastX, 0, x - lastX + 1, height)
 					drawToHere.fillStyle = colour
 					drawToHere.fill()
 					
@@ -205,17 +217,17 @@ function DrawSmoothedGraph(graphData)
 			}
 		}
 
-		const scaleY = canvas.height * 0.95 / biggestVal
+		const scaleY = height * 0.95 / biggestVal
 		
 		if (doStripes)
 		{
-			var verticalBarY = canvas.height
+			var verticalBarY = height
 			
 			while (verticalBarY >= 0)
 			{
 				drawToHere.beginPath()
 				verticalBarY -= scaleY * 2
-				drawToHere.rect(0, verticalBarY, canvas.width, scaleY)
+				drawToHere.rect(0, verticalBarY, width, scaleY)
 				drawToHere.fillStyle = "#00000028"
 				drawToHere.fill()
 			}
@@ -235,18 +247,18 @@ function DrawSmoothedGraph(graphData)
 			if (drawThis.length > 1)
 			{
 				var numDone = 0
-				const scaleX = canvas.width / (drawThis.length - 1)
+				const scaleX = width / (drawThis.length - 1)
 				drawToHere.fillStyle = colours[spelling]
 				drawToHere.beginPath()
-				drawToHere.moveTo(0, canvas.height)
+				drawToHere.moveTo(0, height)
 
 				for (var t of drawThis)
 				{
-					drawToHere.lineTo(numDone * scaleX, canvas.height - t * scaleY)
+					drawToHere.lineTo(numDone * scaleX, height - t * scaleY)
 					++ numDone
 				}
 
-				drawToHere.lineTo(canvas.width, canvas.height)
+				drawToHere.lineTo(width, height)
 				drawToHere.fill()
 			}
 		}
@@ -264,15 +276,23 @@ function DrawSmoothedGraph(graphData)
 				drawToHere.translate(drawAtX, 0)
 				drawToHere.rotate(-Math.PI/2)
 				drawToHere.fillStyle = "#00000080"
-				drawToHere.fillText(drawThisText, -4, 2, canvas.height - 6)
+				drawToHere.fillText(drawThisText, -4, 2, height - 6)
 				drawToHere.fillStyle = "#FFFFFF"
-				drawToHere.fillText(drawThisText, -3, 1, canvas.height - 6)
+				drawToHere.fillText(drawThisText, -3, 1, height - 6)
 				drawToHere.restore()
 			}
 		}
-	}
 
-	g_graphHoverData = graphData
+		g_graphClickData = graphData.clickList
+
+		if (g_graphClickData)
+		{
+			for (var clickElement of g_graphClickData)
+			{
+				clickElement.offsetX = width * (clickElement.clickX + 0.5) / sizeX
+			}
+		}
+	}
 }
 
 function CalcGraphCanvasWidth()
@@ -280,9 +300,31 @@ function CalcGraphCanvasWidth()
 	return Math.max(Math.floor(window.innerWidth * 0.825), 200)
 }
 
-function GraphClick(eventData)
+function GraphClick({offsetX})
 {
-	console.log(eventData)
+	if (g_graphClickData)
+	{
+		var closest = undefined
+		var closestDistance = window.innerWidth
+		
+		for (var clickable of g_graphClickData)
+		{
+			const myDistance = Math.abs(clickable.offsetX - offsetX)
+			if (myDistance < closestDistance)
+			{
+				closestDistance = myDistance
+				closest = clickable.elemName
+			}
+		}
+		
+		if (closest)
+		{
+			ScrollToElementId(closest)
+			TrySetElementClass(closest, "highlighter", true)
+			
+			setTimeout(() => TrySetElementClass(closest, "highlighter", false), 1000)
+		}
+	}
 }
 
 function GraphAddCanvas(reply, height, thenCall)

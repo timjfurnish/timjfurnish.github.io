@@ -5,7 +5,6 @@
 
 const kHasNoEffect = ["voiceDefault", "voiceSpeech", "speakRate", "showWordCountChanges", "warningPopUp"]
 const kCurrentSaveFormatVersion = 2
-const kSettingsWhichProvideNames = MakeColourLookUpTable(["names", "names_places", "names_other"], 0.25)
 
 var g_tweakableSettings = {}
 var g_openTextAreas = {}
@@ -14,6 +13,7 @@ var g_autoTagKeys
 var g_tagsExpectedInEverySection = []
 var g_settingsName = ""
 var g_availableConfigs = []
+var g_entityNameCategories = {}
 
 window?.localStorage?.getItem("nova_configNames")?.split('\n')?.forEach(name => g_availableConfigs.push(name))
 
@@ -438,12 +438,9 @@ const kTweakableDefaults =
 	skip:["Contents"],
 	wordsContainingFullStops:['etc.', 'Dr.', 'Mr.', 'Mrs.', 'i.e.', 'e.g.'],
 	wordJoiners:[' ', ', ', ' ' + kCharacterEmDash + ' ', kCharacterElipsis + ' '],
-	wordJoinersStart:[],
-	replace:['\\bO\\.S\\./OFFSCREEN', '([0-9]+)\\.([0-9]+)/$1^$2', '^== (.*) ==$/$1.', "[!\\?]’/’", "\\bCONT’D\\b/CONTINUED", "^EXT\\./EXTERIOR", "^INT\\./INTERIOR"],
+	replace:['\\b([a-z]+)\\(([a-z]+)\\)/$1$2/i', '([0-9]+),([0-9]+)/$1$2', '\\bO\\.S\\./OFFSCREEN', '([0-9]+)\\.([0-9]+)/$1^$2', '^== (.*) ==$/$1.', "[!\\?]’/’", "\\bCONT’D\\b/CONTINUED", "^EXT\\./EXTERIOR", "^INT\\./INTERIOR"],
 	hyphenCheckPairs:["sat-nav*", "set-up", "under-cover", "self-reliance reliant control esteem respect awareness aware", "proof-read*", "short-term", "love-bird* heart* potion* sick*", "hand-writing written write*", "left right-hand*", "sand egg-timer*", "back-stage* hand* ground* garden*", "stage-left right", "slow-motion", "some-thing where how what body one", "heart-break* broken", "car-park*", "brain-wave*", "mind lip-read*", "twenty thirty forty fifty sixty seventy eighty ninety-one two three four five six seven eight nine", "one two three four five six seven eight nine ten-hundred thousand million billion trillion"],
-	names:[],
-	names_places:[],
-	names_other:[],
+	entityNames:["[PEOPLE]", "me I my myself"],
 	splitInfinitiveIgnoreList:[],
 	adverbHyphenIgnoreList:[],
 	numberIgnoreList:[],
@@ -468,6 +465,56 @@ const kSettingFunctions =
 	tooltips:val => RedoToTop() + RedoTabTops() + RethinkEnabledTabs()
 }
 
+function SettingsAddEntityName(category, theText)
+{
+	g_tweakableSettings.entityNames.splice(g_tweakableSettings.entityNames.indexOf("[" + category + "]") + 1, 0, theText)		
+	SettingPerformMaintenance("entityNames")
+	SettingSave("entityNames")
+	CallTheseFunctions(ProcessInput)
+}
+
+function SortNames(inArray)
+{
+	var currentCategory = "MISC"
+	var groupHere = {}
+	
+	for (var eachIn of inArray)
+	{
+		if (eachIn != '')
+		{
+			const matchBits = eachIn.match(/^\[([A-Za-z0-9_:\- ]+)\]$/)
+
+			if (matchBits)
+			{
+				currentCategory = matchBits[1].toUpperCase()
+			}
+			else if (currentCategory in groupHere)
+			{
+				groupHere[currentCategory].push(eachIn)
+			}
+			else
+			{
+				groupHere[currentCategory] = [eachIn]
+			}
+		}
+	}
+
+	const outArray = []
+
+	for (var [eachCat, contents] of Object.entries(groupHere))
+	{
+		if (outArray.length)
+		{
+			outArray.push("")
+		}
+
+		outArray.push("[" + eachCat + "]", ...contents.sort())
+	}
+
+	g_entityNameCategories = MakeColourLookUpTable(Object.keys(groupHere), 0.25)
+	return outArray
+}
+
 const kMaintenanceFunctions =
 {
 	allowedStartCharacters:SortCharactersAndRemoveDupes,
@@ -477,15 +524,16 @@ const kMaintenanceFunctions =
 	endOfParagraphSpeech:SortCharactersAndRemoveDupes,
 	endOfParagraphNarrative:SortCharactersAndRemoveDupes,
 
+	wordJoiners:SortArray,
+	replace:SortArray,
 	skip:SortArray,
 	wordsContainingFullStops:SortArray,
 	hyphenCheckPairs:SortArray,
-	names:SortArray,
-	names_places:SortArray,
-	names_other:SortArray,
 	splitInfinitiveIgnoreList:SortArray,
 	adverbHyphenIgnoreList:SortArray,
 	numberIgnoreList:SortArray,
+	
+	entityNames:SortNames,
 }
 
 function InitSetting([key, val])
@@ -531,9 +579,7 @@ const kSettingNames =
 	NAMES:
 	{
 		suggestNameIfSeenThisManyTimes:"Capitalised words seen^this many times are^suggested as names",
-		names:"Characters|mediumTextBox",
-		names_places:"Places|mediumTextBox",
-		names_other:"Other|mediumTextBox",
+		entityNames:"Search settings|longTextBox",
 	},
 	HYPHENS:
 	{
@@ -548,7 +594,6 @@ const kSettingNames =
 		endOfSpeech:"End of speech|shortTextBox",
 		endOfParagraphSpeech:"End of paragraph speech|shortTextBox",
 		endOfParagraphNarrative:"End of paragraph narrative|shortTextBox",
-		wordJoinersStart:"Valid punctuation^(start of phrase)|shortTextBox",
 		wordJoiners:"Valid punctuation^(between words)|shortTextBox",
 		warnParagraphAmountPunctuation:"Warn when paragraph contains this^many total punctuation marks",
 		warnParagraphAmountDifferentPunctuation:"Warn when paragraph contains this^many different punctuation marks",
@@ -598,7 +643,7 @@ function UpdateSettingFromText(name, type, savedSetting, loadingVersion)
 	if (type == 'array')
 	{
 		const splitCharacter = (loadingVersion == 1) ? ',' : '\n'
-		SettingUpdate(name, OnlyKeepValid(savedSetting.split(splitCharacter)).sort(), isLoading)
+		SettingUpdate(name, OnlyKeepValid(savedSetting.split(splitCharacter)), isLoading)
 	}
 	else if (name == 'speakRate')
 	{
@@ -752,29 +797,41 @@ function SettingUpdate(name, newValue, isLoading)
 
 function SettingsGetNamesArrays()
 {
+	// Todo: create in SortNames
 	var reply = []
-
-	for (var key of Object.keys(kSettingsWhichProvideNames))
+	var currentCategory = "MISC"
+	
+	for (var eachIn of g_tweakableSettings.entityNames)
 	{
-		for (var n of g_tweakableSettings[key])
+		if (eachIn != '')
 		{
-			var inner = []
-			const quoteUnquote = n.split('"')
-			var isQuoted = false
-			for (var txt of quoteUnquote)
+			const matchBits = eachIn.match(/^\[([A-Za-z0-9_:\- ]+)\]$/)
+
+			if (matchBits)
 			{
-				if (txt)
-				{
-					for (var name of isQuoted ? [txt.trim()] : OnlyKeepValid(txt.split(' ')))
-					{
-						inner.push(name)
-					}
-				}
-				isQuoted = !isQuoted
+				currentCategory = matchBits[1].toUpperCase()
 			}
-			reply.push({arr:inner, type:key})
+			else
+			{
+				var inner = []
+				const quoteUnquote = eachIn.split('"')
+				var isQuoted = false
+				for (var txt of quoteUnquote)
+				{
+					if (txt)
+					{
+						for (var name of isQuoted ? [txt.trim()] : OnlyKeepValid(txt.split(' ')))
+						{
+							inner.push(name)
+						}
+					}
+					isQuoted = !isQuoted
+				}
+				reply.push({arr:inner, type:currentCategory})
+			}
 		}
 	}
+
 	return reply
 }
 
@@ -1103,6 +1160,7 @@ function AddToSetting(whichOne, addThis)
 	SettingSave(whichOne)
 	CallTheseFunctions(ProcessInput)
 }
+
 function InitSettings()
 {
 	Object.keys(g_warningNames).forEach(id => OptionsMakeKey("settings", id, ! (id in kOptionCustomNames)))
@@ -1113,7 +1171,6 @@ function InitSettings()
 	IssueAutoFixDefine("SPLIT INFINITIVE", "Add to allow list", characters => AddToSetting("splitInfinitiveIgnoreList", characters))
 	IssueAutoFixDefine("ADVERB WITH HYPHEN", "Add to allow list", characters => AddToSetting("adverbHyphenIgnoreList", characters))
 	IssueAutoFixDefine("PUNCTUATION: MID-PHRASE", "Add to allow list", characters => AddToSetting("wordJoiners", characters))
-	IssueAutoFixDefine("PUNCTUATION: PHRASE START", "Add to allow list", characters => AddToSetting("wordJoinersStart", characters))
 	IssueAutoFixDefine("INVALID FIRST SPEECH CHARACTER", "Ignore characters", characters => AddToSetting("startOfSpeech", characters))
 	IssueAutoFixDefine("INVALID FINAL SPEECH CHARACTER", "Ignore characters", characters => AddToSetting("endOfSpeech", characters))
 }

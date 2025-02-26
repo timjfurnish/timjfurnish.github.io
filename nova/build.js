@@ -349,7 +349,23 @@ function OptionsMakeCheckbox(options, funcName, idIn, label, defaultVal, callFun
 
 function OptionsConcat(arr)
 {
-	return "<nobr>" + arr.join("&nbsp;</nobr> <nobr>") + "</nobr><br>"
+	var out = ""
+	var before = ""
+
+	for (var each of arr)
+	{
+		if (each != "|")
+		{
+			out += before + "<nobr>&nbsp;" + each + "&nbsp;</nobr>"
+			before = " "
+		}
+		else if (before != "")
+		{
+			before = "<BR>"
+		}
+	}
+
+	return out + "<br>"
 }
 
 function OptionsMakeButtons(toHere, info)
@@ -366,10 +382,17 @@ function OptionsMakeButtons(toHere, info)
 
 function OptionsMakeSelect(toHere, funcName, heading, id, options, defaultVal, callFuncLate)
 {
+	AssertSame(typeof options, "object")
 	const entries = Object.entries(options)
+
 	id = OptionsMakeKey(g_selectedTabName, id, (defaultVal === undefined) ? entries[0][0] : defaultVal, Object.keys(options))
 
-	var reply = [heading + ': <select ' + OptionsCommon(id, funcName, callFuncLate) + '>']
+	if (heading)
+	{
+		heading += ": "
+	}
+	
+	var reply = [heading + '<select ' + OptionsCommon(id, funcName, callFuncLate) + '>']
 
 	for (var [key, val] of entries)
 	{
@@ -382,7 +405,13 @@ function OptionsMakeSelect(toHere, funcName, heading, id, options, defaultVal, c
 function OptionsMakeTextBox(toHere, funcName, heading, id, defVal)
 {
 	id = OptionsMakeKey(g_selectedTabName, id, defVal ?? "")
-	toHere.push(heading + ': <input type=text ' + OptionsCommon(id, funcName) + '></input>')
+
+	if (heading)
+	{
+		heading += ": "
+	}
+
+	toHere.push(heading + '<input type=text ' + OptionsCommon(id, funcName) + ' class="mediumTextBox"></input>')
 }
 
 function OptionsMakeNumberBox(toHere, funcName, heading, id, defVal)

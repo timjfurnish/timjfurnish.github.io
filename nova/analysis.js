@@ -7,7 +7,7 @@ var g_profileAnalysis = {}
 var g_processInputWorkspace
 var g_checkedWords = {}
 
-const kReplaceOnlyKeepBraces      =  /[^‘’\u201C\u201D\[\]\{\}\(\)]/g // And opening/closing quotes
+const kReplaceOnlyKeepBraces      =  /[^‘’\u201C\u201D\[\]\{\}\(\)]|’\w/g // And opening/closing quotes
 const kReplaceFullStops           =  /\./g
 const kReplaceCarats              =  /\^/g
 const kReplaceSpeechStartStuff    =  /^'|^‘|^(\u2026 )/
@@ -15,7 +15,7 @@ const kReplaceSentenceStartStuff  =  /^'|^‘|^\(/
 const kReplaceSentenceEndStuff    =  /[,'’—\u2026]+$/
 
 const kSplitToCheckForGappyPunctuation  =  /[\.,;:!\?]+["\u201D\)]?/
-const kSplitIntoFragments               =  /([\|\!\?;:]+) */
+const kSplitIntoFragments               =  /([\(\)]?[\|\!\?;:]+[\(\)]? *[\(\)]?)/
 const kSplitOnSpeechMarks               =  /[\u201C\u201D"]/
 
 const kBraces = {['‘']:'’', ['{']:'}', ['[']:']', ['(']:')', ['\u201C']:'\u201D'}
@@ -30,7 +30,7 @@ function MakeValidJoinersTable(table)
 }
 
 const kValidJoinersSpeech = MakeValidJoinersTable({["’!"]:true, ["!?"]:true, ["’?"]:true, ["—"]:true})
-const kValidJoinersNarrative = MakeValidJoinersTable({[""]:false})
+const kValidJoinersNarrative = MakeValidJoinersTable({[". ("]:true, ["? ("]:true, ["! ("]:true, [".)"]:true, ["?)"]:true, [")."]:true, [""]:false})
 
 //==========================================================
 // CHECKING FOR ILLEGAL SUBSTRINGS...
@@ -60,6 +60,7 @@ const kIllegalSubstrings =
 	["irregular dash spacing", /( —[^ ])|([^ ]— )/g],
 	["misused opening quote", /[^“\( ][‘“]/g],
 	["double space", "  "],
+	["oddly spaced braces", /[\(\[] /g],
 	["dubious punctuation combo", /[;:\-,\.\!\?][‘'’“"”]?[;:\-,\.\!\?]/g, txt => txt == "!?"],
 	["space before punctuation", / [;:,\.\!\?]/g],
 	["split infinitive", /\bto (not|never|always|almost|[a-z][a-z]+ly) [a-z][a-z]+/gi, txt => (g_tweakableSettings.splitInfinitiveIgnoreList.includes(txt) || txt.toLowerCase().endsWith(" the"))],
@@ -118,8 +119,19 @@ function CheckStringForEvenBraces(txtIn)
 
 function CheckEachWord(word, s, isSpeech)
 {
-	const wordLower = word.toLowerCase()
 	const {plainBadWords, badWordRegExpressions, checkedWordsSeenInLowerCase} = g_processInputWorkspace
+
+	var wordLower = word.toLowerCase()
+	
+	if (wordLower === word)
+	{
+		checkedWordsSeenInLowerCase[wordLower] = true
+	}
+	
+	if (wordLower.endsWith("’s"))
+	{
+		wordLower = wordLower.substring(0, wordLower.length - 2)
+	}
 
 	if (wordLower in plainBadWords)
 	{
@@ -140,12 +152,7 @@ function CheckEachWord(word, s, isSpeech)
 			}
 		}
 	}
-	const lastApostrophe = word.lastIndexOf("’")
-	if (lastApostrophe > 0)
-	{
-		CheckEachWord(word.substr(0, lastApostrophe), s, isSpeech)
-		return false
-	}
+
 	if (! (wordLower in g_checkedWords))
 	{
 		g_checkedWords[wordLower] = {inSpeech:0, inNarrative:0}
@@ -153,10 +160,6 @@ function CheckEachWord(word, s, isSpeech)
 
 	Tally (g_checkedWords[wordLower], isSpeech ? "inSpeech" : "inNarrative")
 	Tally (g_checkedWords[wordLower], "total")
-	if (wordLower === word)
-	{
-		checkedWordsSeenInLowerCase[wordLower] = true
-	}
 
 	return ["mr.", "dr.", "mrs."].includes(wordLower)
 }
@@ -344,9 +347,11 @@ function CheckOverusedPuncInPara(txtIn)
 function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 {
 	Tally (g_profileAnalysis, "AnalyseParagraph")
+	
 	//==================================
 	// Check for issues
 	//==================================
+	
 	for (var [k,v,allowFunc] of kIllegalSubstrings)
 	{
 		var grabEmHere = {}
@@ -359,6 +364,7 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 			}
 		}
 	}
+	
 	const firstCharacter = txtInProcessed[0].toUpperCase()
 	const {allowedStartCharacters, endOfSpeech, startOfSpeech} = g_tweakableSettings
 
@@ -370,22 +376,13 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 	CheckStringForEvenBraces(txtInProcessed)
 	CheckOverusedPuncInPara(txtInProcessed)
 
-	const splittyFun = txtInProcessed.split(kSplitToCheckForGappyPunctuation)
-	splittyFun.shift()
-	for (var each of splittyFun)
-	{
-		if (each && ! each.startsWith(' ') && ! each.startsWith("’"))
-		{
-			IssueAdd("Found punctuation not followed by space before " + FixStringHTML(each) + " in " + FixStringHTML(txtInProcessed), "PUNCTUATION WITHOUT SPACE")
-		}
-	}
-
 	//==================================
 	// Process it
 	//==================================
 
 	const bScriptMode = ! g_disabledWarnings.SCRIPT
 	const talkyNonTalky = bScriptMode ? [txtInProcessed] : txtInProcessed.split(kSplitOnSpeechMarks)
+	
 	if ((talkyNonTalky.length & 1) == 0)
 	{
 		IssueAdd("Found odd number of quotation marks in " + FixStringHTML(txtInProcessed), "UNFINISHED QUOTE")
@@ -397,14 +394,18 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 	var bCanCheckFinalCharacter = true
 	var bIgnoreFragments = false
 	var isTreatingAsSpeech = false
+	
 	const storeAsFragments = []
+	
 	for (const eachIn of talkyNonTalky)
 	{
 		// Use | instead of . so that we can put back things like "Mr. Smith".
 		const each = eachIn.replace(kReplaceFullStops, '|').replace(kReplaceCarats, '.')
 		const firstCharacterHere = eachIn[0]
 		var thisBunchOfFragments = each.trim()
+		
 		isSpeech = !isSpeech
+		
 		if (bScriptMode)
 		{
 			if (firstCharacterHere == '(')
@@ -522,6 +523,17 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 
 				var followedBy = joiners.shift()
 				var precededBy = ""
+				const followedByTrimmed = followedBy.trimEnd()
+				
+				if (! followedByTrimmed.endsWith("("))
+				{
+					if (joiners.length && followedByTrimmed == followedBy)
+					{
+						IssueAdd("Punctuation combo " + FixStringHTML(followedByTrimmed) + " should be followed by a space in " + (isSpeech ? "speech" : "narrative") + " chunk " + FixStringHTML(thisBunchOfFragments), "PUNCTUATION COMBO")
+					}
+
+					followedBy = followedByTrimmed
+				}
 				
 				const replaceStartRule = isSpeech ? kReplaceSpeechStartStuff : kReplaceSentenceStartStuff
 				
@@ -572,13 +584,6 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 						shouldStartWithCapital = CheckEachWord(word, s, isSpeech) && ("following " + word + " in")
 						++ numWords
 						rebuild = ""
-					}
-					else
-					{
-						if (! (join in g_processInputWorkspace.validWordJoinersStart))
-						{
-							IssueAdd("Unexpected punctuation [" + FixStringHTML(join) + "] at the start of " + FixStringHTML(s), "PUNCTUATION: PHRASE START", join)
-						}
 					}
 				}
 
@@ -693,7 +698,6 @@ function ProcessInputBegin()
 	g_processInputWorkspace =
 	{
 		validWordJoiners:MakeSet('', ' ', '’', ...g_tweakableSettings.wordJoiners),
-		validWordJoinersStart:MakeSet('', ' ', ...g_tweakableSettings.wordJoinersStart),
 		checkedWordsSeenInLowerCase:{},
 		plainBadWords:{},
 		numberRules:[],
@@ -706,8 +710,6 @@ function ProcessInputBegin()
 		inputTextArray:GetInputText().split(/[\n]+/),
 		replaceRules:SettingsGetReplacementRegularExpressionsArray()
 	}
-
-	console.log(g_processInputWorkspace.validWordJoiners)
 
 	SetUpBadWordRules()
 	SetUpNumberRules()
@@ -780,11 +782,15 @@ function GatherNameSuggestions()
 {
 	const {suggestNameIfSeenThisManyTimes} = g_tweakableSettings
 	g_entityNewNameSuggestions = []
+	
 	for (var [word, counts] of Object.entries(g_checkedWords))
 	{
 		if (word.length > 1 && counts.total >= suggestNameIfSeenThisManyTimes && ! (word in g_processInputWorkspace.checkedWordsSeenInLowerCase))
 		{
-			g_entityNewNameSuggestions.push({word:word, count:counts.total})
+			if (! (word.includes('.') || word.startsWith("i’") || word.startsWith("i'")))
+			{
+				g_entityNewNameSuggestions.push({word:word, count:counts.total})
+			}
 		}
 	}
 }

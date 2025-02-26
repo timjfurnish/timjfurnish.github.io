@@ -122,7 +122,7 @@ function RedrawWordTable()
 							thereWasMore = true;
 							break;
 						}
-						TableNewRow(reply, kSettingsWhichProvideNames[isAName])
+						TableNewRow(reply, g_entityNameCategories[isAName])
 						TableAddCell(reply, MakeMentionLink(w))
 						TableAddCell(reply, wordInfo.total)
 						TableAddCell(reply, wordInfo.inSpeech)

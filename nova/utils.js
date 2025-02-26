@@ -38,6 +38,22 @@ function TrySetElementContents(elemName, contents)
 	}
 }
 
+function ScrollToElementId(elemName)
+{
+	const elem = document.getElementById(elemName)
+
+	if (elem)
+	{
+		const rect = elem.getBoundingClientRect()
+
+		if (rect.bottom > window.innerHeight * 0.8 || rect.top < window.innerHeight * 0.2)
+		{
+			console.log("Scrolling to '" + elemName + "'")
+			window.scrollTo(0, rect.top + window.scrollY - window.innerHeight * 0.3)
+		}
+	}
+}
+
 //---------------------------
 // String things
 //---------------------------

@@ -26,7 +26,7 @@ function RedrawSearchResults()
 		var graphVisible = false
 		var entityNames = document.getElementById("search.entity")?.value
 
-		g_searchDataForGraph = {colours:{}, data:[], doStripes:true}
+		g_searchDataForGraph = {clickList:[], colours:{}, data:[], doStripes:true}
 
 		if (entityNames)
 		{
@@ -39,12 +39,12 @@ function RedrawSearchResults()
 			customTextBox.readOnly = false
 		}
 
-		const {page, colourUsing} = g_currentOptions.search
-		const showThis = g_currentOptions.search["showThis_" + page]
-		const gapValue = +g_currentOptions.search["smoothing_" + page] * 4 + 2
+		const {onlyShow, colourUsing} = g_currentOptions.search
+		const showThis = g_currentOptions.search["showThis_" + onlyShow]
+		const gapValue = +g_currentOptions.search["smoothing_" + onlyShow] * 4 + 2
 		const bgData = g_metaDataSeenValues[colourUsing]
 
-//		NovaLog("Searching for '" + entityNames + "' in sections where " + page + "='" + showThis + "'")
+//		NovaLog("Searching for '" + entityNames + "' in sections where " + onlyShow + "='" + showThis + "'")
 
 		if (bgData)
 		{
@@ -55,6 +55,7 @@ function RedrawSearchResults()
 		{
 			var output = []
 			var grabEmHere = {}
+			var anchorCount = 0
 
 			const theString = "\\b(?:" + TurnNovaShorthandIntoRegex(entityNames) + ")\\b"
 			const exp = new RegExp(theString, "ig");
@@ -63,15 +64,17 @@ function RedrawSearchResults()
 			{
 				const info = metadata.info
 
-				if (((page == "ALL") || ((page == "MENTIONS") ? metadata.Mentions[showThis] : (info[page] == showThis))))
+				if (((onlyShow == "ALL") || ((onlyShow == "MENTIONS") ? metadata.Mentions[showThis] : (info[onlyShow] == showThis))))
 				{
-					GraphAddBackgroundBlock(g_searchDataForGraph, metadata.Paragraphs, info[colourUsing])
+					const useColour = info[colourUsing]
+
+					GraphAddBackgroundBlock(g_searchDataForGraph, metadata.Paragraphs, useColour)
 					
-					var addAfterSkippedLines = "<H3>" + MetaDataMakeFragmentDescription(metadata) + "</H3>"
+					var addAfterSkippedLines = "<H3 recolourHeading=\"" + useColour + "\">" + MetaDataMakeFragmentDescription(metadata) + "</H3>"
 					var keepShowingCountdown = 0
 					var showThisToo = null
 					var skippedLines = true
-
+					
 					for (var para of metadata.myParagraphs)
 					{
 						if (! para.ignoreFragments)
@@ -97,6 +100,9 @@ function RedrawSearchResults()
 								if (foundTextHere)
 								{
 									keepShowingCountdown = 1
+									s2 = '<FONT ID="searchAnchor' + anchorCount + '">' + s2 + '</FONT>'
+									g_searchDataForGraph.clickList.push({elemName:'searchAnchor' + anchorCount, clickX:g_searchDataForGraph.data.length - 1})
+									++ anchorCount
 								}
 								else
 								{
@@ -145,11 +151,23 @@ function RedrawSearchResults()
 				var recolour = []
 
 				g_searchDataForGraph.colours = colours
-
+				
 				for (var key of upperKeys)
 				{
 					recolour.push(['highlightFor="' + key + '"', 'style="background-color:' + g_searchDataForGraph.colours[key] + '"'])
 				}
+
+				if (g_searchDataForGraph.backgroundBlocks)
+				{
+					CreateGraphBackgroundColours(g_searchDataForGraph)
+
+					for (var [key, value] of Object.entries(g_searchDataForGraph.bgColours))
+					{
+						recolour.push(['recolourHeading="' + key + '"', 'style="color:white; background-color:' + value + '"'])
+					}
+				}
+
+//				console.log("Recolouring using:\n  " + recolour.join('\n  '))
 
 				for (var eachLine of output)
 				{
@@ -209,14 +227,15 @@ TabDefine("search", function(reply, thenCall)
 
 	nameData["twent*|thirt*|forty|fortie*|fift*|eight*|one|ones|two*|three*|four*|five*|six*|seven*|nine*|ten|tens|tenth*|third*|fourth*|ninth*|eleven*|twelfth*|twelve*|hundred*|thousand*|billion*|million*|trillion*"] = "Numbers (words)"
 	nameData["*[0-9]*"] = "Numbers (digits)"
-	nameData["in fact|of course|in many ways|for some reason|some kind|no doubt|certainly|definitely"] = "&quot;In fact&quot;"
+	nameData["in fact|of course|in many ways|for some reason|some kind|no doubt|certainly|definitely|all honesty|* be honest|whatsoever|more accurately|after all|at all|in the slightest|by any means"] = "&quot;In fact&quot;"
 	nameData["entire|entirely|total|totally|utter|utterly|fully|complete|completely|whole|wholly|altogether|literal|literally|somewhat|quite|really|very"] = "&quot;Completely&quot;"
 	nameData["beg*n* to|b*g*n* *ing|start* to|start* *ing|proceed* to|proceed* *ing|set about"] = "&quot;Started to&quot;"
 	nameData["sudden*|instant*|immediate*"] = "&quot;Suddenly&quot;"
-	nameData["stood up|stand* up|sat down|sit* down|lay* down|lie* down|lying down|jump* up|rais* up|ris* up|lift* up|gather* up|collect* up|print* out"] = "&quot;Sat down&quot;"
+	nameData["stood up|stand* up|sat down|sit* down|lay* down|lie* down|lying down|jump* up|rais* up|ris* up|lift* up|gather* up|collect* up|print* out|knelt down|kneel* down"] = "&quot;Sat down&quot;"
 	
-	OptionsMakeSelect(options, "RedrawSearchResults()", "Entity", "entity", nameData, "")
-	OptionsMakeTextBox(options, "RedrawSearchResults()", "Search for", "custom")
+	OptionsMakeSelect(options, "RedrawSearchResults()", "Search for", "entity", nameData, "")
+	OptionsMakeTextBox(options, "RedrawSearchResults()", "", "custom")
+	options.push("|")
 	GraphCreateStandardOptions(options, "RedrawSearchResults", true)
 
 	reply.push(OptionsConcat(options))
@@ -279,17 +298,17 @@ function RedrawThread(goToTop)
 		var skippedASection = true
 		var lastChapterName
 
-		const {page, headings, summary} = g_currentOptions.voice
-		const showThis = g_currentOptions.voice["showThis_" + page]
+		const {onlyShow, headings, summary} = g_currentOptions.voice
+		const showThis = g_currentOptions.voice["showThis_" + onlyShow]
 
-		NovaLog("Redrawing sections where " + page + "='" + showThis + "' (" + (goToTop ? "jumping to top" : "searching for previously highlighted text") + ")")
+		NovaLog("Redrawing sections where " + onlyShow + "='" + showThis + "' (" + (goToTop ? "jumping to top" : "searching for previously highlighted text") + ")")
 
 		for (var metadata of g_metaDataInOrder)
 		{
 			const info = metadata.info
 			const displayTheseThings = summary ? metadata.mySummaries : metadata.myParagraphs
 
-			if (displayTheseThings.length && ((page == "ALL") || ((page == "MENTIONS") ? metadata.Mentions[showThis] : (info[page] == showThis))))
+			if (displayTheseThings.length && ((onlyShow == "ALL") || ((onlyShow == "MENTIONS") ? metadata.Mentions[showThis] : (info[onlyShow] == showThis))))
 			{
 				if (skippedASection)
 				{
@@ -317,6 +336,14 @@ function RedrawThread(goToTop)
 
 				for (var para of displayTheseThings)
 				{
+					var after = "<BR>"
+					
+					if (para.issues)
+					{
+						output.push("<FONT COLOR=red>")
+						after = "</FONT><BR>"
+					}
+
 					FormatParagraphForDisplay(output, para.fragments, fragment =>
 					{
 						const theTxt = fragment.text + fragment.followedBy
@@ -324,7 +351,7 @@ function RedrawThread(goToTop)
 						g_threadSections.push({sayThisText:theTxt, useSpeechVoice:fragment.isSpeech})
 						return reply
 					})
-					output.push("<BR>")
+					output.push(after)
 				}
 				addWhenSkipASection = "<BR><HR WIDTH=45%>"
 				skippedASection = false
@@ -341,9 +368,9 @@ function RedrawThread(goToTop)
 
 		for (var {info} of g_metaDataInOrder)
 		{
-			if (page in info)
+			if (onlyShow in info)
 			{
-				const txt = info[page]
+				const txt = info[onlyShow]
 				nameData[txt] = txt
 			}
 		}
@@ -356,7 +383,7 @@ function RedrawThread(goToTop)
 				{
 					const escapedText = txt.replaceAll("'", "\\'")
 	//				console.log("Escaped: " + escapedText)
-					output.push('<P ALIGN=right STYLE="padding-right:20px"><BUTTON ID=nextChunk ONCLICK="' + AddEscapeChars('window.scrollTo(0,0); document.getElementById(\'voice.showThis_' + page + '\').value = \'' + escapedText + '\'; UpdateOptions(); RedrawThread(true)') + '">Next: ' + txt + '</BUTTON></p>')
+					output.push('<P ALIGN=right STYLE="padding-right:20px"><BUTTON ID=nextChunk ONCLICK="' + AddEscapeChars('window.scrollTo(0,0); document.getElementById(\'voice.showThis_' + onlyShow + '\').value = \'' + escapedText + '\'; UpdateOptions(); RedrawThread(true)') + '">Next: ' + txt + '</BUTTON></p>')
 					break
 				}
 				else if (txt == showThis)
@@ -410,19 +437,7 @@ function ThreadRead()
 
 	if (thingToSay)
 	{
-		// Scroll to element...
-		const theElement = document.getElementById("threadSection" + g_threadSectionSelected)
-
-		if (theElement)
-		{
-			const rect = theElement.getBoundingClientRect()
-
-			if (rect.bottom > window.innerHeight * 0.8 || rect.top < window.innerHeight * 0.2)
-			{
-				window.scrollTo(0, rect.top + window.scrollY - window.innerHeight * 0.3)
-			}
-		}
-
+		ScrollToElementId("threadSection" + g_threadSectionSelected)
 		SpeakUsingVoice(thingToSay.sayThisText, thingToSay.useSpeechVoice ? "voiceSpeech" : "voiceDefault", OnDoneThreadSpeakingFragment)
 	}
 }
@@ -430,45 +445,38 @@ function ThreadRead()
 function CreateOnlyShowSelectBox(reply, callThis, prefix, theDefault)
 {
 	var options = []
-	var columns = Object.keys(g_metaDataAvailableColumns)
-	columns.push("MENTIONS", "ALL")
-	TabBuildButtonsBar(reply, columns, theDefault)
+	var columns = {}
 
-	if (g_hasSummaries == undefined)
-	{
-		g_hasSummaries = false
-		for (var {mySummaries} of g_metaDataInOrder)
-		{
-			if (mySummaries.length)
-			{
-				g_hasSummaries = true
-				break
-			}
-		}
-	}
+	Object.keys(g_metaDataAvailableColumns).forEach(eachCol => columns[eachCol] = CapitaliseFirstLetter(eachCol.toLowerCase()))
 
-	const page = g_currentOptions[g_selectedTabName].page
+	columns["MENTIONS"] = "Sections that mention"
+	columns["ALL"] = "All text"
 
-	if (page == "MENTIONS")
+	OptionsMakeSelect(options, "ShowContentForSelectedTab()", prefix, "onlyShow", columns, theDefault, true)
+	
+	const onlyShow = g_currentOptions[g_selectedTabName].onlyShow
+
+	if (onlyShow == "MENTIONS")
 	{
 		const mentionData = SettingsGetMentionList(undefined, true)
-		OptionsMakeSelect(options, callThis, prefix + " sections which mention", "showThis_" + page, mentionData, undefined, true)
+		OptionsMakeSelect(options, callThis, "", "showThis_" + onlyShow, mentionData, undefined, true)
 	}
-	else if (page != "ALL")
+	else if (onlyShow != "ALL")
 	{
 		var nameData = {}
 		for (var {info} of g_metaDataInOrder)
 		{
-			if (page in info)
+			if (onlyShow in info)
 			{
-				const txt = info[page]
+				const txt = info[onlyShow]
 				nameData[txt] = txt
 			}
 		}
 
-		OptionsMakeSelect(options, callThis, prefix + " " + page.toLowerCase(), "showThis_" + page, nameData, undefined, true)
+		OptionsMakeSelect(options, callThis, "", "showThis_" + onlyShow, nameData, undefined, true)
 	}
-	
+
+	options.push("|")
 	return options
 }
 
@@ -527,10 +535,10 @@ function SwitchToMentionsAndSearch(txt)
 	ShowTab("search")
 }
 
-function SwitchToReadToMe(page, whichOne)
+function SwitchToReadToMe(onlyShow, whichOne)
 {
-	OptionsMakeKey("voice", "page", page, true)
-	OptionsMakeKey("voice", "showThis_" + page, whichOne, true)
+	OptionsMakeKey("voice", "onlyShow", onlyShow, true)
+	OptionsMakeKey("voice", "showThis_" + onlyShow, whichOne, true)
 	ShowTab("voice")
 }
 

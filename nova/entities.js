@@ -14,37 +14,31 @@ function BuildNewNameSuggestionsTable(reply)
 
 	for (var {word, count} of g_entityNewNameSuggestions)
 	{
-		if (! word.includes('.'))
+		var matched = undefined
+
+		for (var {regex} of g_nameLookup)
 		{
-			var matched = undefined
-			for (var {regex} of g_nameLookup)
+			if (word.match(regex))
 			{
-				if (word.match(regex))
-				{
-					matched = regex
-					break
-				}
+				matched = regex
+				break
+			}
+		}
+
+		if (! matched)
+		{
+			TableNewRow(reply)
+			TableAddCell(reply, word.toUpperCase() + '&nbsp;' + CreateClickableText(kIconSearch, "SwitchToMentionsAndSearch(" + MakeParamsString(word) + ")"))
+			TableAddCell(reply, count)
+
+			const finalCell = []
+
+			for (var [addAs, colour] of Object.entries(g_entityNameCategories))
+			{
+				finalCell.push('<NOBR STYLE="background-color:' + colour + '" class="fixMe" onClick="SettingsAddEntityName(\'' + addAs + '\', \'' + word + '\')">' + addAs + '</NOBR>')
 			}
 
-			if (! matched)
-			{
-				TableNewRow(reply)
-				TableAddCell(reply, word.toUpperCase() + '&nbsp;' + CreateClickableText(kIconSearch, "SwitchToMentionsAndSearch(" + MakeParamsString(word) + ")"))
-				TableAddCell(reply, count)
-
-				const finalCell = []
-				if (matched)
-				{
-					finalCell.push(matched)
-				}
-				else
-				{
-					finalCell.push('<NOBR class="fixMe" onClick="AddToSetting(\'names\', \'' + word + '\')">NAME</NOBR>')
-					finalCell.push('<NOBR class="fixMe" onClick="AddToSetting(\'names_places\', \'' + word + '\')">PLACE</NOBR>')
-					finalCell.push('<NOBR class="fixMe" onClick="AddToSetting(\'names_other\', \'' + word + '\')">OTHER</NOBR>')
-				}
-				TableAddCell(reply, finalCell.join(' '), true)
-			}
+			TableAddCell(reply, finalCell.join(' '), true)
 		}
 	}
 
@@ -55,6 +49,7 @@ TabDefine("entities", function(reply, thenCall)
 	var theDefault = undefined
 	var beatThis = 0
 	var keys = Object.keys(g_metaDataAvailableColumns)
+
 	// Pick the default view...
 	for (var eachOne of keys)
 	{
@@ -66,8 +61,10 @@ TabDefine("entities", function(reply, thenCall)
 			theDefault = eachOne
 		}
 	}
+
 	keys.push("SUGGESTIONS")
 	TabBuildButtonsBar(reply, keys, theDefault)
+
 	const {page} = g_currentOptions.entities
 
 	if (page === "SUGGESTIONS")
@@ -100,6 +97,14 @@ TabDefine("entities", function(reply, thenCall)
 				}
 			}
 		}
+
+		const coloursForMatches = {}
+		
+		for (var {means, type} of g_nameLookup)
+		{
+			coloursForMatches[means] = g_entityNameCategories[type]
+		}
+
 		for (var metaData of g_metaDataInOrder)
 		{
 			const rawElementName = metaData.info[page]
@@ -110,7 +115,9 @@ TabDefine("entities", function(reply, thenCall)
 				FinishSegment()
 				consolidateToHere = {name:elementName, rawName:rawElementName, entityMentions:{}}
 			}
+
 			MetaDataCombine(consolidateToHere, "entityMentions", metaData.Mentions)
+
 			for (var m of Object.keys(metaData.Mentions))
 			{
 				allMentions[m] = elementName
@@ -119,29 +126,38 @@ TabDefine("entities", function(reply, thenCall)
 
 		FinishSegment()
 		TableAddHeading(reply, "")
+
 		// Totals...
 
 		TableNewRow(reply)
 		TableAddHeading(reply, "Num entities mentioned")
+
 		for (var eachSegment of segments)
 		{
 			reply.push('<TD CLASS="cellNoWrap" ALIGN="center"><small>' + Object.keys(eachSegment.entityMentions).length + "</small>")
 		}
+
 		TableAddHeading(reply, "")
 		TableNewRow(reply)
 		TableAddHeading(reply, "Total mentions")
+
 		var totalTotalMentions = 0
+
 		for (var eachSegment of segments)
 		{
 			const num = Object.values(eachSegment.entityMentions).reduce((a,b)=>a+b, 0)
 			reply.push('<TD CLASS="cellNoWrap" ALIGN="center"><small>' + num + "</small>")
 			totalTotalMentions += num
 		}
+
 		TableAddHeading(reply, totalTotalMentions)
+
 		const MakeCell = (bg, txt) => '<TD CLASS="cell" BGCOLOR=' + bg + '><FONT COLOR="white"><B>' + txt + '</B></FONT>'
+
 		for (var [m,lastFoundInChapter] of Object.entries(allMentions))
 		{
-			reply.push('<TR ALIGN=CENTER><TD CLASS="cellNoWrap" ALIGN=left>' + m)
+			TableNewRow(reply, coloursForMatches[m], "align=center")
+			reply.push('<TD CLASS="cellNoWrap" ALIGN=left>' + m)
 			reply.push('&nbsp;' + CreateClickableText(kIconSearch, "SwitchToMentionsAndSearchEntity(" + MakeParamsString(m) + ")"))
 			var empty = true
 			var totaliser = 0
