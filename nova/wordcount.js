@@ -41,6 +41,7 @@ function Counter_Words(reply, thenCall)
 	OptionsMakeCheckbox(options, "ChangedWordCountSettings()", "includeHyphens", "Include words containing hyphens", true, true)
 
 	reply.push(OptionsConcat(options))
+	reply.push("<BR>")
 	MakeUpdatingArea(reply, "wordTableHere")
 	thenCall.push(ChangedWordCountSettings)
 }

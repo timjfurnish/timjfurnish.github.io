@@ -8,8 +8,6 @@ var g_searchDataForGraph = {colours:{}, data:{}}
 var g_threadSectionSelected = 0
 var g_recentlyHighlightedReadToMeText = []
 
-const kIndent = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
-
 function TurnRedIf(input, condition)
 {
 	return condition ? "<FONT COLOR=Red>" + input + "</FONT>" : input
@@ -20,13 +18,15 @@ function RedrawSearchResults()
 	var searchResultsHere = document.getElementById("searchResultsHere")
 	var customTextBox = document.getElementById("search.custom")
 	
+	CancelPendingFunctions()
+	
 	if (searchResultsHere && customTextBox)
 	{
 		var displayThis = "<center><B>No results found</B></center>"
 		var graphVisible = false
 		var entityNames = document.getElementById("search.entity")?.value
 
-		g_searchDataForGraph = {clickList:[], colours:{}, data:[], doStripes:true}
+		g_searchDataForGraph = {clickData:{clickList:[], timerCancelWhen:[RedrawSearchResults, ShowContentForSelectedTab]}, colours:{}, data:[], doStripes:true}
 
 		if (entityNames)
 		{
@@ -101,7 +101,7 @@ function RedrawSearchResults()
 								{
 									keepShowingCountdown = 1
 									s2 = '<FONT ID="searchAnchor' + anchorCount + '">' + s2 + '</FONT>'
-									g_searchDataForGraph.clickList.push({elemName:'searchAnchor' + anchorCount, clickX:g_searchDataForGraph.data.length - 1})
+									g_searchDataForGraph.clickData.clickList.push({elemName:'searchAnchor' + anchorCount, clickX:g_searchDataForGraph.data.length - 1})
 									++ anchorCount
 								}
 								else
@@ -117,10 +117,10 @@ function RedrawSearchResults()
 								}
 								if (showThisToo)
 								{
-									output.push(before + kIndent + showThisToo)
+									output.push(before + '<DIV CLASS="indent">' + showThisToo + '</DIV>')
 									before = ""
 								}
-								output.push(before + kIndent + TurnRedIf(s2, para.issues))
+								output.push(before + '<DIV CLASS="indent">' + TurnRedIf(s2, para.issues) + '</DIV>')
 								showThisToo = null
 							}
 							else
@@ -178,7 +178,7 @@ function RedrawSearchResults()
 					realOutput.push(eachLine)
 				}
 
-				displayThis = "<center>" + TableShowTally(grabEmHere, {ignoreWhenThisLow:1, addSearchIcon:true, colours:g_searchDataForGraph.colours, showTotal:true}) + "</center>" + realOutput.join('<BR>')
+				displayThis = "<center>" + TableShowTally(grabEmHere, {ignoreWhenThisLow:1, addSearchIcon:true, colours:g_searchDataForGraph.colours, showTotal:true}) + "</center>" + realOutput.join('')
 				graphVisible = true
 			}
 		}
@@ -239,8 +239,9 @@ TabDefine("search", function(reply, thenCall)
 	GraphCreateStandardOptions(options, "RedrawSearchResults", true)
 
 	reply.push(OptionsConcat(options))
-	GraphAddCanvas(reply, 250, thenCall)
-	MakeUpdatingArea(reply, "searchResultsHere", 'align="left" style="user-select:text"')
+	GraphAddCanvas(reply, 250, thenCall, false)
+	reply.push("<BR>")
+	MakeUpdatingArea(reply, "searchResultsHere", 'align="left" style="user-select:text"', "<center><B>No results found</B></center>")
 
 	thenCall.push(RedrawSearchResults)
 }, {icon:kIconSearch})
@@ -329,26 +330,33 @@ function RedrawThread(goToTop)
 
 					output.push("<H3>" + headingText + "</H3>")
 				}
-				else if (addWhenSkipASection)
+				else
 				{
 					output.push("<BR>")
 				}
 
 				for (var para of displayTheseThings)
 				{
-					var after = "<BR>"
+					var after = ""
 					
 					if (para.issues)
 					{
 						output.push("<FONT COLOR=red>")
-						after = "</FONT><BR>"
+						after = "</FONT>"
 					}
 
 					FormatParagraphForDisplay(output, para.fragments, fragment =>
 					{
-						const theTxt = fragment.text + fragment.followedBy
+						const followedBy = fragment.followedBy.replace(/ \($/, '')
+						const theTxt = fragment.text + followedBy
 						const reply = '<SPAN CLASS="clicky" ONCLICK="HighlightThreadSection(' + g_threadSections.length + ')" ID="threadSection' + g_threadSections.length + '">' + theTxt + '</SPAN>'
 						g_threadSections.push({sayThisText:theTxt, useSpeechVoice:fragment.isSpeech})
+						
+						if (followedBy != fragment.followedBy)
+						{
+							return reply + " ("
+						}
+						
 						return reply
 					})
 					output.push(after)

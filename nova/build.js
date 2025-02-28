@@ -194,9 +194,9 @@ function RenderBarFor(val, scale, dp, suffix)
 	return '<DIV STYLE="width:' + Math.floor(num) + 'px;background:' + col + '" CLASS="colourBar"><b>' + ((dp === undefined) ? val : val.toFixed(dp)) + "</b><small>" + (suffix ?? '') + '</small></DIV>'
 }
 
-function MakeUpdatingArea(toHere, name, extra)
+function MakeUpdatingArea(toHere, name, extra, initialContents)
 {
-	toHere.push('<P ID="' + name + '"' + (extra ? " " + extra : "") + '></P>')
+	toHere.push('<DIV ID="' + name + '"' + (extra ? " " + extra : "") + '>' + (initialContents ?? '') + '</DIV>')
 }
 
 function UpdateArea(name, contents)
@@ -257,6 +257,7 @@ function UpdateOptions()
 		for (var key of Object.keys(myTabOptions))
 		{
 			var elem = document.getElementById(g_selectedTabName + "." + key)
+
 			if (elem)
 			{
 				myTabOptions[key] = ((typeof myTabOptions[key]) == "boolean") ? elem.checked : elem.value
@@ -465,7 +466,7 @@ function FormatParagraphForDisplay(toHere, paragraph, customFunc)
 		}
 
 		paraContents.push(joiner + customFunc(eachFrag))
-		joiner = ' '
+		joiner = eachFrag.followedBy.endsWith('(') ? '' : ' '
 	}
 
 	if (wasSpeech)
@@ -473,5 +474,5 @@ function FormatParagraphForDisplay(toHere, paragraph, customFunc)
 		paraContents.push('"')
 	}
 	
-	toHere.push(kIndent + paraContents.join(''))
+	toHere.push('<DIV CLASS="indent">' + paraContents.join('') + '</DIV>')
 }

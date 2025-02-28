@@ -19,6 +19,8 @@ function MatchHighlightStringDifferences(before, after)
 		{
 			break
 		}
+		
+		// Remove first element of beforeBits and afterBits
 		output.push(beforeBits.shift())
 		afterBits.shift()
 	}
@@ -30,11 +32,21 @@ function MatchHighlightStringDifferences(before, after)
 			break
 		}
 
+		// Remove last element of beforeBits and afterBits
 		addToEnd.unshift(beforeBits.pop())
 		afterBits.pop()
 	}
 
-	output.push('<FONT CLASS="MatchRemove">' + afterBits.join(' ') + '</FONT> <FONT CLASS="MatchAdd">' + beforeBits.join(' ') + '</FONT>')
+	if (afterBits.length)
+	{
+		output.push('<FONT CLASS="MatchRemove">' + afterBits.join(' ') + '</FONT>')
+	}
+	
+	if (beforeBits.length)
+	{
+		output.push('<FONT CLASS="MatchAdd">' + beforeBits.join(' ') + '</FONT>')
+	}
+
 	output.push(...addToEnd)
 	return output.join(' ')
 }
@@ -206,6 +218,7 @@ TabDefine("match", function(reply, thenCall)
 	OptionsMakeButtons(options, {Clear:"document.getElementById('compareWithThis').value = ''; MatchCompare()", Paste:"MatchInputPaste()"})
 	reply.push(OptionsConcat(options) + "<BR>")
 	reply.push('<textarea class="docIn" id="compareWithThis" onChange="MatchCompare()"></textarea>')
+	reply.push("<BR>")
 	MakeUpdatingArea(reply, "matchOutput", 'style="user-select:text"')
 	thenCall.push(MatchCompare)
 }, {icon:kIconMatch, tooltipText:"Does it match?"})

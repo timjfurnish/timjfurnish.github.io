@@ -68,12 +68,14 @@ function ClearEarlyIssues()
 	g_issues = {}
 	g_disabledWarnings = {}
 	g_issueStats = {}
-//	console.log("Reset issue count to " + g_issueCount)
+
 	function InitOneStat(theName)
 	{
 		(theName in kOptionCustomNames) || (g_issueStats[theName] = 0)
 	}
+
 	Object.keys(g_warningNames).forEach(InitOneStat)
+
 	if (g_currentOptions.settings)
 	{
 		for (var [key, val] of Object.entries(g_currentOptions.settings))
@@ -84,7 +86,6 @@ function ClearEarlyIssues()
 			}
 		}
 	}
-//	NovaLog("Reset disabled warnings to defaults: " + Object.keys(g_disabledWarnings))
 }
 
 OnEvent("clear", false, ClearEarlyIssues)

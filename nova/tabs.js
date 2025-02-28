@@ -166,6 +166,8 @@ function ShowHoverControls(arr)
 
 function ShowContentForSelectedTab()
 {
+	CancelPendingFunctions()
+
 	g_hoverControls.innerHTML = ""
 	g_hoverControls.style.display = "none"
 	var displayThis = []
@@ -187,7 +189,8 @@ function ShowContentForSelectedTab()
 	func(displayThis, thenCall)
 
 	const elem = document.getElementById('tabContents')
-	elem.innerHTML = displayThis.join('')
+	elem.innerHTML = displayThis.join('\n')
+	console.log(elem.innerHTML)
 	elem.style.userSelect = canSelect ? "text" : "none"
 	elem.style.textAlign = alignment ?? ""
 	StopTalking()

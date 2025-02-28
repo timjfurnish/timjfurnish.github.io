@@ -79,6 +79,7 @@ function UtilFormatTime(numSeconds)
 		const prefix = numWholeHours ? numWholeHours + ":" + ("0" + numWholeMinutes % 60).substr(-2) : numWholeMinutes
 		return prefix + ":" + ("0" + numWholeSeconds % 60).substr(-2)
 	}
+
 	return numWholeSeconds + " seconds"
 }
 
@@ -136,7 +137,7 @@ function HighlighterWithDots(matched)
 
 function TurnNovaShorthandIntoRegex(txt)
 {
-	return txt.replaceAll('*', '\\w*')
+	return txt.replaceAll('*', '[\\w\\-’\']*')
 }
 
 //---------------------------
@@ -412,6 +413,41 @@ function CallTheseFunctionsNow(...list)
 }
 
 //---------------------------
+// Call after a delay...
+//---------------------------
+
+const g_delayedFuncData = {}
+var g_myTimerCount = 0
+
+function TimerHasElapsed(myTimerID)
+{
+	const executeThis = g_delayedFuncData[myTimerID]
+	Assert(executeThis)
+	executeThis.callFunc()
+	delete g_delayedFuncData[myTimerID]
+}
+
+function ExecuteAfterTime(func, delay, cancelList)
+{
+	const myTimerID = ++ g_myTimerCount
+	g_delayedFuncData[myTimerID] = {callFunc:func, cancelList:cancelList, jsTimerID:setTimeout(TimerHasElapsed, delay, myTimerID)}
+}
+
+function CancelPendingFunctions()
+{
+	const caller = CancelPendingFunctions.caller
+	
+	for (var [myTimerID, data] of Object.entries(g_delayedFuncData))
+	{
+		if (data.cancelList.includes(caller))
+		{
+			clearTimeout(data.jsTimerID)
+			delete g_delayedFuncData[myTimerID]
+		}
+	}
+}
+
+//---------------------------
 // Event stuff
 //---------------------------
 
@@ -426,7 +462,6 @@ function DoEvent(eventName)
 {
 	if (eventName in g_eventFuncs)
 	{
-//		NovaLog("Calling " + g_eventFuncs[eventName].length + " '" + eventName + "' callbacks")
 		CallTheseFunctionsNow(...g_eventFuncs[eventName])
 	}
 }

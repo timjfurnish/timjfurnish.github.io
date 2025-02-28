@@ -157,14 +157,15 @@ function DrawSmoothedGraph(graphData)
 	if (drawToHere)
 	{
 		const {colours, data, backgroundBlocks, doStripes} = graphData
-		const smoothingCountRaw = g_currentOptions[g_selectedTabName][GetGraphSmoothingValueName()]
-		const smoothingCount = (smoothingCountRaw * (smoothingCountRaw + 1)) >> 1
+		const smoothingValueName = GetGraphSmoothingValueName()
+		const smoothingCountRaw = +g_currentOptions[g_selectedTabName][smoothingValueName]
+		const smoothingCount = (smoothingCountRaw * (smoothingCountRaw + 1)) / 2
 		const colourEntries = Object.keys(colours)
 		const drawData = {}
 		const sizeX = data.length
 		const {width, height} = canvas
 
-		NovaLog("Drawing graph (canvas=" + width + " data=" + sizeX + ") for " + colourEntries.length + " values [" + colourEntries.join(', ') + "] smooth=" + smoothingCount)
+		NovaLog("Drawing graph (canvas=" + width + " data=" + sizeX + ") for " + colourEntries.length + " values [" + colourEntries.join(', ') + "] " + g_selectedTabName + "." + smoothingValueName + "=" + smoothingCountRaw + " (" + typeof smoothingCountRaw + ") smooth=" + smoothingCount)
 
 		const biggestVal = CreateDrawData(drawData, smoothingCount, colourEntries, data)
 
@@ -283,11 +284,11 @@ function DrawSmoothedGraph(graphData)
 			}
 		}
 
-		g_graphClickData = graphData.clickList
+		g_graphClickData = graphData.clickData
 
 		if (g_graphClickData)
 		{
-			for (var clickElement of g_graphClickData)
+			for (var clickElement of g_graphClickData.clickList)
 			{
 				clickElement.offsetX = width * (clickElement.clickX + 0.5) / sizeX
 			}
@@ -307,7 +308,7 @@ function GraphClick({offsetX})
 		var closest = undefined
 		var closestDistance = window.innerWidth
 		
-		for (var clickable of g_graphClickData)
+		for (var clickable of g_graphClickData.clickList)
 		{
 			const myDistance = Math.abs(clickable.offsetX - offsetX)
 			if (myDistance < closestDistance)
@@ -321,21 +322,21 @@ function GraphClick({offsetX})
 		{
 			ScrollToElementId(closest)
 			TrySetElementClass(closest, "highlighter", true)
-			
-			setTimeout(() => TrySetElementClass(closest, "highlighter", false), 1000)
+			ExecuteAfterTime(() => TrySetElementClass(closest, "highlighter", false), 1000, g_graphClickData.timerCancelWhen)
 		}
 	}
 }
 
-function GraphAddCanvas(reply, height, thenCall)
+function GraphAddCanvas(reply, height, thenCall, visible)
 {
-	reply.push('<DIV ID="graphShowHide"><BR><CANVAS WIDTH="' + CalcGraphCanvasWidth() + '" HEIGHT="' + height + '" ID="graphCanvas"></CANVAS></DIV>')
+	reply.push('<DIV ID="graphShowHide" STYLE="display:' + (visible ? 'block' : 'none') + '"><BR><CANVAS WIDTH="' + CalcGraphCanvasWidth() + '" HEIGHT="' + height + '" ID="graphCanvas"></CANVAS></DIV>')
 
 	thenCall.push(function ()
 	{
 		document.getElementById("graphCanvas").onmousedown = GraphClick
 	})
 }
+
 window.addEventListener('resize', function(theEvent)
 {
 	const elem = document.getElementById("graphCanvas")

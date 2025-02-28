@@ -50,6 +50,7 @@ function PhrasesDisplay()
 			TableNewRow(reply)
 			reply.push('<TD CLASS="cell">' + phrase + '&nbsp;' + CreateClickableText(kIconSearch, "SwitchToMentionsAndSearch(" + MakeParamsString(phrase) + ")") + '</TD><TD CLASS="cell">' + countWithoutSingletons[phrase] + '</TD>')
 		}
+
 		TableClose(reply)
 		phrasesGoHere.innerHTML = reply.join('')
 	}
@@ -61,6 +62,7 @@ function Counter_Phrases(reply, thenCall)
 	OptionsMakeCheckbox(options, "PhrasesDisplay()", "speech", "Speech", true, true)
 	OptionsMakeCheckbox(options, "PhrasesDisplay()", "narr", "Narrative", true, true)
 	reply.push(OptionsConcat(options))
+	reply.push("<BR>")
 	MakeUpdatingArea(reply, "phrasesGoHere")
 	thenCall.push(PhrasesDisplay)
 }

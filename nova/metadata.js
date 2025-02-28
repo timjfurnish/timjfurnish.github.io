@@ -156,6 +156,12 @@ function MetaDataEndSection()
 		}
 
 		var storeThis = {info:info, myParagraphs:g_metaDataGatherParagraphs, mySummaries:g_metaDataGatherSummaries}
+		
+		if (g_metaDataGatherSummaries.length)
+		{
+			g_hasSummaries = true
+		}
+		
 		g_metaDataTally["Estimated final words"] = (g_metaDataTally.Words * 100) / g_metaDataCurrentCompleteness
 
 		for (var [key, val] of Object.entries(g_metaDataTally))
@@ -777,6 +783,6 @@ function TabFunctionGraph(reply, thenCall)
 	}
 
 	reply.push(OptionsConcat(options))
-	GraphAddCanvas(reply, 300, thenCall)
+	GraphAddCanvas(reply, 300, thenCall, true)
 	thenCall.push(MetaDataDrawGraph)
 }

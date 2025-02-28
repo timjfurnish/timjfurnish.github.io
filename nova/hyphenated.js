@@ -233,6 +233,7 @@ TabDefine("hyphen_check", function(reply, thenCall)
 	var options = []
 	OptionsMakeCheckbox(options, "HyphenCheckShowGoButton()", "disc", "Only show discrepancies", true, true)
 	reply.push(OptionsConcat(options))
+	reply.push("<BR>")
 	MakeUpdatingArea(reply, "hyphenCheckOutput")
 	thenCall.push(HyphenCheckShowGoButton)
 }, {icon:kIconHyphen})

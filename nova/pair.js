@@ -37,6 +37,7 @@ OnEvent("processingDone", false, () =>
 	for (var myData of Object.values(g_pairData))
 	{
 		var needColourFor = []
+
 		for (var [name, value] of Object.entries(myData.fragmentCounts))
 		{
 			if (value & (value - 1))
@@ -87,7 +88,7 @@ TabDefine("pairs", function(reply, thenCall)
 					}
 				}
 
-				TableAddCell(reply, cellContents.join('<BR>'), true)
+				TableAddCell(reply, cellContents.join(''), 'cellIndent')
 			}
 		}
 
