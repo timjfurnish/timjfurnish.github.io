@@ -3,8 +3,7 @@
 // (c) Tim Furnish, 2023-2025
 //==============================================
 
-const kMaxLookAhead = 100
-const kMaxIssuesPerSection = 4
+const kMaxLookAhead = 500
 
 function MatchHighlightStringDifferences(before, after)
 {
@@ -19,7 +18,7 @@ function MatchHighlightStringDifferences(before, after)
 		{
 			break
 		}
-		
+
 		// Remove first element of beforeBits and afterBits
 		output.push(beforeBits.shift())
 		afterBits.shift()
@@ -41,7 +40,7 @@ function MatchHighlightStringDifferences(before, after)
 	{
 		output.push('<FONT CLASS="MatchRemove">' + afterBits.join(' ') + '</FONT>')
 	}
-	
+
 	if (beforeBits.length)
 	{
 		output.push('<FONT CLASS="MatchAdd">' + beforeBits.join(' ') + '</FONT>')
@@ -136,7 +135,7 @@ function MatchCompare()
 						if (! shouldMatch)
 						{
 							issuesWithThisRow.push('<FONT COLOR=purple>Document ended while expecting "' + line.allOfIt + '"</FONT>')
-							break;
+							break
 						}
 						else if (line.allOfIt != shouldMatch)
 						{

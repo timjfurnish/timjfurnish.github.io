@@ -80,11 +80,11 @@ TabDefine("pairs", function(reply, thenCall)
 				{
 					for (var eachLine of showThisText)
 					{
-						FormatParagraphForDisplay(cellContents, eachLine, fragment =>
+						cellContents.push('<DIV CLASS="indent">' + FormatParagraphForDisplay(eachLine, fragment =>
 						{
 							const colour = myData.colours[fragment.text.toLowerCase()]
 							return (colour ? Highlighter(fragment.text, colour) : fragment.text) + fragment.followedBy
-						})
+						}) + '</DIV>')
 					}
 				}
 

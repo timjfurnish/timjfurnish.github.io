@@ -48,7 +48,7 @@ function PhrasesDisplay()
 		for (var phrase of Object.keys(countWithoutSingletons).sort((p1, p2) => (countWithoutSingletons[p2] - countWithoutSingletons[p1])))
 		{
 			TableNewRow(reply)
-			reply.push('<TD CLASS="cell">' + phrase + '&nbsp;' + CreateClickableText(kIconSearch, "SwitchToMentionsAndSearch(" + MakeParamsString(phrase) + ")") + '</TD><TD CLASS="cell">' + countWithoutSingletons[phrase] + '</TD>')
+			reply.push('<TD CLASS="cell">' + phrase + '&nbsp;' + CreateClickableText(kIconSearch, "SwitchToMentionsAndSearch(" + MakeParamsString(phrase) + ", 'Phrase equals')") + '</TD><TD CLASS="cell">' + countWithoutSingletons[phrase] + '</TD>')
 		}
 
 		TableClose(reply)
@@ -59,8 +59,8 @@ function PhrasesDisplay()
 function Counter_Phrases(reply, thenCall)
 {
 	var options = []
-	OptionsMakeCheckbox(options, "PhrasesDisplay()", "speech", "Speech", true, true)
-	OptionsMakeCheckbox(options, "PhrasesDisplay()", "narr", "Narrative", true, true)
+	OptionsMakeCheckbox(options, "PhrasesDisplay()", "speech", "Speech", true)
+	OptionsMakeCheckbox(options, "PhrasesDisplay()", "narr", "Narrative", true)
 	reply.push(OptionsConcat(options))
 	reply.push("<BR>")
 	MakeUpdatingArea(reply, "phrasesGoHere")

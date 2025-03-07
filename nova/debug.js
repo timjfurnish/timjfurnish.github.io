@@ -40,7 +40,7 @@ function NovaLog(message)
 function NovaWarn(message)
 {
 	NovaLogWithCaller(message, NovaWarn.caller?.name, "warn")
-	
+
 	if (g_tweakableSettings.warningPopUp)
 	{
 		alert(message)

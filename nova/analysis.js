@@ -122,12 +122,12 @@ function CheckEachWord(word, s, isSpeech)
 	const {plainBadWords, badWordRegExpressions, checkedWordsSeenInLowerCase} = g_processInputWorkspace
 
 	var wordLower = word.toLowerCase()
-	
+
 	if (wordLower === word)
 	{
 		checkedWordsSeenInLowerCase[wordLower] = true
 	}
-	
+
 	if (wordLower.endsWith("’s"))
 	{
 		wordLower = wordLower.substring(0, wordLower.length - 2)
@@ -185,7 +185,7 @@ function ShouldProcessPara(txtInProcessed)
 			{
 				storeAs += " " + g_processInputWorkspace.inputTextArray.shift()
 			}
-			
+
 			MetaDataSet(tag, storeAs)
 
 			for (var clearEach of OnlyKeepValid(clearTags.split(' ')))
@@ -245,7 +245,7 @@ function SplitIntoFragments(thisBunch, splitRegex)
 function MakeListOfValidLetters()
 {
 	var validLetters = ""
-	
+
 	for (var chr of g_tweakableSettings.allowedCharacters)
 	{
 		const chrLow = chr.toLowerCase()
@@ -347,11 +347,11 @@ function CheckOverusedPuncInPara(txtIn)
 function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 {
 	Tally (g_profileAnalysis, "AnalyseParagraph")
-	
+
 	//==================================
 	// Check for issues
 	//==================================
-	
+
 	for (var [k,v,allowFunc] of kIllegalSubstrings)
 	{
 		var grabEmHere = {}
@@ -364,7 +364,7 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 			}
 		}
 	}
-	
+
 	const firstCharacter = txtInProcessed[0].toUpperCase()
 	const {allowedStartCharacters, endOfSpeech, startOfSpeech} = g_tweakableSettings
 
@@ -382,7 +382,7 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 
 	const bScriptMode = ! g_disabledWarnings.SCRIPT
 	const talkyNonTalky = bScriptMode ? [txtInProcessed] : txtInProcessed.split(kSplitOnSpeechMarks)
-	
+
 	if ((talkyNonTalky.length & 1) == 0)
 	{
 		IssueAdd("Found odd number of quotation marks in " + FixStringHTML(txtInProcessed), "UNFINISHED QUOTE")
@@ -394,18 +394,18 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 	var bCanCheckFinalCharacter = true
 	var bIgnoreFragments = false
 	var isTreatingAsSpeech = false
-	
+
 	const storeAsFragments = []
-	
+
 	for (const eachIn of talkyNonTalky)
 	{
 		// Use | instead of . so that we can put back things like "Mr. Smith".
 		const each = eachIn.replace(kReplaceFullStops, '|').replace(kReplaceCarats, '.')
 		const firstCharacterHere = eachIn[0]
 		var thisBunchOfFragments = each.trim()
-		
+
 		isSpeech = !isSpeech
-		
+
 		if (bScriptMode)
 		{
 			if (firstCharacterHere == '(')
@@ -524,7 +524,7 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 				var followedBy = joiners.shift()
 				var precededBy = ""
 				const followedByTrimmed = followedBy.trimEnd()
-				
+
 				if (! followedByTrimmed.endsWith("("))
 				{
 					if (joiners.length && followedByTrimmed == followedBy)
@@ -534,9 +534,9 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 
 					followedBy = followedByTrimmed
 				}
-				
+
 				const replaceStartRule = isSpeech ? kReplaceSpeechStartStuff : kReplaceSentenceStartStuff
-				
+
 				s = s.replace(replaceStartRule, what =>
 				{
 					precededBy += what
@@ -560,7 +560,7 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 				{
 					const word = rebuild + wordBit
 					const join = myListOfJoiners.shift()
-				
+
 					if (join == '’' && myListOfJoiners.length)
 					{
 						rebuild += word + join
@@ -588,7 +588,7 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 				}
 
 				if (numWords)
-				{					
+				{
 					g_metaDataTally.Words += numWords
 
 					if (isSpeech)
@@ -691,7 +691,7 @@ function ProcessInputBegin()
 	DoEvent("clear")
 
 	const validLetters = MakeListOfValidLetters()
-	
+
 	g_profileAnalysis = {}
 	g_checkedWords = {}
 
@@ -782,7 +782,7 @@ function GatherNameSuggestions()
 {
 	const {suggestNameIfSeenThisManyTimes} = g_tweakableSettings
 	g_entityNewNameSuggestions = []
-	
+
 	for (var [word, counts] of Object.entries(g_checkedWords))
 	{
 		if (word.length > 1 && counts.total >= suggestNameIfSeenThisManyTimes && ! (word in g_processInputWorkspace.checkedWordsSeenInLowerCase))

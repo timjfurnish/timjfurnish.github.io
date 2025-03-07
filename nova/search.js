@@ -8,6 +8,14 @@ var g_searchDataForGraph = {colours:{}, data:{}}
 var g_threadSectionSelected = 0
 var g_recentlyHighlightedReadToMeText = []
 
+const kMatchModes =
+{
+	"Phrase contains":   {before:"\\b", after:"\\b", flags:"ig"},
+	"Phrase starts with":{before:"^",   after:"\\b", flags:"i"},
+	"Phrase ends with":  {before:"\\b", after:"$",   flags:"i"},
+	"Phrase equals":     {before:"^",   after:"$",   flags:"i"},
+}
+
 function TurnRedIf(input, condition)
 {
 	return condition ? "<FONT COLOR=Red>" + input + "</FONT>" : input
@@ -17,9 +25,9 @@ function RedrawSearchResults()
 {
 	var searchResultsHere = document.getElementById("searchResultsHere")
 	var customTextBox = document.getElementById("search.custom")
-	
+
 	CancelPendingFunctions()
-	
+
 	if (searchResultsHere && customTextBox)
 	{
 		var displayThis = "<center><B>No results found</B></center>"
@@ -39,12 +47,13 @@ function RedrawSearchResults()
 			customTextBox.readOnly = false
 		}
 
-		const {onlyShow, colourUsing} = g_currentOptions.search
-		const showThis = g_currentOptions.search["showThis_" + onlyShow]
-		const gapValue = +g_currentOptions.search["smoothing_" + onlyShow] * 4 + 2
-		const bgData = g_metaDataSeenValues[colourUsing]
+		const {onlyShow, colourUsing, matchMode} = g_currentOptions.search
+		
+		Assert(matchMode in kMatchModes, "Bad match mode '" + matchMode + "'")
 
-//		NovaLog("Searching for '" + entityNames + "' in sections where " + onlyShow + "='" + showThis + "'")
+		const {before, after, flags} = kMatchModes[matchMode]
+		const showThis = g_currentOptions.search["showThis_" + onlyShow]
+		const bgData = g_metaDataSeenValues[colourUsing]
 
 		if (bgData)
 		{
@@ -57,8 +66,7 @@ function RedrawSearchResults()
 			var grabEmHere = {}
 			var anchorCount = 0
 
-			const theString = "\\b(?:" + TurnNovaShorthandIntoRegex(entityNames) + ")\\b"
-			const exp = new RegExp(theString, "ig");
+			const matchThis = new RegExp(before + "(?:" + TurnNovaShorthandIntoRegex(entityNames) + ")" + after, flags)
 
 			for (var metadata of g_metaDataInOrder)
 			{
@@ -69,12 +77,12 @@ function RedrawSearchResults()
 					const useColour = info[colourUsing]
 
 					GraphAddBackgroundBlock(g_searchDataForGraph, metadata.Paragraphs, useColour)
-					
+
 					var addAfterSkippedLines = "<H3 recolourHeading=\"" + useColour + "\">" + MetaDataMakeFragmentDescription(metadata) + "</H3>"
 					var keepShowingCountdown = 0
 					var showThisToo = null
 					var skippedLines = true
-					
+
 					for (var para of metadata.myParagraphs)
 					{
 						if (! para.ignoreFragments)
@@ -88,15 +96,17 @@ function RedrawSearchResults()
 							}
 
 							var grabForPara = {}
-							var s2 = para.allOfIt.replace(exp, GotAMatch)
-							const foundTextHere = (para.allOfIt != s2)
-							var allowedToAdd = true
+							var s2 = FormatParagraphForDisplay(para.fragments, fragment => fragment.text.replace(matchThis, GotAMatch) + fragment.followedBy)
+
+							const plain = FormatParagraphForDisplay(para.fragments, fragment => fragment.text + fragment.followedBy)
+							const foundTextHere = (plain != s2)
 
 							g_searchDataForGraph.data.push(grabForPara)
 
 							if (foundTextHere || keepShowingCountdown)
 							{
-								var before = ""
+								var prefix = ""
+
 								if (foundTextHere)
 								{
 									keepShowingCountdown = 1
@@ -111,16 +121,18 @@ function RedrawSearchResults()
 
 								if (skippedLines)
 								{
-									before = addAfterSkippedLines
+									prefix = addAfterSkippedLines
 									skippedLines = false
 									addAfterSkippedLines = "<br>"
 								}
+
 								if (showThisToo)
 								{
-									output.push(before + '<DIV CLASS="indent">' + showThisToo + '</DIV>')
-									before = ""
+									output.push(prefix + '<DIV CLASS="indent">' + showThisToo + '</DIV>')
+									prefix = ""
 								}
-								output.push(before + '<DIV CLASS="indent">' + TurnRedIf(s2, para.issues) + '</DIV>')
+
+								output.push(prefix + '<DIV CLASS="indent">' + TurnRedIf(s2, para.issues) + '</DIV>')
 								showThisToo = null
 							}
 							else
@@ -151,7 +163,7 @@ function RedrawSearchResults()
 				var recolour = []
 
 				g_searchDataForGraph.colours = colours
-				
+
 				for (var key of upperKeys)
 				{
 					recolour.push(['highlightFor="' + key + '"', 'style="background-color:' + g_searchDataForGraph.colours[key] + '"'])
@@ -178,11 +190,11 @@ function RedrawSearchResults()
 					realOutput.push(eachLine)
 				}
 
-				displayThis = "<center>" + TableShowTally(grabEmHere, {ignoreWhenThisLow:1, addSearchIcon:true, colours:g_searchDataForGraph.colours, showTotal:true}) + "</center>" + realOutput.join('')
+				displayThis = "<center>" + TableShowTally(grabEmHere, {ignoreWhenThisLow:1, addSearchIcon:true, matchMode:matchMode, colours:g_searchDataForGraph.colours, showTotal:true}) + "</center>" + realOutput.join('')
 				graphVisible = true
 			}
 		}
-		
+
 		searchResultsHere.innerHTML = displayThis
 
 		const graphShowHide = document.getElementById("graphShowHide")
@@ -205,12 +217,12 @@ function SettingsGetMentionList(firstElementText, useNameAsKey)
 {
 	const specificNames = SettingsGetNamesArrays()
 	var nameData = {}
-	
+
 	if (firstElementText)
 	{
 		nameData[""] = firstElementText
 	}
-	
+
 	for (var name of specificNames)
 	{
 		const value = name.arr[0]
@@ -228,15 +240,16 @@ TabDefine("search", function(reply, thenCall)
 	nameData["twent*|thirt*|forty|fortie*|fift*|eight*|one|ones|two*|three*|four*|five*|six*|seven*|nine*|ten|tens|tenth*|third*|fourth*|ninth*|eleven*|twelfth*|twelve*|hundred*|thousand*|billion*|million*|trillion*"] = "Numbers (words)"
 	nameData["*[0-9]*"] = "Numbers (digits)"
 	nameData["in fact|of course|in many ways|for some reason|some kind|no doubt|certainly|definitely|all honesty|* be honest|whatsoever|more accurately|after all|at all|in the slightest|by any means"] = "&quot;In fact&quot;"
-	nameData["entire|entirely|total|totally|utter|utterly|fully|complete|completely|whole|wholly|altogether|literal|literally|somewhat|quite|really|very"] = "&quot;Completely&quot;"
+	nameData["entire|entirely|total|totally|utter|utterly|fully|complete|completely|whole|wholly|altogether|literal|literally|incredibly|especially|somewhat|quite|really|very"] = "&quot;Completely&quot;"
 	nameData["beg*n* to|b*g*n* *ing|start* to|start* *ing|proceed* to|proceed* *ing|set about"] = "&quot;Started to&quot;"
 	nameData["sudden*|instant*|immediate*"] = "&quot;Suddenly&quot;"
-	nameData["stood up|stand* up|sat down|sit* down|lay* down|lie* down|lying down|jump* up|rais* up|ris* up|lift* up|gather* up|collect* up|print* out|knelt down|kneel* down"] = "&quot;Sat down&quot;"
-	
+	nameData["stood up|stand* up|sat down|sit* down|lay* down|lie* down|lying down|jump* up|rais* up|ris* up|lift* up|gather* up|pass* by|collect* up|print* out|knelt down|kneel* down"] = "&quot;Sat down&quot;"
+
 	OptionsMakeSelect(options, "RedrawSearchResults()", "Search for", "entity", nameData, "")
 	OptionsMakeTextBox(options, "RedrawSearchResults()", "", "custom")
 	options.push("|")
-	GraphCreateStandardOptions(options, "RedrawSearchResults", true)
+	OptionsMakeSelect(options, "RedrawSearchResults()", "Match mode", "matchMode", Object.keys(kMatchModes), undefined, true)
+	GraphCreateStandardOptions(options, "RedrawSearchResults", true, g_currentOptions.search.onlyShow)
 
 	reply.push(OptionsConcat(options))
 	GraphAddCanvas(reply, 250, thenCall, false)
@@ -338,28 +351,29 @@ function RedrawThread(goToTop)
 				for (var para of displayTheseThings)
 				{
 					var after = ""
-					
+
 					if (para.issues)
 					{
 						output.push("<FONT COLOR=red>")
 						after = "</FONT>"
 					}
 
-					FormatParagraphForDisplay(output, para.fragments, fragment =>
+					const formatted = FormatParagraphForDisplay(para.fragments, fragment =>
 					{
 						const followedBy = fragment.followedBy.replace(/ \($/, '')
 						const theTxt = fragment.text + followedBy
 						const reply = '<SPAN CLASS="clicky" ONCLICK="HighlightThreadSection(' + g_threadSections.length + ')" ID="threadSection' + g_threadSections.length + '">' + theTxt + '</SPAN>'
 						g_threadSections.push({sayThisText:theTxt, useSpeechVoice:fragment.isSpeech})
-						
+
 						if (followedBy != fragment.followedBy)
 						{
 							return reply + " ("
 						}
-						
+
 						return reply
 					})
-					output.push(after)
+
+					output.push('<DIV CLASS="indent">', formatted, '</DIV>', after)
 				}
 				addWhenSkipASection = "<BR><HR WIDTH=45%>"
 				skippedASection = false
@@ -461,7 +475,7 @@ function CreateOnlyShowSelectBox(reply, callThis, prefix, theDefault)
 	columns["ALL"] = "All text"
 
 	OptionsMakeSelect(options, "ShowContentForSelectedTab()", prefix, "onlyShow", columns, theDefault, true)
-	
+
 	const onlyShow = g_currentOptions[g_selectedTabName].onlyShow
 
 	if (onlyShow == "MENTIONS")
@@ -491,11 +505,11 @@ function CreateOnlyShowSelectBox(reply, callThis, prefix, theDefault)
 TabDefine("voice", function(reply, thenCall)
 {
 	var options = CreateOnlyShowSelectBox(reply, "RedrawThread()", "Show")
-	OptionsMakeCheckbox(options, "RedrawThread()", "headings", "Show headings", true, true)
+	OptionsMakeCheckbox(options, "RedrawThread()", "headings", "Show headings", true)
 
 	if (g_hasSummaries)
 	{
-		OptionsMakeCheckbox(options, "RedrawThread(true)", "summary", "Show summary", false, true)
+		OptionsMakeCheckbox(options, "RedrawThread(true)", "summary", "Show summary", false)
 	}
 
 	OptionsMakeCheckbox(options, null, "autoAdvance", "Auto-advance", true)
@@ -523,23 +537,35 @@ function SwitchToMentionsAndSearchEntity(txt)
 		if (txt == name.arr[0])
 		{
 			const searchFor = name.arr.join('|')
+
+			NovaLog("Searching for entity '" + searchFor + "' (matchMode=" + matchMode + ")")
+			
+			OptionsMakeKey("search", "matchMode", "Phrase contains", true)
+			OptionsMakeKey("search", "onlyShow", "ALL", true)
 			OptionsMakeKey("search", "entity", searchFor, true)
 			OptionsMakeKey("search", "custom", searchFor, true)
 			ShowTab("search")
 			return
 		}
+		/*
 		else if (txt.toUpperCase() == name.arr[0].toUpperCase())
 		{
 			NovaWarn("Suspicious! Text in '" + txt + "' NEARLY matches '" + name.arr[0] + "'")
 		}
+		*/
 	}
 	ShowError("SwitchToMentionsAndSearchEntity failed to find '" + txt + "'")
 }
 
-function SwitchToMentionsAndSearch(txt)
+function SwitchToMentionsAndSearch(txt, matchMode)
 {
+	NovaLog("Searching for custom text '" + txt + "' (matchMode=" + matchMode + ")")
+
+	OptionsMakeKey("search", "matchMode", matchMode ?? "Phrase contains", true)
+	OptionsMakeKey("search", "onlyShow", "ALL", true)
 	OptionsMakeKey("search", "entity", "", true)
 	OptionsMakeKey("search", "custom", txt, true)
+
 	ShowTab("search")
 }
 

@@ -174,6 +174,7 @@ function ShowContentForSelectedTab()
 	var thenCall = []
 
 	const page = g_currentOptions[g_selectedTabName]?.page
+
 	if (page === undefined)
 	{
 		NovaLog("Showing contents for '" + g_selectedTabName + "' tab")
@@ -182,6 +183,7 @@ function ShowContentForSelectedTab()
 	{
 		NovaLog("Showing contents for '" + g_selectedTabName + "' tab, page '" + page + "'")
 	}
+
 	const {func, canSelect, alignment, tooltipText} = g_tabFunctions[g_selectedTabName]
 
 	displayThis.push('<CENTER STYLE="color:#888888; font-weight:1000; font-size:150%">' + tooltipText + '<HR></CENTER>')
@@ -190,7 +192,6 @@ function ShowContentForSelectedTab()
 
 	const elem = document.getElementById('tabContents')
 	elem.innerHTML = displayThis.join('\n')
-	console.log(elem.innerHTML)
 	elem.style.userSelect = canSelect ? "text" : "none"
 	elem.style.textAlign = alignment ?? ""
 	StopTalking()

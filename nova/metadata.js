@@ -156,12 +156,12 @@ function MetaDataEndSection()
 		}
 
 		var storeThis = {info:info, myParagraphs:g_metaDataGatherParagraphs, mySummaries:g_metaDataGatherSummaries}
-		
+
 		if (g_metaDataGatherSummaries.length)
 		{
 			g_hasSummaries = true
 		}
-		
+
 		g_metaDataTally["Estimated final words"] = (g_metaDataTally.Words * 100) / g_metaDataCurrentCompleteness
 
 		for (var [key, val] of Object.entries(g_metaDataTally))
@@ -574,7 +574,7 @@ function TabFunctionStats(reply, thenCall)
 
 		for (var colName of selectedColumns)
 		{
-			OptionsMakeCheckbox(options, "MetaDataDrawTable()", "process_" + colName, colName + " (" + Object.keys(g_metaDataSeenValues[colName]).length + ")", kMetaDataDefaultGroup[colName], true)
+			OptionsMakeCheckbox(options, "MetaDataDrawTable()", "process_" + colName, colName + " (" + Object.keys(g_metaDataSeenValues[colName]).length + ")", kMetaDataDefaultGroup[colName])
 		}
 
 		var sortData = {"":"Do not consolidate", none:"Chronological"}
@@ -582,13 +582,13 @@ function TabFunctionStats(reply, thenCall)
 		for (var name of kTallyCheckboxes)
 		{
 			sortData[name] = name
-			OptionsMakeCheckbox(optionsDisplay, "MetaDataDrawTable()", "display_" + name, name, (name == "Words") || (g_everChangedPercentComplete && kMetaDataDefaultDisplay[name]), true)
+			OptionsMakeCheckbox(optionsDisplay, "MetaDataDrawTable()", "display_" + name, name, (name == "Words") || (g_everChangedPercentComplete && kMetaDataDefaultDisplay[name]))
 		}
 
-		OptionsMakeCheckbox(optionsDisplay, "MetaDataDrawTable()", "display_Mentions", "Mentions", false, true)
+		OptionsMakeCheckbox(optionsDisplay, "MetaDataDrawTable()", "display_Mentions", "Mentions", false)
 		optionsDisplay.push("|")
 		OptionsMakeSelect(optionsDisplay, "MetaDataDrawTable()", "Sort", "sort", sortData, "none")
-		OptionsMakeCheckbox(optionsDisplay, "MetaDataDrawTable()", "totalise", "Show running totals", false, true)
+		OptionsMakeCheckbox(optionsDisplay, "MetaDataDrawTable()", "totalise", "Show running totals", false)
 
 		reply.push("<B>Split into rows using:</B><BR>")
 		reply.push(OptionsConcat(options) + "<BR>")
@@ -666,7 +666,7 @@ function MetaDataDrawGraph()
 	else if (g_currentOptions.graph.data == "SPEECH")
 	{
 		const graphThis = {colours:{SPEECH:"rgba(255,255,255,0.3)", NARRATIVE:"rgba(0,0,0,0.6)"}, data:[]}
-		
+
 		for (var elem of g_metaDataInOrder)
 		{
 			for (var para of elem.myParagraphs)
@@ -691,7 +691,7 @@ function MetaDataDrawGraph()
 				}
 			}
 		}
-		
+
 		AddColourUsingData(graphThis, g_currentOptions.graph.colourUsing)
 		DrawSmoothedGraph(graphThis)
 	}

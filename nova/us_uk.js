@@ -40,10 +40,13 @@ const g_internationalSubStrings =
 	{us:"ensing",   uk:"encing",    check:enceCheck},
 
 	// misc.
-	{us:"aluminum",    uk:"aluminium"},
+	{us:"practic",     uk:"practis",       check:(a,b,c)=>!c.startsWith("al")},
+	{us:"defens",      uk:"defenc",        check:(a,b,c)=>!c.startsWith("iv")},
 	{us:"maneuver",    uk:"manoeuvre",     check:(a,b,c)=>c==""},
 	{us:"maneuvering", uk:"manoeuvring"},
 	{us:"maneuvered",  uk:"manoeuvred"},
+	{us:"maneuvers",   uk:"manoeuvres"},
+	{us:"aluminum",    uk:"aluminium"},
 	{us:"artifact",    uk:"artefact"},
 	{us:"cozy",        uk:"cosy"},
 	{us:"coziness",    uk:"cosiness"},
@@ -231,7 +234,7 @@ function CheckForMatch(wordIn, changeThis, intoThis, check)
 		{
 			results += changeThis
 		}
-	
+
 		results += nextBit
 		nextBit = brokenIntoBits.shift()
 	}
@@ -314,14 +317,17 @@ TabDefine("international", function(reply, thenCall)
 	TableAddHeading(reply, "UK")
 	TableAddHeading(reply, "US")
 
-	for (var key of Object.keys(g_ukWords).sort())
+	for (var ukSpelling of Object.keys(g_ukWords).sort())
 	{
-		const val = g_ukWords[key]
+		const usSpelling = g_ukWords[ukSpelling]
+		const {uk, us} = g_usWords[usSpelling]
+		const displayUK = uk ? "<B>" + ukSpelling + "</B>" : ukSpelling
+		const displayUS = us ? "<B>" + usSpelling + "</B>" : usSpelling
 		TableNewRow(reply)
-		TableAddCell(reply, key + " / " + val + " " + CreateClickableText(kIconSearch, "SwitchToMentionsAndSearch(" + MakeParamsString(key + '|' + val) + ")"))
-		TableAddCell(reply, g_usWords[val].uk ?? '')
-		TableAddCell(reply, g_usWords[val].us ?? '')
+		TableAddCell(reply, displayUK + " / " + displayUS + " " + CreateClickableText(kIconSearch, "SwitchToMentionsAndSearch(" + MakeParamsString(ukSpelling + '|' + usSpelling) + ")"))
+		TableAddCell(reply, uk ?? '')
+		TableAddCell(reply, us ?? '')
 	}
-	
+
 	TableClose(reply)
 }, {icon:kIconUSA, canSelect:true, tooltipText:"UK vs. US"})

@@ -291,7 +291,7 @@ function PromptForNameAndCheckIfAllowed(thePrompt, oldValue, checkHere, whatIsIt
 			return newName
 		}
 	}
-	
+
 	return null
 }
 
@@ -372,7 +372,7 @@ function RemoveConfig(configName)
 				removeThese.push(nthKey)
 			}
 		}
-		
+
 		removeThese.forEach(k => window.localStorage.removeItem(k))
 	}
 	catch(error)
@@ -467,7 +467,7 @@ const kSettingFunctions =
 
 function SettingsAddEntityName(category, theText)
 {
-	g_tweakableSettings.entityNames.splice(g_tweakableSettings.entityNames.indexOf("[" + category + "]") + 1, 0, theText)		
+	g_tweakableSettings.entityNames.splice(g_tweakableSettings.entityNames.indexOf("[" + category + "]") + 1, 0, theText)
 	SettingPerformMaintenance("entityNames")
 	SettingSave("entityNames")
 	CallTheseFunctions(ProcessInput)
@@ -477,7 +477,7 @@ function SortNames(inArray)
 {
 	var currentCategory = "MISC"
 	var groupHere = {}
-	
+
 	for (var eachIn of inArray)
 	{
 		if (eachIn != '')
@@ -532,7 +532,7 @@ const kMaintenanceFunctions =
 	splitInfinitiveIgnoreList:SortArray,
 	adverbHyphenIgnoreList:SortArray,
 	numberIgnoreList:SortArray,
-	
+
 	entityNames:SortNames,
 }
 
@@ -545,7 +545,7 @@ function InitSetting([key, val])
 	}
 	else if (typeof val == "object")
 	{
-		Assert(Object.keys(val).length == 0, key + " is an object with keys, InitSetting only supports empty objects");
+		Assert(Object.keys(val).length == 0, key + " is an object with keys, InitSetting only supports empty objects")
 		g_tweakableSettings[key] = {}
 	}
 	else
@@ -588,9 +588,9 @@ const kSettingNames =
 	CHECKS:
 	{
 		badWords:"Bad words|longTextBox",
-		allowedCharacters:"Valid characters|longTextBox",
-		allowedStartCharacters:"Start of paragraph|longTextBox",
-		startOfSpeech:"Start of speech|longTextBox",
+		allowedCharacters:"Valid characters|mediumTextBox",
+		allowedStartCharacters:"Start of paragraph|mediumTextBox",
+		startOfSpeech:"Start of speech|mediumTextBox",
 		endOfSpeech:"End of speech|shortTextBox",
 		endOfParagraphSpeech:"End of paragraph speech|shortTextBox",
 		endOfParagraphNarrative:"End of paragraph narrative|shortTextBox",
@@ -800,7 +800,7 @@ function SettingsGetNamesArrays()
 	// Todo: create in SortNames
 	var reply = []
 	var currentCategory = "MISC"
-	
+
 	for (var eachIn of g_tweakableSettings.entityNames)
 	{
 		if (eachIn != '')
@@ -1132,7 +1132,7 @@ function BuildIssueDefaults(doSettings, moreOutput)
 	{
 		if ((warningID in kOptionCustomNames) == doSettings)
 		{
-			OptionsMakeCheckbox(reply, "ProcessInput()", warningID, doSettings ? kOptionCustomNames[warningID] : ("Check for " + warningID.toLowerCase()), !doSettings, true)
+			OptionsMakeCheckbox(reply, "ProcessInput()", warningID, doSettings ? kOptionCustomNames[warningID] : ("Check for " + warningID.toLowerCase()), !doSettings)
 		}
 	}
 

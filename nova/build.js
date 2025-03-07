@@ -91,7 +91,7 @@ function TableShowTally(tally, options)
 	var total = 0
 	var totalIgnored = 0
 
-	const {colours, colourEntireLine, showTotal, keyHeading, valueHeading, custom, customHeading, addSearchIcon} = options ?? {}
+	const {colours, colourEntireLine, showTotal, keyHeading, valueHeading, custom, customHeading, addSearchIcon, matchMode} = options ?? {}
 	const keysInOrder = Object.keys(tally).sort((p1, p2) => (tally[p2] - tally[p1]))
 	const {length} = keysInOrder
 	const addColourColumn = colours && !colourEntireLine
@@ -111,25 +111,23 @@ function TableShowTally(tally, options)
 		TableAddHeading(reply, customHeading ?? "Custom")
 	}
 
-	NovaLog("Building tally table containing " + length + " values")
-
 	for (var key of keysInOrder)
 	{
 		const value = tally[key]
-		
+
 		if (value > ignoreWhenThisLow)
 		{
 			TableNewRow(reply, colourEntireLine ? colours[key] : undefined)
-			
+
 			if (addSearchIcon && length > 1)
 			{
-				TableAddCell(reply, key + '&nbsp;' + CreateClickableText(kIconSearch, "SwitchToMentionsAndSearch(" + MakeParamsString(key) + ")"))
+				TableAddCell(reply, key + '&nbsp;' + CreateClickableText(kIconSearch, "SwitchToMentionsAndSearch(" + MakeParamsString(key) + ", '" + matchMode + "')"))
 			}
 			else
 			{
 				TableAddCell(reply, key)
 			}
-			
+
 			reply.push('<td align=right class=cell>' + value + '</td>')
 
 			if (addColourColumn)
@@ -342,10 +340,10 @@ function OptionsMakeLineHeading(options, txt)
 	options.push('<B>' + txt + ':</B>&nbsp;')
 }
 
-function OptionsMakeCheckbox(options, funcName, idIn, label, defaultVal, callFuncLate)
+function OptionsMakeCheckbox(options, funcName, idIn, label, defaultVal)
 {
 	const id = OptionsMakeKey(g_selectedTabName, idIn, defaultVal ? true : false)
-	options.push('<INPUT TYPE="checkbox" ' + OptionsCommon(id, funcName, callFuncLate) + '><LABEL FOR="' + id + '"> ' + (label ?? idIn) + '</LABEL>')
+	options.push('<INPUT TYPE="checkbox" ' + OptionsCommon(id, funcName, true) + '><LABEL FOR="' + id + '"> ' + (label ?? idIn) + '</LABEL>')
 }
 
 function OptionsConcat(arr)
@@ -383,21 +381,42 @@ function OptionsMakeButtons(toHere, info)
 
 function OptionsMakeSelect(toHere, funcName, heading, id, options, defaultVal, callFuncLate)
 {
-	AssertSame(typeof options, "object")
-	const entries = Object.entries(options)
+	const isArray = Array.isArray(options)
 
-	id = OptionsMakeKey(g_selectedTabName, id, (defaultVal === undefined) ? entries[0][0] : defaultVal, Object.keys(options))
+	if (defaultVal === undefined)
+	{
+		if (isArray)
+		{
+			defaultVal = options[0]
+		}
+		else
+		{
+			defaultVal = Object.keys(options)[0]
+		}
+	}
+
+	id = OptionsMakeKey(g_selectedTabName, id, defaultVal)
 
 	if (heading)
 	{
 		heading += ": "
 	}
-	
+
 	var reply = [heading + '<select ' + OptionsCommon(id, funcName, callFuncLate) + '>']
 
-	for (var [key, val] of entries)
+	if (isArray)
 	{
-		reply.push('<option value="' + key + '">' + val + '</option>')
+		for (var keyAndVal of options)
+		{
+			reply.push('<option value="' + keyAndVal + '">' + keyAndVal + '</option>')
+		}
+	}
+	else
+	{
+		for (var [key, val] of Object.entries(options))
+		{
+			reply.push('<option value="' + key + '">' + val + '</option>')
+		}
 	}
 
 	toHere.push(reply.join('') + '</select>')
@@ -443,23 +462,23 @@ function OptionModifyNumber(myId, change, func)
 // Formatting paragraphs
 //=======================
 
-function FormatParagraphForDisplay(toHere, paragraph, customFunc)
+function FormatParagraphForDisplay(paragraph, customFunc)
 {
 	var paraContents = []
 	var wasSpeech = undefined
 	var joiner = ''
-	
+
 	for (var eachFrag of paragraph)
 	{
 		if (wasSpeech != eachFrag.isSpeech)
 		{
 			if (wasSpeech)
 			{
-				joiner = '"' + joiner
+				joiner = '”' + joiner
 			}
 			else
 			{
-				joiner += '"'
+				joiner += '“'
 			}
 
 			wasSpeech = eachFrag.isSpeech
@@ -471,8 +490,8 @@ function FormatParagraphForDisplay(toHere, paragraph, customFunc)
 
 	if (wasSpeech)
 	{
-		paraContents.push('"')
+		paraContents.push('”')
 	}
-	
-	toHere.push('<DIV CLASS="indent">' + paraContents.join('') + '</DIV>')
+
+	return paraContents.join('')
 }

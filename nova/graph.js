@@ -34,7 +34,7 @@ function GetGraphSmoothingValueName()
 	return page ? "smoothing_" + page : "smoothing"
 }
 
-function GraphCreateStandardOptions(options, graphFuncName, addColourUsing)
+function GraphCreateStandardOptions(options, graphFuncName, addColourUsing, ignoreName)
 {
 	OptionsMakeNumberBox(options, graphFuncName, "Smoothing", GetGraphSmoothingValueName(), 5)
 
@@ -44,7 +44,10 @@ function GraphCreateStandardOptions(options, graphFuncName, addColourUsing)
 
 		for (var eachCol of Object.keys(g_metaDataAvailableColumns))
 		{
-			nameData[eachCol] = eachCol
+			if (eachCol != ignoreName)
+			{
+				nameData[eachCol] = eachCol
+			}
 		}
 
 		OptionsMakeSelect(options, graphFuncName + "()", "Colour background using", "colourUsing", nameData, "", true)
@@ -68,15 +71,14 @@ function CreateDrawData(drawData, smoothingCount, colourEntries, data)
 
 	var biggestVal = 0.01
 
-	for (var t of data)
+	function AddToGraph(dataProvider)
 	{
 		var totalHere = 0
 
 		for (var spelling of colourEntries)
 		{
-			const incomingValue = t?.[spelling] ?? 0
 			const {smoothing, drawThis} = drawData[spelling]
-			smoothing.push(incomingValue)
+			smoothing.push(dataProvider(spelling))
 			smoothing.shift()
 			totalHere += Smoother(smoothing)
 			drawThis.push(totalHere)
@@ -87,28 +89,16 @@ function CreateDrawData(drawData, smoothingCount, colourEntries, data)
 			biggestVal = totalHere
 		}
 	}
+
+	data.forEach(t => AddToGraph(spelling => t?.[spelling] ?? 0))
 
 	for (var i = 0; i < smoothingCount * 2; ++ i)
 	{
-		var totalHere = 0
-
-		for (var spelling of colourEntries)
-		{
-			const {smoothing, drawThis} = drawData[spelling]
-			smoothing.push(0)
-			smoothing.shift()
-			totalHere += Smoother(smoothing)
-			drawThis.push(totalHere)
-		}
-
-		if (biggestVal < totalHere)
-		{
-			biggestVal = totalHere
-		}
+		AddToGraph(spelling => 0)
 	}
 
 	colourEntries.reverse()
-	
+
 	return biggestVal
 }
 
@@ -128,7 +118,7 @@ function GraphAddBackgroundBlock({backgroundBlocks}, count, colourID)
 				return
 			}
 		}
-		
+
 		backgroundBlocks.push({width:count, colourID:colourID})
 	}
 }
@@ -145,7 +135,7 @@ function CreateGraphBackgroundColours(graphData)
 			colourIDs[elem.colourID] = true
 		}
 	}
-	
+
 	graphData.bgColours = MakeColourLookUpTable(Object.keys(colourIDs), 0.4, undefined, 0.6)
 }
 
@@ -175,7 +165,7 @@ function DrawSmoothedGraph(graphData)
 
 		drawToHere.fillStyle = "#444444"
 		drawToHere.fillRect(0, 0, width, height)
-		
+
 		const drawText = []
 
 		if (backgroundBlocks)
@@ -184,7 +174,7 @@ function DrawSmoothedGraph(graphData)
 			{
 				CreateGraphBackgroundColours(graphData)
 			}
-			
+
 			var countParagraphs = 0
 			var lastX = 0
 			const multiplier = width / sizeX
@@ -195,14 +185,14 @@ function DrawSmoothedGraph(graphData)
 
 				const x = Math.floor(countParagraphs * multiplier)
 				const colour = graphData.bgColours[elem.colourID]
-				
+
 				if (colour && lastX != x)
 				{
 					drawToHere.beginPath()
 					drawToHere.rect(lastX, 0, x - lastX + 1, height)
 					drawToHere.fillStyle = colour
 					drawToHere.fill()
-					
+
 					if (elem.width * multiplier > 12)
 					{
 						drawText.push({drawAtX:lastX, drawThisText:elem.colourID.toUpperCase()})
@@ -219,11 +209,11 @@ function DrawSmoothedGraph(graphData)
 		}
 
 		const scaleY = height * 0.95 / biggestVal
-		
+
 		if (doStripes)
 		{
 			var verticalBarY = height
-			
+
 			while (verticalBarY >= 0)
 			{
 				drawToHere.beginPath()
@@ -263,14 +253,14 @@ function DrawSmoothedGraph(graphData)
 				drawToHere.fill()
 			}
 		}
-		
+
 		// Move this
 		if (drawText.length)
 		{
 			drawToHere.font = "12px sans-serif"
 			drawToHere.textBaseline = "top"
 			drawToHere.textAlign = "right"
-			
+
 			for (const {drawAtX, drawThisText} of drawText)
 			{
 				drawToHere.save()
@@ -307,7 +297,7 @@ function GraphClick({offsetX})
 	{
 		var closest = undefined
 		var closestDistance = window.innerWidth
-		
+
 		for (var clickable of g_graphClickData.clickList)
 		{
 			const myDistance = Math.abs(clickable.offsetX - offsetX)
@@ -317,7 +307,7 @@ function GraphClick({offsetX})
 				closest = clickable.elemName
 			}
 		}
-		
+
 		if (closest)
 		{
 			ScrollToElementId(closest)
@@ -337,7 +327,7 @@ function GraphAddCanvas(reply, height, thenCall, visible)
 	})
 }
 
-window.addEventListener('resize', function(theEvent)
+window.addEventListener('resize', theEvent =>
 {
 	const elem = document.getElementById("graphCanvas")
 
@@ -351,4 +341,4 @@ window.addEventListener('resize', function(theEvent)
 			TabRedrawGraph()
 		}
 	}
-}, true);
+}, true)

@@ -174,7 +174,7 @@ function rgbToHex(rIn, gIn, bIn)
 	const r = Math.round(rIn * 255)
 	const g = Math.round(gIn * 255)
 	const b = Math.round(bIn * 255)
-	return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+	return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)
 }
 
 function PickColourOffsetForString(str)
@@ -436,7 +436,7 @@ function ExecuteAfterTime(func, delay, cancelList)
 function CancelPendingFunctions()
 {
 	const caller = CancelPendingFunctions.caller
-	
+
 	for (var [myTimerID, data] of Object.entries(g_delayedFuncData))
 	{
 		if (data.cancelList.includes(caller))

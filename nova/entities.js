@@ -74,7 +74,7 @@ TabDefine("entities", function(reply, thenCall)
 	else
 	{
 		var options = []
-		OptionsMakeCheckbox(options, "ShowContentForSelectedTab()", "showWithNoMentions", "Show columns with no mentions", true, true)
+		OptionsMakeCheckbox(options, "ShowContentForSelectedTab()", "showWithNoMentions", "Show columns with no mentions", true)
 		reply.push(OptionsConcat(options) + "<BR>")
 		TableOpen(reply)
 		reply.push("<TD BGCOLOR=lightGray>")
@@ -99,7 +99,7 @@ TabDefine("entities", function(reply, thenCall)
 		}
 
 		const coloursForMatches = {}
-		
+
 		for (var {means, type} of g_nameLookup)
 		{
 			coloursForMatches[means] = g_entityNameCategories[type]

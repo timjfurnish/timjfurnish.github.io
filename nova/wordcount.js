@@ -15,8 +15,6 @@ function Counter_Words(reply, thenCall)
 {
 	if (! g_calculatedScores)
 	{
-		NovaLog("Calculating word count scores!")
-
 		for (var [key, data] of Object.entries(g_checkedWords))
 		{
 			if (key.length > 2)
@@ -38,7 +36,7 @@ function Counter_Words(reply, thenCall)
 	OptionsMakeSelect(options, "ChangedWordCountSettings()", "Sort", "sortMode", g_wordSortModes, "Score", true)
 	OptionsMakeSelect(options, "ChangedWordCountSettings()", "Show", "displayUnique", g_displayUnique, "Repeated", true)
 	OptionsMakeSelect(options, "ChangedWordCountSettings()", "Include", "showNames", g_showNameModes, "NoNames", true)
-	OptionsMakeCheckbox(options, "ChangedWordCountSettings()", "includeHyphens", "Include words containing hyphens", true, true)
+	OptionsMakeCheckbox(options, "ChangedWordCountSettings()", "includeHyphens", "Include words containing hyphens", true)
 
 	reply.push(OptionsConcat(options))
 	reply.push("<BR>")
@@ -64,7 +62,7 @@ function RedrawWordTable()
 {
 	var reply = []
 	var wordsInOrder = Object.keys(g_checkedWords).filter(word => word.length > 1)
-	NovaLog("wordsInOrder length=" + wordsInOrder.length)
+
 	if (wordsInOrder.length)
 	{
 		var sortFunctions =
@@ -95,8 +93,8 @@ function RedrawWordTable()
 
 		wordsInOrder.sort(sortFunctions[sortMode])
 
-		var thereWasMore = false;
-		var numRows = 0;
+		var thereWasMore = false
+		var numRows = 0
 
 		for (var w of wordsInOrder)
 		{
@@ -120,9 +118,10 @@ function RedrawWordTable()
 					{
 						if (numRows >= g_maxWordCountRows)
 						{
-							thereWasMore = true;
-							break;
+							thereWasMore = true
+							break
 						}
+
 						TableNewRow(reply, g_entityNameCategories[isAName])
 						TableAddCell(reply, MakeMentionLink(w))
 						TableAddCell(reply, wordInfo.total)
