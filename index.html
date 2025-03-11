@@ -15,7 +15,10 @@
 		h5 { font-size: 10px; margin: 0px; padding: 0px }
 		a { color: black; font-size: 18px; font-weight: bold; text-decoration: none; margin: 3px 3px 3px 0px; padding: 8px 12px 8px 12px; background-image: linear-gradient(white, rgba(75,125,75,0.4)); border-radius: 15px; border: 1px solid #252}
 		.box { width: 75%; color: #444; font-family: Arial, sans-serif; padding:20px; font-size: 24px; margin: 10px; background-image: linear-gradient(rgba(200,100,100,0.2), rgba(120,60,60,0.2)); border-radius: 2px; border: 2px solid #A55}
+		img { margin: 0px 3px 0px 3px }
 		.buttonBar { line-height:50px; margin:20px 0px 0px 0px }
+		.flotman { border: 1px solid black; border-radius: 5px; max-width:200px }
+		.screeny { border: 2px solid black; border-radius: 15px }
 		@media screen and (min-width: 1000px)
 		{
 			p { font-size: 18px; margin-top: 7px; margin-bottom: 7px }
@@ -145,6 +148,8 @@ function SetUp()
 	section = []
 	section.push(BuildText("<big>THE FLYWHEEL</big><br>(<small>2020</small>)", "h3"))
 	section.push("An interactive story thing. It's like a text adventure in that you have to read words and then interact with the objects you find. It's also nothing like a text adventure because you do so without typing. No dead ends, just good old-fashioned puzzling and kleptomania.")
+	section.push(bigGap)
+	section.push('<IMG SRC="gfx/flywheel_rotate.png" CLASS="screeny" STYLE="max-width:850px" width=85%>')
     AddButtons(section, 'flywheel/|PLAY')
 	AddHiddenSection('CURRENT', section)
 	
@@ -161,6 +166,12 @@ function SetUp()
 	section.push("Proof that sometimes the total is more than the sum of its parts. But often, it's less.")
     section.push(gap)
 	section.push("Captain Flotman is the name under which I snuck my mash-ups onto the internet. If you've ever wanted to hear Coolio, Adele and the Beach Boys collaborate on a song you're (a) odd and (b) in a whole heap of luck.")
+	section.push(bigGap)
+	section.push('<IMG SRC="gfx/flotman-crazy.jpg" CLASS="flotman" width=30%>')
+	section.push('<IMG SRC="gfx/flotman-grapevine.jpg" CLASS="flotman" width=30%>')
+	section.push('<IMG SRC="gfx/flotman-love.jpg" CLASS="flotman" width=30%>')
+	section.push('<IMG SRC="gfx/flotman-sky.jpg" CLASS="flotman" width=30%>')
+	section.push('<IMG SRC="gfx/flotman-walk.jpg" CLASS="flotman" width=30%>')
     AddButtons(section, 'https://hearthis.at/captain-flotman/|HEARTHIS', 'https://soundcloud.com/captain-flotman|SOUNDCLOUD')
 	AddHiddenSection('OLD', section)
 
@@ -169,7 +180,9 @@ function SetUp()
 	section.push("An award-winning comedy science-fiction adventure game.")
     section.push(gap)
 	section.push("Ever woken up in the middle of the night to find you've been kidnapped... and so's your bedroom? Ever had to fend for yourself in the face of strangely hypnotic music, alien doctors, talking computers a-plenty and half-finished bathrooms? Ever found something unpleasant in a burger?")
-    AddButtons(section, 'https://en.wikipedia.org/wiki/Out_of_Order_(video_game)|WIKIPEDIA', 'https://tvtropes.org/pmwiki/pmwiki.php/VideoGame/OutOfOrder2003|TV TROPES')
+	section.push(bigGap)
+	section.push('<IMG SRC="gfx/ooo_bedroom.png" CLASS="screeny" STYLE="max-width:640px" width=85%>')
+    AddButtons(section, 'https://web.archive.org/web/20110818231839fw_/http://outoforder.adventuredevelopers.com/files/OOO_full.exe|DOWNLOAD INSTALLER', 'https://en.wikipedia.org/wiki/Out_of_Order_(video_game)|WIKIPEDIA', 'https://tvtropes.org/pmwiki/pmwiki.php/VideoGame/OutOfOrder2003|TV TROPES')
 	AddHiddenSection('OLD', section)
 	
 	section = []
