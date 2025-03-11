@@ -8,30 +8,19 @@
 	<meta property="og:image" content="https://timjfurnish.github.io/gfx/main_v2.png">
 	<meta property="og:description" content="Some games. Some writings. Some things that are both.">
 	<style type="text/css" media="screen">
-		p { color: #666; font-size: 24px; font-family: Arial, sans-serif; margin-top: 10px; margin-bottom: 10px; margin-left: 40px; margin-right: 40px }
+		p { color: #666; font-size: 20px; font-family: Arial, sans-serif; margin-top: 10px; margin-bottom: 10px; margin-left: 40px; margin-right: 40px }
 		h1 { color: #778fbd; font-size: 40px; word-spacing: -0.1em; font-family: Monospace; font-weight: 500; line-height: 32px; margin-top: 4px }
-		h2 { color: #444; font-size: 28px; font-family: Arial, sans-serif; margin: 0.83em 0 0 }
+		h2 { color: #444; font-size: 26px; font-family: Arial, sans-serif; margin: 0.83em 0 0 }
 		h3 { color: #333; font-size: 30px; word-spacing: -0.3em; font-family: Monospace; margin-top: 4px; margin-bottom:24px; font-weight: bold; line-height: 27px; width: auto }
 		h4 { letter-spacing: -0.066em; cursor:pointer; background: -webkit-linear-gradient(rgba(100, 100, 100, 0.5), rgba(110, 110, 110, 1)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; font-size: 20px; margin: 0px; margin-left:3%; text-align: left }
 		h5 { font-size: 10px; margin: 0px; padding: 0px }
-		.bigButton { font-size: 32px; background-image: linear-gradient(white, #FFFF88) }
-		a { color: black; font-size: 24px; font-weight: bold; text-decoration: none; padding: 8px 12px 8px 12px; background-image: linear-gradient(white, rgba(75,125,75,0.4)); border-radius: 15px; border: 1px solid #252}
-		.box { width: 75%; color: #444; font-family: Arial, sans-serif; padding:20px; font-size: 24px; margin: 10px; background-image: linear-gradient(rgba(200,100,100,0.2), rgba(120,60,60,0.2)); border-radius: 2px; border: 2px solid #A55}
+		.bigButton { font-size: 30px; background-image: linear-gradient(white, #FFFF88) }
+		a { color: black; font-size: 20px; font-weight: bold; text-decoration: none; padding: 8px 12px 8px 12px; background-image: linear-gradient(white, rgba(75,125,75,0.4)); border-radius: 15px; border: 1px solid #252}
+		.box { width: 75%; color: #444; font-family: Arial, sans-serif; padding:20px; font-size: 20px; margin: 10px; background-image: linear-gradient(rgba(200,100,100,0.2), rgba(120,60,60,0.2)); border-radius: 2px; border: 2px solid #A55}
 		img { margin: 0px 3px 0px 3px }
 		.buttonBar { line-height:50px; margin:20px 0px 5px 0px }
 		.flotman { border: 1px solid black; border-radius: 5px; max-width:200px }
 		.screeny { border: 2px solid black; border-radius: 15px }
-		@media screen and (min-width: 1000px)
-		{
-			p { font-size: 18px; margin-top: 7px; margin-bottom: 7px }
-			h3 { font-size: 22px; margin-bottom:18px; line-height: 18px }
-			h4 { font-size: 15px }
-			h5 { font-size: 8px }
-			.bigButton { font-size: 25px }
-			a { font-size: 18px }
-			.box { font-size: 18px; padding:15px }
-			.buttonBar { line-height:45px; margin:12px 0px 3px 0px }
-		}
 	</style>
 	<script type="text/javascript" src="fade.js"></script>
 	<script type="text/javascript">
@@ -207,7 +196,6 @@ function SetUp()
     AddButtons(false, section, 'https://www.mobygames.com/person/138001/tim-furnish/credits/sort:date/|MOBYGAMES', 'https://www.instagram.com/timjfurnish/|INSTAGRAM', 'https://www.threads.net/@timjfurnish|THREADS')
 	AddHiddenSection('MISC', section)
 	
-	AddSection(collection, ["<HR>"])
 	AddSection(collection, [BuildText("&copy; Tim Furnish " + (new Date().getUTCFullYear()), "small|p")])
 	
 	document.getElementById('toHere')
