@@ -1,29 +1,38 @@
 var g_fadeMe = 0
 var g_trig = {}
 var g_stillGoing = true
+var g_fadeInElementNames = []
+
+function QueueFade(elementName)
+{
+	g_fadeInElementNames.push(elementName)
+	return elementName
+}
 
 function FadeGetNextName()
 {
-	return 'fadeMe' + (g_fadeMe ++)
+	return QueueFade('fadeMe' + (g_fadeMe ++))
 }
 
 function StartFading()
 {
-	g_fadeMe = 0
 	FadeStartNext()
 	setTimeout(TickFade, 20)
 }
 
 function FadeStartNext()
 {
-	const name = 'fadeMe' + g_fadeMe
-	const elem = document.getElementById(name)
-
-	if (elem)
+	const name = g_fadeInElementNames.shift()
+	if (name)
 	{
+		const elem = document.getElementById(name)
+		const rect = elem.getBoundingClientRect()
+		
 		g_trig[name] = {style:elem.style, op:0}
-		++ g_fadeMe
-		setTimeout(FadeStartNext, 250)
+		
+		// Speed up if this element is off the top of the screen...
+		const time = (-rect.y >= rect.height) ? 5 : 250		
+		setTimeout(FadeStartNext, time)
 	}
 	else
 	{
@@ -33,7 +42,8 @@ function FadeStartNext()
 
 function TickFade()
 {
-	var didSomething = false
+	var didSomething = g_stillGoing
+
 	for (var [k,v] of Object.entries(g_trig))
 	{
 		v.op += 0.015
@@ -49,7 +59,7 @@ function TickFade()
 		}
 	}
 	
-	if (g_stillGoing || didSomething)
+	if (didSomething)
 	{
 		setTimeout(TickFade, 20)
 	}

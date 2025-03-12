@@ -8,9 +8,10 @@
 	<meta property="og:image" content="https://timjfurnish.github.io/gfx/main_v2.png">
 	<meta property="og:description" content="Some games. Some writings. Some things that are both.">
 	<style type="text/css" media="screen">
+		body { overflow-y: scroll }
 		p { color: #666; font-size: 20px; font-family: Arial, sans-serif; margin-top: 10px; margin-bottom: 10px; margin-left: 40px; margin-right: 40px }
 		h1 { color: #778fbd; font-size: 40px; word-spacing: -0.1em; font-family: Monospace; font-weight: 500; line-height: 32px; margin-top: 4px }
-		h2 { color: #444; font-size: 26px; font-family: Arial, sans-serif; margin: 0.83em 0 0 }
+		h2 { color: #444; font-size: 22px; font-family: Arial, sans-serif; margin: 0.83em 0 0 }
 		h3 { color: #333; font-size: 30px; word-spacing: -0.3em; font-family: Monospace; margin-top: 4px; margin-bottom:24px; font-weight: bold; line-height: 27px; width: auto }
 		h4 { letter-spacing: -0.066em; cursor:pointer; background: -webkit-linear-gradient(rgba(100, 100, 100, 0.5), rgba(110, 110, 110, 1)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; font-size: 20px; margin: 0px; margin-left:3%; text-align: left }
 		h5 { font-size: 10px; margin: 0px; padding: 0px }
@@ -25,32 +26,70 @@
 	<script type="text/javascript" src="fade.js"></script>
 	<script type="text/javascript">
 const g_hiddenSections = {}
+var g_creatingHiddenSection
+var g_openThings = []
+
 function BuildText(text, tags)
 {
 	for (var t of tags.split('|'))
 	{
-		text = "<" + t + ">" + text + "</" + (t.split(' ')[0]) + ">"
+		text = "<" + t + ">" + text + "</" + (t.split(' ', 1)[0]) + ">"
 	}
 	return text
 }
 function AddSection(collection, section)
 {
-	collection.push(BuildText(section.join(''), 'td style="opacity:0" align=center id="' + FadeGetNextName() + '"|tr'))
-}
-function AddHiddenSection(code, section)
-{
-	g_hiddenSections[code] += BuildText(section.join(''), "DIV CLASS=box")
+	if (g_creatingHiddenSection)
+	{
+		g_hiddenSections[g_creatingHiddenSection] += BuildText(section.join(''), "DIV CLASS=box")
+	}
+	else
+	{
+		collection.push(BuildText(section.join(''), 'td style="opacity:0" align=center id="' + FadeGetNextName() + '"|tr'))
+	}
 }
 function BeginExpand(collection, code, title)
 {
+	if (g_creatingHiddenSection)
+	{
+		EndExpand(collection)
+	}
+	
 	AddSection(collection, ["<HR>", BuildText(title, 'h4 onClick="Expand(\'' + code + '\')"')])
 	g_hiddenSections[code] = ""
-	collection.push(BuildText('', 'td align=center id="' + code + '"|tr'))
+	g_creatingHiddenSection = code
+}
+function EndExpand(collection)
+{
+	if (g_openThings.includes(g_creatingHiddenSection))
+	{
+		QueueFade(g_creatingHiddenSection)
+		collection.push(BuildText(g_hiddenSections[g_creatingHiddenSection], 'td td style="opacity:0" align=center id="' + g_creatingHiddenSection + '"|tr'))
+	}
+	else
+	{
+		collection.push(BuildText('', 'td align=center id="' + g_creatingHiddenSection + '"|tr'))
+	}
+	
+	g_creatingHiddenSection = undefined
 }
 function Expand(code)
 {
 	const elem = document.getElementById(code)
-	elem.innerHTML = (elem.innerHTML == "") ? g_hiddenSections[code] : ""
+	const index = g_openThings.indexOf(code)
+
+	if (index >= 0)
+	{
+		elem.innerHTML = ""
+		g_openThings.splice(index, 1)
+	}
+	else
+	{
+		elem.innerHTML = g_hiddenSections[code]
+		g_openThings.push(code)
+	}
+	
+	window?.sessionStorage?.setItem?.("entertainmentmongerOpenSections", g_openThings.join('+'))
 }
 function AddButtons(big, section, ...buttons)
 {
@@ -86,6 +125,13 @@ function SetUp()
 	var collection = [], section
 	const gap = '<h5>&nbsp;</h5>'
 	const bigGap = '<h5>&nbsp;<BR>&nbsp;</h5>'
+	
+	const openThingsString = window?.sessionStorage?.getItem?.("entertainmentmongerOpenSections")
+	
+	if (openThingsString)
+	{
+		g_openThings = openThingsString.split('+')
+	}
 
 	AddSection(collection, ["<HR>"])
 	
@@ -113,19 +159,19 @@ function SetUp()
     section.push(gap)
 	section.push("Lead programmer on <B>Team Sonic Racing</B> (2019).")
 	AddButtons(false, section, 'https://www.sumo-digital.com/|SUMO DIGITAL', 'https://www.txchainsawgame.com/|THE TEXAS CHAIN SAW MASSACRE', 'https://forza.net/horizon|FORZA HORIZON', 'https://www.sonicthehedgehog.com/en-gb/teamsonicracing/|TEAM SONIC RACING')
-	AddHiddenSection('WORK', section)
+	AddSection(collection, section)
 	
 	section = []
 	section.push(BuildText("<big>DEEP SILVER DAMBUSTER STUDIOS</big><br>(<small>2014-2016</small>)", "h3"))
 	section.push("Senior programmer on <B>Homefront: The Revolution</B> (2016).")
     AddButtons(false, section, 'https://www.dsdambuster.com/studio|DEEP SILVER DAMBUSTER STUDIOS')
-	AddHiddenSection('WORK', section)
+	AddSection(collection, section)
 	
 	section = []
 	section.push(BuildText("<big>CRYTEK UK</big><br>(<small>2009-2014</small>)", "h3"))
 	section.push("Senior programmer on <B>Crysis</B> and <B>Crysis 2</B> (2011).")
     AddButtons(false, section, 'https://www.crytek.com/|CRYTEK')
-	AddHiddenSection('WORK', section)
+	AddSection(collection, section)
 	
 	section = []
 	section.push(BuildText("<big>FREE RADICAL DESIGN</big><br>(<small>2002-2009</small>)", "h3"))
@@ -135,7 +181,7 @@ function SetUp()
     section.push(gap)
 	section.push("Designer and programmer on <B>Second Sight</B> (2004).")
     AddButtons(false, section, 'https://en.wikipedia.org/wiki/Free_Radical_Design|WIKIPEDIA')
-	AddHiddenSection('WORK', section)
+	AddSection(collection, section)
 	
 	BeginExpand(collection, 'CURRENT', 'SECTION 1:&nbsp; CURRENT / RECENT / ONGOING')
 
@@ -145,20 +191,18 @@ function SetUp()
 	section.push(bigGap)
 	section.push('<IMG SRC="gfx/flywheel_rotate.png" CLASS="screeny" STYLE="max-width:850px" width=85%>')
     AddButtons(true, section, 'flywheel/|PLAY')
-	AddHiddenSection('CURRENT', section)
+	AddSection(collection, section)
 	
 	section = []
 	section.push(BuildText("<big>ASSORTED POTTERY</big><br>(<small>2015-present</small>)", "h3"))
 	section.push("You know - songs without tunes.")
     AddButtons(true, section, 'pottery/|READ')
-	AddHiddenSection('CURRENT', section)
+	AddSection(collection, section)
 	
 	BeginExpand(collection, 'OLD', 'CLUSTER 2:&nbsp; DETRITUS / RELICS / MEMORIES')
 	
 	section = []
 	section.push(BuildText("<big>CAPTAIN FLOTMAN</big><br>(<small>2015-2018</small>)", "h3"))
-	section.push("Proof that sometimes the total is more than the sum of its parts. But often, it's less.")
-    section.push(gap)
 	section.push("Captain Flotman is the name under which I snuck my mash-ups onto the internet. If you've ever wanted to hear Coolio, Adele and the Beach Boys collaborate on a song you're (a) odd and (b) in a whole heap of luck.")
 	section.push(bigGap)
 	section.push('<IMG SRC="gfx/flotman-crazy.jpg" CLASS="flotman" width=30%>')
@@ -167,7 +211,7 @@ function SetUp()
 	section.push('<IMG SRC="gfx/flotman-sky.jpg" CLASS="flotman" width=30%>')
 	section.push('<IMG SRC="gfx/flotman-walk.jpg" CLASS="flotman" width=30%>')
     AddButtons(false, section, 'https://hearthis.at/captain-flotman/|HEARTHIS', 'https://soundcloud.com/captain-flotman|SOUNDCLOUD')
-	AddHiddenSection('OLD', section)
+	AddSection(collection, section)
 
 	section = []
 	section.push(BuildText("<big>OUT OF ORDER</big><br>(<small>2003</small>)", "h3"))
@@ -178,7 +222,7 @@ function SetUp()
 	section.push('<IMG SRC="gfx/ooo_bedroom.png" CLASS="screeny" STYLE="max-width:640px" width=85%>')
     AddButtons(true, section, 'https://web.archive.org/web/20110818231839fw_/http://outoforder.adventuredevelopers.com/files/OOO_full.exe|DOWNLOAD INSTALLER')
     AddButtons(false, section, 'https://en.wikipedia.org/wiki/Out_of_Order_(video_game)|WIKIPEDIA', 'https://tvtropes.org/pmwiki/pmwiki.php/VideoGame/OutOfOrder2003|TV TROPES')
-	AddHiddenSection('OLD', section)
+	AddSection(collection, section)
 	
 	section = []
 	section.push(BuildText("<big>SLUDGE</big><br>(<small>2003-2008</small>)", "h3"))
@@ -186,7 +230,7 @@ function SetUp()
     section.push(gap)
 	section.push("In 2008 the source code was released into the wild and the team that took it over added, among other changes, support for non-Windows platforms. In 2017 support for running SLUDGE games was added to ScummVM.")
     AddButtons(false, section, 'https://opensludge.github.io/|GITHUB', 'https://wiki.scummvm.org/index.php/SLUDGE|SCUMMVM')
-	AddHiddenSection('OLD', section)
+	AddSection(collection, section)
 	
 	BeginExpand(collection, 'MISC', 'SEGMENT 3:&nbsp; MISCELLANEOUS / REFERENCES / APPENDICES')
 
@@ -194,7 +238,9 @@ function SetUp()
 	section.push(BuildText("<big>FURTHER READING</big>", "h3"))
 	section.push("Additional exits are available here and here.")
     AddButtons(false, section, 'https://www.mobygames.com/person/138001/tim-furnish/credits/sort:date/|MOBYGAMES', 'https://www.instagram.com/timjfurnish/|INSTAGRAM', 'https://www.threads.net/@timjfurnish|THREADS')
-	AddHiddenSection('MISC', section)
+	AddSection(collection, section)
+	
+	EndExpand(collection)
 	
 	AddSection(collection, [BuildText("&copy; Tim Furnish " + (new Date().getUTCFullYear()), "small|p")])
 	
