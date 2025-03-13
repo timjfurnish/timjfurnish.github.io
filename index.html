@@ -11,15 +11,15 @@
 		body { overflow-y: scroll }
 		p { color: #666; font-size: 20px; font-family: Arial, sans-serif; margin-top: 10px; margin-bottom: 10px; margin-left: 40px; margin-right: 40px }
 		h1 { color: #778fbd; font-size: 40px; word-spacing: -0.1em; font-family: Monospace; font-weight: 500; line-height: 32px; margin-top: 4px }
-		h2 { color: #444; font-size: 22px; font-family: Arial, sans-serif; margin: 0.83em 0 0 }
-		h3 { color: #333; font-size: 30px; word-spacing: -0.3em; font-family: Monospace; margin-top: 4px; margin-bottom:24px; font-weight: bold; line-height: 27px; width: auto }
+		h2 { color: #444; font-size: 18px; font-family: Arial, sans-serif; margin: 0.83em 0 0 }
+		h3 { color: #333; font-size: 26px; word-spacing: -0.3em; font-family: Monospace; margin-top: 4px; margin-bottom:24px; font-weight: bold; line-height: 27px; width: auto }
 		h4 { letter-spacing: -0.066em; cursor:pointer; background: -webkit-linear-gradient(rgba(100, 100, 100, 0.5), rgba(110, 110, 110, 1)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; font-size: 20px; margin: 0px; margin-left:3%; text-align: left }
 		h5 { font-size: 10px; margin: 0px; padding: 0px }
-		.bigButton { font-size: 25px; background-image: linear-gradient(white, #FFFF88) }
-		a { color: black; font-size: 16px; font-weight: bold; text-decoration: none; padding: 8px 12px 8px 12px; background-image: linear-gradient(white, rgba(75,125,75,0.4)); border-radius: 15px; border: 1px solid #252}
+		.bigButton { font-size: 20px; background-image: linear-gradient(white, #FFFF88) }
+		a { color: black; font-size: 12px; font-weight: bold; text-decoration: none; padding: 8px 12px 8px 12px; background-image: linear-gradient(white, rgba(75,125,75,0.4)); border-radius: 15px; border: 1px solid #252}
 		.box { width: 75%; color: #444; font-family: Arial, sans-serif; padding:20px; font-size: 20px; margin: 10px; background-image: linear-gradient(rgba(200,100,100,0.2), rgba(120,60,60,0.2)); border-radius: 2px; border: 2px solid #A55}
 		img { margin: 0px 3px 0px 3px }
-		.buttonBar { line-height:40px; margin:20px 0px 5px 0px }
+		.buttonBar { line-height:40px; margin:15px 0px 0px 0px }
 		.flotman { border: 1px solid black; border-radius: 5px; max-width:200px }
 		.screeny { border: 2px solid black; border-radius: 15px }
 	</style>
@@ -93,17 +93,15 @@ function Expand(code)
 }
 function AddButtons(big, section, ...buttons)
 {
-	var before = ""
 	section.push('<DIV class=buttonBar>')
 
 	for (var deets of buttons)
 	{
 		var [link, text] = deets.split('|', 2)
 
-		section.push(before)
-		before = " "
+		section.push("\n")
 
-		var tag = '<NOBR><A HREF="' + link + '"'
+		var tag = '<A HREF="' + link + '"'
 
 		if (big)
 		{
@@ -115,7 +113,7 @@ function AddButtons(big, section, ...buttons)
 			text = '&#10157; ' + text
 		}
 
-		section.push(tag + '>' + text + '</A></NOBR>')
+		section.push(tag + '>' + text.replaceAll(' ', '&nbsp;') + '</A>')
 	}
 
 	section.push('</DIV>')
