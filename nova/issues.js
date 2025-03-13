@@ -21,7 +21,7 @@ function BuildWarningNamesList()
 		'INVALID FINAL SPEECH CHARACTER', 'INVALID FIRST SPEECH CHARACTER', 'INVALID FINAL CHARACTER', 'IGNORED COMPLETENESS',
 		'SPLIT INFINITIVE', 'ADVERB WITH HYPHEN', 'TAG TEXT IN SECTION', 'COMPLEX PUNCTUATION',
 		'UNFINISHED QUOTE', 'CAPITALS', 'SPACE BEFORE PUNCTUATION', 'MISSING TAG',
-		'MARKUP ERROR', 'SPACE IN SPEECH', 'EMPTY SPEECH', 'SETTINGS', 'LONG TEXT', "PUNCTUATION: MID-PHRASE",
+		'MARKUP ERROR', 'SPACE IN SPEECH', 'EMPTY SPEECH', 'SETTINGS', 'LONG TEXT', "PUNCTUATION: MID-PHRASE", "PUNCTUATION: END-PHRASE",
  		'PUNCTUATION WITHOUT SPACE', 'ILLEGAL START CHARACTER', 'EMPTY WORD'
 	]
 
@@ -43,6 +43,12 @@ function IssueAutoFixDefine(type, msg, func)
 	g_autoFixIssues[type] = {func:func, msg:msg}
 }
 
+function MakeFixMeButton(theText, callThis, colour)
+{
+	const extra = colour ? ' style="background-color:' + colour + '"' : ''
+	return '<NOBR class="fixMe" onClick="' + callThis + '"' + extra + '>' + theText + '</NOBR>'
+}
+
 TabDefine("issues", function(reply, thenCall)
 {
 	if (g_issueCount)
@@ -51,14 +57,39 @@ TabDefine("issues", function(reply, thenCall)
 		{
 			reply.push("<H3>" + heading + "</H3>" + issueList.join(""))
 		}
-		if (! g_disabledWarnings["ISSUE SUMMARY"])
-		{
-			reply.push("<CENTER><HR>" + TableShowTally(g_issueStats, {colours:g_warningNames, colourEntireLine:true, showTotal:true}) + "</CENTER>")
-		}
 	}
 	else
 	{
 		reply.push("<CENTER>No issues found</CENTER>")
+	}
+
+	if (! g_disabledWarnings["ISSUE SUMMARY"])
+	{
+		reply.push("<CENTER><HR>" + TableShowTally(g_issueStats, {colours:g_warningNames, colourEntireLine:true, showTotal:true}) + "</CENTER>")
+	}
+
+	const maxVals = Object.entries(g_longest)
+
+	if (maxVals.length)
+	{
+		reply.push("<H3>Maximums</H3><UL>")
+		
+		for (var [key, {val, settingName}] of maxVals)
+		{
+			reply.push('<LI>Max ' + key + ' = <B>' + val + '</B>')
+			if (g_tweakableSettings[settingName] != val)
+			{
+				reply.push(' ' + MakeFixMeButton('Warn', "SettingUpdate('" + settingName + "', " + val + ") && ProcessInput()", '#FFCC88'))
+			}
+			++ val
+			if (g_tweakableSettings[settingName] != val)
+			{
+				reply.push(' ' + MakeFixMeButton('Allow', "SettingUpdate('" + settingName + "', " + (val) + ") && ProcessInput()"))
+			}
+			reply.push('</LI>')
+		}
+
+		reply.push("</UL>")
 	}
 }, {icon:kIconIssues, canSelect:true, alignment:"left"})
 
@@ -121,8 +152,7 @@ function IssueAdd(addThis, theType, fixMeParam, overrideIssueHeading)
 			const autoFix = g_autoFixIssues[theType]
 			if (autoFix)
 			{
-				const callThis = 'AutoFix(\'' + theType + '\', \'' + AddEscapeChars(fixMeParam.replace("'", "\\'")) + '\')'
-				addThis += ' <NOBR class="fixMe" onClick="' + callThis + '">' + autoFix.msg + '</NOBR>'
+				addThis += ' ' + MakeFixMeButton(autoFix.msg, 'AutoFix(\'' + theType + '\', \'' + AddEscapeChars(fixMeParam.replace("'", "\\'")) + '\')')
 			}
 		}
 	}
@@ -133,6 +163,7 @@ function IssueAdd(addThis, theType, fixMeParam, overrideIssueHeading)
 	Tally(g_issueStats, theType ?? "NO TYPE")
 	++ g_issueCount
 	const issueHeading = overrideIssueHeading ?? MetaDataMakeFragmentDescription()
+
 	if (issueHeading in g_issues)
 	{
 		g_issues[issueHeading].push(storeThis)

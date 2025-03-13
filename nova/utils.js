@@ -111,7 +111,7 @@ function FixStringHTML(stringIn)
 
 function AddEscapeChars(stringIn)
 {
-	return stringIn.replace(/\&/g, '&amp;').replace(/\[/g, '&lt;').replace(/\]/g, '&gt;').replace(/\'/g, '&apos;').replace(/\"/g, '&quot;')
+	return stringIn.replace(/\&/g, '&amp;').replace(/\[/g, '&lt;').replace(/\]/g, '&gt;').replace(/\'/g, '&apos;').replace(/\"/g, '&quot;').replaceAll(/^ | $/g, '&nbsp;')
 }
 
 function Highlighter(matched, colour, extra)
@@ -210,8 +210,8 @@ function MakeColourLookUpTable(arr, forceMult, offset, scale)
 		var add = (1 - mult)
 		reply[each] = rgbToHex(
 			scale * Math.sqrt(add + Math.sin(colourWheelAngle) * mult),
-			scale *          (add + Math.sin(colourWheelAngle + 2) * mult),
-			scale * Math.sqrt(add + Math.sin(colourWheelAngle + 4) * mult))
+			scale *          (add + Math.sin(colourWheelAngle * 3 + 2) * mult),
+			scale * Math.sqrt(add + Math.sin(colourWheelAngle * 2) * mult))
 	}
 
 	return reply
@@ -243,6 +243,39 @@ function MakeSet(...theBits)
 		set[name] = true
 	}
 	return set
+}
+
+function MakeTallySet(issueID, theBits)
+{
+	var set = {}
+	for (var name of theBits.sort())
+	{
+		set[name] = 0
+	}
+	return {issueID:issueID, set:set}
+}
+
+function CheckAgainstTallySet(tallySet, value, errorMsg)
+{
+	if (value in tallySet.set)
+	{
+		++ tallySet.set[value]
+	}
+	else
+	{
+		IssueAdd(errorMsg(), tallySet.issueID, value)
+	}
+}
+
+function CheckAllUsedInTallySet(tallySet)
+{
+	for (var [key, value] of Object.entries(tallySet.set))
+	{
+		if (value == 0)
+		{
+			IssueAdd("Value " + FixStringHTML(key) + " never matched in document and can therefore be removed", tallySet.issueID)
+		}
+	}
 }
 
 function OnlyKeepValid(arr)

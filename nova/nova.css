@@ -272,15 +272,15 @@ canvas
 }
 .longTextBox
 {
-	width:800px;
+	width:52vw;
 }
 .mediumTextBox
 {
-	width:550px;
+	width:41vw;
 }
 .shortTextBox
 {
-	width:300px;
+	width:30vw;
 }
 button
 {

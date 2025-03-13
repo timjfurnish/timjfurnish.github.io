@@ -27,6 +27,8 @@ function RedrawSearchResults()
 	var customTextBox = document.getElementById("search.custom")
 
 	CancelPendingFunctions()
+	
+	g_searchTableCachedData = {}
 
 	if (searchResultsHere && customTextBox)
 	{
@@ -63,7 +65,6 @@ function RedrawSearchResults()
 		if (entityNames && g_metaDataInOrder.length)
 		{
 			var output = []
-			var grabEmHere = {}
 			var anchorCount = 0
 
 			const matchThis = new RegExp(before + "(?:" + TurnNovaShorthandIntoRegex(entityNames) + ")" + after, flags)
@@ -83,22 +84,22 @@ function RedrawSearchResults()
 					var showThisToo = null
 					var skippedLines = true
 
-					for (var para of metadata.myParagraphs)
+					for (var {ignoreFragments, fragments, issues} of metadata.myParagraphs)
 					{
-						if (! para.ignoreFragments)
+						if (! ignoreFragments)
 						{
 							function GotAMatch(matched)
 							{
 								const upper = matched.toUpperCase()
-								Tally(grabEmHere, upper)
+								Tally(g_searchTableCachedData, upper)
 								Tally(grabForPara, upper)
 								return Highlighter(matched, undefined, 'highlightFor="' + upper + '"')
 							}
 
 							var grabForPara = {}
-							var s2 = FormatParagraphForDisplay(para.fragments, fragment => fragment.text.replace(matchThis, GotAMatch) + fragment.followedBy)
+							var s2 = FormatParagraphForDisplay(fragments, fragment => fragment.text.replace(matchThis, GotAMatch) + fragment.followedBy)
 
-							const plain = FormatParagraphForDisplay(para.fragments, fragment => fragment.text + fragment.followedBy)
+							const plain = FormatParagraphForDisplay(fragments, fragment => fragment.text + fragment.followedBy)
 							const foundTextHere = (plain != s2)
 
 							g_searchDataForGraph.data.push(grabForPara)
@@ -132,7 +133,7 @@ function RedrawSearchResults()
 									prefix = ""
 								}
 
-								output.push(prefix + '<DIV CLASS="indent">' + TurnRedIf(s2, para.issues) + '</DIV>')
+								output.push(prefix + '<DIV CLASS="indent">' + TurnRedIf(s2, issues) + '</DIV>')
 								showThisToo = null
 							}
 							else
@@ -156,7 +157,7 @@ function RedrawSearchResults()
 
 			if (output.length)
 			{
-				const upperKeys = Object.keys(grabEmHere)
+				const upperKeys = Object.keys(g_searchTableCachedData)
 				const colours = MakeColourLookUpTable(upperKeys, 0.3, PickColourOffsetForString(entityNames))
 
 				var realOutput = []
@@ -190,7 +191,8 @@ function RedrawSearchResults()
 					realOutput.push(eachLine)
 				}
 
-				displayThis = "<center>" + TableShowTally(grabEmHere, {ignoreWhenThisLow:1, addSearchIcon:true, matchMode:matchMode, colours:g_searchDataForGraph.colours, showTotal:true}) + "</center>" + realOutput.join('')
+				const tableSettings = {ignoreWhenThisLow:1, showMoreFunc:"ExpandSearchTable()", addSearchIcon:true, matchMode:matchMode, colours:g_searchDataForGraph.colours, showTotal:true}
+				displayThis = "<center id=searchTable>" + TableShowTally(g_searchTableCachedData, tableSettings) + "</center>" + realOutput.join('')
 				graphVisible = true
 			}
 		}
@@ -211,6 +213,12 @@ function RedrawSearchResults()
 			}
 		}
 	}
+}
+
+function ExpandSearchTable()
+{
+	const tableSettings = {addSearchIcon:true, matchMode:g_currentOptions.search.matchMode, colours:g_searchDataForGraph.colours, showTotal:true}
+	TrySetElementContents("searchTable", TableShowTally(g_searchTableCachedData, tableSettings))
 }
 
 function SettingsGetMentionList(firstElementText, useNameAsKey)
@@ -348,17 +356,17 @@ function RedrawThread(goToTop)
 					output.push("<BR>")
 				}
 
-				for (var para of displayTheseThings)
+				for (var {issues, fragments} of displayTheseThings)
 				{
 					var after = ""
 
-					if (para.issues)
+					if (issues)
 					{
 						output.push("<FONT COLOR=red>")
 						after = "</FONT>"
 					}
 
-					const formatted = FormatParagraphForDisplay(para.fragments, fragment =>
+					const formatted = FormatParagraphForDisplay(fragments, fragment =>
 					{
 						const followedBy = fragment.followedBy.replace(/ \($/, '')
 						const theTxt = fragment.text + followedBy

@@ -6,6 +6,7 @@
 var g_profileAnalysis = {}
 var g_processInputWorkspace
 var g_checkedWords = {}
+var g_longest
 
 const kReplaceOnlyKeepBraces      =  /[^‘’\u201C\u201D\[\]\{\}\(\)]|’\w/g // And opening/closing quotes
 const kReplaceFullStops           =  /\./g
@@ -176,14 +177,14 @@ function ShouldProcessPara(txtInProcessed)
 			const {tag, numericalCheck, clearTags, includeLineInText, joinNextLine, number} = autoTagSettings
 			var storeAs = withoutKey.trim()
 
-			if (number)
-			{
-				storeAs = storeAs.replace(/[^0-9]/g, '')
-			}
-
 			if (joinNextLine)
 			{
 				storeAs += " " + g_processInputWorkspace.inputTextArray.shift()
+			}
+
+			if (number)
+			{
+				storeAs = storeAs.replace(/[^0-9]/g, '')
 			}
 
 			MetaDataSet(tag, storeAs)
@@ -327,11 +328,23 @@ function SetUpNumberRules()
 
 function CheckLengthOfSomething(txtIn, term, {length}, limitName, countedWhat, category)
 {
-//	Assert(limitName in g_tweakableSettings)
-
-	if (length > g_tweakableSettings[limitName])
+	if (length)
 	{
-		IssueAdd(term + " contains " + length + " " + countedWhat + ": " + FixStringHTML(txtIn), category)
+		if (length >= g_tweakableSettings[limitName])
+		{
+			IssueAdd(CapitaliseFirstLetter(term) + " contains " + length + " " + countedWhat + ": " + FixStringHTML(txtIn), category)
+		}
+	
+		const id = countedWhat + " per " + term
+		
+		if (! (id in g_longest))
+		{
+			g_longest[id] = {val:length, settingName:limitName}
+		}
+		else if (g_longest[id].val < length)
+		{
+			g_longest[id].val = length
+		}
 	}
 }
 
@@ -339,9 +352,9 @@ function CheckOverusedPuncInPara(txtIn)
 {
 	const justPunc = txtIn.replace(g_processInputWorkspace.regexForRemovingLetters, '')
 
-	CheckLengthOfSomething(txtIn, "Paragraph", justPunc, "warnParagraphAmountPunctuation", "punctuation symbols", "COMPLEX PUNCTUATION")
-	CheckLengthOfSomething(txtIn, "Paragraph", Object.keys(MakeSet(...justPunc.replaceAll('“', '”'))), "warnParagraphAmountDifferentPunctuation", "distinct punctuation symbols", "COMPLEX PUNCTUATION")
-	CheckLengthOfSomething(txtIn, "Paragraph", txtIn, "warnParagraphLength", "characters", "LONG TEXT")
+	CheckLengthOfSomething(txtIn, "paragraph", justPunc, "warnParagraphAmountPunctuation", "punctuation symbols", "COMPLEX PUNCTUATION")
+	CheckLengthOfSomething(txtIn, "paragraph", Object.keys(MakeSet(...justPunc.replaceAll('“', '”'))), "warnParagraphAmountDifferentPunctuation", "distinct punctuation symbols", "COMPLEX PUNCTUATION")
+	CheckLengthOfSomething(txtIn, "paragraph", txtIn, "warnParagraphLength", "characters", "LONG TEXT")
 }
 
 function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
@@ -519,7 +532,7 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 			for (var s of sentences)
 			{
 				Tally (g_profileAnalysis, "Sentence")
-				CheckLengthOfSomething(s, "Phrase", s, "warnPhraseLength", "characters", "LONG TEXT")
+				CheckLengthOfSomething(s, "phrase", s, "warnPhraseLength", "characters", "LONG TEXT")
 
 				var followedBy = joiners.shift()
 				var precededBy = ""
@@ -567,11 +580,15 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 					}
 					else if (word)
 					{
-						if (! (join in g_processInputWorkspace.validWordJoiners))
+						if (myListOfJoiners.length)
 						{
-							IssueAdd("Unexpected punctuation [" + FixStringHTML(join) + "] in " + FixStringHTML(s), "PUNCTUATION: MID-PHRASE", join)
+							CheckAgainstTallySet(g_processInputWorkspace.validWordJoiners, join, () => "Unexpected punctuation [" + FixStringHTML(join) + "] found in " + FixStringHTML(s))
 						}
-
+						else if (join != "" && join != ')')
+						{
+							IssueAdd("Unexpected punctuation [" + FixStringHTML(join) + "] found at end of " + FixStringHTML(s), "PUNCTUATION: END-PHRASE")
+						}
+						
 						if (shouldStartWithCapital)
 						{
 							const letter = (word[0] == '’') ? word[1] : word[0]
@@ -694,10 +711,11 @@ function ProcessInputBegin()
 
 	g_profileAnalysis = {}
 	g_checkedWords = {}
+	g_longest = {}
 
 	g_processInputWorkspace =
 	{
-		validWordJoiners:MakeSet('', ' ', '’', ...g_tweakableSettings.wordJoiners),
+		validWordJoiners:MakeTallySet("PUNCTUATION: MID-PHRASE", g_tweakableSettings.wordJoiners),
 		checkedWordsSeenInLowerCase:{},
 		plainBadWords:{},
 		numberRules:[],
@@ -765,7 +783,7 @@ function TickProcessInternal()
 function TickProcessInput()
 {
 	Tally (g_profileAnalysis, "TimeSlice")
-	for (var t = 0; t < 200; ++ t)
+	for (var t = 0; t < 150; ++ t)
 	{
 		if (! TickProcessInternal())
 		{
@@ -797,8 +815,14 @@ function GatherNameSuggestions()
 
 function AfterProcessInput()
 {
+	if (g_metaDataInOrder.length)
+	{
+		CheckAllUsedInTallySet(g_processInputWorkspace.validWordJoiners)
+	}
+	
 	DoEvent("processingDone")
 	g_processInputWorkspace = undefined
+	
 	if (g_selectedTabName != 'settings')
 	{
 		CallTheseFunctions(ShowContentForSelectedTab)

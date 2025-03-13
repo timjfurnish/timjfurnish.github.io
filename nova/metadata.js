@@ -17,7 +17,7 @@ var g_metaDataCurrentContainsToDo
 var g_metaDataSeenValues
 var g_hasSummaries
 var g_stillLookingForTagText
-var g_lastReportedWordCount = 0
+var g_lastReported = {}
 
 const kMetaDataDefaultDisplay = MakeSet("Estimated final words", "Percent done")
 const kMetaDataDefaultGroup = MakeSet("PART")
@@ -106,21 +106,39 @@ function MetaDataDoneProcessing()
 	{
 		MetaDataSet(v)
 	}
+
 	MetaDataEndSection()
 
-	const {Words} = g_metaDataTotals
-	if (Words && g_lastReportedWordCount && g_tweakableSettings.showWordCountChanges)
+	const reportThis = []
+	var show = false
+
+	for (var [key, val] of Object.entries(g_metaDataTotals))
 	{
-		if (Words != g_lastReportedWordCount)
+		if (! key.startsWith("Estimated "))
 		{
-			alert("Word count has " + ((Words > g_lastReportedWordCount) ? "increased from " : "decreased from ") + g_lastReportedWordCount + " to " + Words + ".")
-		}
-		else
-		{
-//			alert("Word count has stayed at " + Words + ".")
+			const oldValue = g_lastReported[key]
+
+			if (oldValue)
+			{
+				if (val != oldValue)
+				{
+					reportThis.push(key + ((val > oldValue) ? " increased from " : " decreased from ") + oldValue + " to " + val + ".")
+					show = true
+				}
+				else if (key == "Words")
+				{
+					reportThis.push(key + " remained at " + val + ".")
+				}
+			}
+
+			g_lastReported[key] = val
 		}
 	}
-	g_lastReportedWordCount = Words
+	
+	if (show && g_tweakableSettings.showWordCountChanges)
+	{
+		alert(reportThis.join('\n'))
+	}
 }
 
 function MetaDataEndSection()

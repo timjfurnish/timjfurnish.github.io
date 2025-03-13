@@ -437,7 +437,7 @@ const kTweakableDefaults =
 	endOfParagraphNarrative:kCharacterElipsis + ".!?:",
 	skip:["Contents"],
 	wordsContainingFullStops:['etc.', 'Dr.', 'Mr.', 'Mrs.', 'i.e.', 'e.g.'],
-	wordJoiners:[' ', ', ', ' ' + kCharacterEmDash + ' ', kCharacterElipsis + ' '],
+	wordJoiners:[', ', ' ' + kCharacterEmDash + ' ', kCharacterElipsis + ' '],
 	replace:['\\b([a-z]+)\\(([a-z]+)\\)/$1$2/i', '([0-9]+),([0-9]+)/$1$2', '\\bO\\.S\\./OFFSCREEN', '([0-9]+)\\.([0-9]+)/$1^$2', '^== (.*) ==$/$1.', "[!\\?]’/’", "\\bCONT’D\\b/CONTINUED", "^EXT\\./EXTERIOR", "^INT\\./INTERIOR"],
 	hyphenCheckPairs:["sat-nav*", "set-up", "under-cover", "self-reliance reliant control esteem respect awareness aware", "proof-read*", "short-term", "love-bird* heart* potion* sick*", "hand-writing written write*", "left right-hand*", "sand egg-timer*", "back-stage* hand* ground* garden*", "stage-left right", "slow-motion", "some-thing where how what body one", "heart-break* broken", "car-park*", "brain-wave*", "mind lip-read*", "twenty thirty forty fifty sixty seventy eighty ninety-one two three four five six seven eight nine", "one two three four five six seven eight nine ten-hundred thousand million billion trillion"],
 	entityNames:["[PEOPLE]", "me I my myself"],
@@ -594,7 +594,7 @@ const kSettingNames =
 		endOfSpeech:"End of speech|shortTextBox",
 		endOfParagraphSpeech:"End of paragraph speech|shortTextBox",
 		endOfParagraphNarrative:"End of paragraph narrative|shortTextBox",
-		wordJoiners:"Valid punctuation^(between words)|shortTextBox",
+		wordJoiners:"Valid punctuation^between words|shortTextBox",
 		warnParagraphAmountPunctuation:"Warn when paragraph contains this^many total punctuation marks",
 		warnParagraphAmountDifferentPunctuation:"Warn when paragraph contains this^many different punctuation marks",
 		warnParagraphLength:"Warn when paragraph contains this^many characters",
@@ -787,12 +787,15 @@ function SettingUpdate(name, newValue, isLoading)
 				SettingSave(name)
 				FillInSetting(name)
 			}
+			return true
 		}
 	}
 	else
 	{
 		NovaWarn("There's no setting called '" + name + "' in settings structure")
 	}
+	
+	return false
 }
 
 function SettingsGetNamesArrays()
