@@ -30,14 +30,6 @@ const g_hiddenSections = {}
 var g_creatingHiddenSection
 var g_openThings = []
 
-function BuildText(text, tags)
-{
-	for (var t of tags.split('|'))
-	{
-		text = "<" + t + ">" + text + "</" + (t.split(' ', 1)[0]) + ">"
-	}
-	return text
-}
 function AddSection(collection, section)
 {
 	if (g_creatingHiddenSection)
@@ -246,7 +238,7 @@ function SetUp()
 	document.getElementById('toHere')
 	toHere.innerHTML = BuildText(collection.join(''), "TABLE WIDTH=90% CELLPADDING=6 CELLSPACING=3")
 	
-	StartFading()
+	StartFading(250, 20)
 }
 	</script>
     <title>Tim Furnish - Entertainmentmonger</title>
