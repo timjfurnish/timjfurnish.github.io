@@ -273,15 +273,15 @@ function HighlightThreadSection(num)
 {
 	StopTalking()
 
+	if (g_threadSectionSelected != num)
+	{
+		TrySetElementClass("threadSection" + g_threadSectionSelected, "highlighter", false)
+	}
+
+	g_threadSectionSelected = num
+
 	if (num >= 0 && num < g_threadSections.length)
 	{
-		if (g_threadSectionSelected != num)
-		{
-			TrySetElementClass("threadSection" + g_threadSectionSelected, "highlighter", false)
-		}
-
-		g_threadSectionSelected = num
-
 		const stashThis = TrySetElementClass("threadSection" + num, "highlighter", true)?.innerHTML
 
 		if (stashThis)
@@ -290,8 +290,6 @@ function HighlightThreadSection(num)
 			g_recentlyHighlightedReadToMeText.splice(4)
 		}
 	}
-
-	return num == g_threadSectionSelected
 }
 
 function FindRecentLine(txt)
@@ -310,6 +308,7 @@ function FindRecentLine(txt)
 
 function RedrawThread(goToTop)
 {
+	StopTalking()
 	var threadsGoHere = document.getElementById("threadsGoHere")
 
 	g_threadSections = []
@@ -447,9 +446,25 @@ function RedrawThread(goToTop)
 
 function OnDoneThreadSpeakingFragment()
 {
-	if (HighlightThreadSection(g_threadSectionSelected + 1))
+	HighlightThreadSection(g_threadSectionSelected + 1)
+	ThreadRead()
+}
+
+function ThreadRead()
+{
+	const thingToSay = g_threadSections[g_threadSectionSelected]
+
+	if (thingToSay)
 	{
-		CallTheseFunctions(ThreadRead)
+		if (g_currentOptions.voice.onlyReadSpeech && !thingToSay.useSpeechVoice)
+		{
+			CallTheseFunctions(OnDoneThreadSpeakingFragment)
+		}
+		else
+		{
+			ScrollToElementId("threadSection" + g_threadSectionSelected)
+			SpeakUsingVoice(thingToSay.sayThisText, thingToSay.useSpeechVoice ? "voiceSpeech" : "voiceDefault", OnDoneThreadSpeakingFragment)
+		}
 	}
 	else if (g_currentOptions.voice.autoAdvance)
 	{
@@ -460,17 +475,6 @@ function OnDoneThreadSpeakingFragment()
 			nextChunkButton.click()
 			CallTheseFunctions(ThreadRead)
 		}
-	}
-}
-
-function ThreadRead()
-{
-	const thingToSay = g_threadSections[g_threadSectionSelected]
-
-	if (thingToSay)
-	{
-		ScrollToElementId("threadSection" + g_threadSectionSelected)
-		SpeakUsingVoice(thingToSay.sayThisText, thingToSay.useSpeechVoice ? "voiceSpeech" : "voiceDefault", OnDoneThreadSpeakingFragment)
 	}
 }
 

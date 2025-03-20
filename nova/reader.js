@@ -9,7 +9,33 @@ var g_voiceLanguages = []
 var g_currentSpeaky
 
 const SpeechTest     = whichOne  => SpeakUsingVoice("Testing, one two three!", whichOne)
-const OnReaderEnd    = e         => e?.target?.myNovaOnEndCallback?.()
+
+function OnReaderStart(e)
+{
+	TrySetElementContents("saying", "Saying &quot;<b>" + e.utterance.text + "</b>&quot; (started)")
+}
+
+function OnReaderEnd(e)
+{
+	if (g_currentSpeaky)
+	{
+		g_currentSpeaky = undefined
+		TrySetElementContents("saying", "")
+		e?.target?.myNovaOnEndCallback?.()
+	}
+}
+
+function StopTalking()
+{
+	if (g_currentSpeaky)
+	{
+		g_currentSpeaky = undefined
+		TrySetElementContents("saying", "")
+		speechSynthesis.cancel()
+	}
+}
+
+// const OnReaderLogEvent = e => console.log(e)
 
 function SpeakUsingVoice(thingToSay, voiceType, onEnd)
 {
@@ -20,22 +46,15 @@ function SpeakUsingVoice(thingToSay, voiceType, onEnd)
 	if (onEnd)
 	{
 		g_currentSpeaky.myNovaOnEndCallback = onEnd
-		console.log("<" + voiceType + "> " + thingToSay)
 	}
 
-	g_currentSpeaky.onend = OnReaderEnd
+	g_currentSpeaky.addEventListener("start", OnReaderStart)
+	g_currentSpeaky.addEventListener("end", OnReaderEnd)
 	g_currentSpeaky.rate = g_tweakableSettings.speakRate
 	g_currentSpeaky.voice = g_voiceLookUp[g_tweakableSettings[voiceType]]
 	speechSynthesis.speak(g_currentSpeaky)
-}
-
-function StopTalking()
-{
-	if (g_currentSpeaky)
-	{
-		g_currentSpeaky.myNovaOnEndCallback = undefined
-		speechSynthesis.cancel()
-	}
+	
+	TrySetElementContents("saying", "Saying &quot;<b>" + thingToSay + "</b>&quot; (requested)")
 }
 
 function ReadVoices()

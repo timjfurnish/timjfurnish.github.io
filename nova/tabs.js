@@ -95,11 +95,6 @@ function MakeIconWithTooltip(icon, angle, tooltipText, clickyFunc, id, alpha, xO
 	return '<center CLASS="iconWithTooltip"><FONT' + extraArgs + '>' + icon + '</FONT>' + tooltipHTML + '</center>'
 }
 
-function ShowTabs()
-{
-	document.getElementById("infoPanel").style.display = "block"
-}
-
 function RedoTabTops()
 {
 	var tilty = -1
@@ -147,7 +142,7 @@ function BuildTabs()
 	output.push('<TR><TD COLSPAN="' + spanCols + '" ALIGN=center ID="tabContents"></TABLE>')
 	infoPanel.innerHTML = output.join('')
 
-	document.getElementById("debugLogWrapper").innerHTML = '<div id=screenDims style="padding-bottom:5px"></div><div id=debugLog></div>'
+	document.getElementById("debugLogWrapper").innerHTML = '<div id=screenDims style="padding-bottom:5px"></div><div id=saying style="padding-bottom:5px"></div><div id=debugLog></div>'
 	window.addEventListener("resize", LogWindowDims)
 	LogWindowDims()
 	ShowTab(g_selectedTabName)

@@ -72,7 +72,7 @@ const kIllegalSubstrings =
 
 function SetUp()
 {
-	g_onQueueEmpty.push(ShowTabs)
+	g_onQueueEmpty.push(() => document.getElementById("infoPanel").style.display = "block")
 	CallTheseFunctions(InitTabs, InitSettings, AddAllInputBoxes, BuildTabs, InitToTop, SetUp_FixTitle, SettingsLoad, ProcessInputBegin)
 }
 
