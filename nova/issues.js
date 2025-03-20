@@ -22,7 +22,8 @@ function BuildWarningNamesList()
 		'SPLIT INFINITIVE', 'ADVERB WITH HYPHEN', 'TAG TEXT IN SECTION', 'COMPLEX PUNCTUATION',
 		'UNFINISHED QUOTE', 'CAPITALS', 'SPACE BEFORE PUNCTUATION', 'MISSING TAG',
 		'MARKUP ERROR', 'SPACE IN SPEECH', 'EMPTY SPEECH', 'SETTINGS', 'LONG TEXT', "PUNCTUATION: MID-PHRASE", "PUNCTUATION: END-PHRASE",
- 		'PUNCTUATION WITHOUT SPACE', 'ILLEGAL START CHARACTER', 'EMPTY WORD'
+ 		'BIG BLOCK OF SPEECH', 'BIG BLOCK OF NARRATIVE',
+		'PUNCTUATION WITHOUT SPACE', 'ILLEGAL START CHARACTER', 'EMPTY WORD'
 	]
 
 	for (var [autoErrName] of kIllegalSubstrings)
@@ -178,7 +179,7 @@ function DisableIssueCheck(theType)
 {
 	Assert(g_currentOptions.settings[theType])
 	g_currentOptions.settings[theType] = false
-	CallTheseFunctions(ProcessInput)
+	ProcessInput()
 }
 OnEvent("processingDone", false, () =>
 {

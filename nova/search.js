@@ -248,10 +248,12 @@ TabDefine("search", function(reply, thenCall)
 	nameData["twent*|thirt*|forty|fortie*|fift*|eight*|one|ones|two*|three*|four*|five*|six*|seven*|nine*|ten|tens|tenth*|third*|fourth*|ninth*|eleven*|twelfth*|twelve*|hundred*|thousand*|billion*|million*|trillion*"] = "Numbers (words)"
 	nameData["*[0-9]*"] = "Numbers (digits)"
 	nameData["in fact|of course|in many ways|for some reason|some kind|no doubt|certainly|definitely|all honesty|* be honest|whatsoever|more accurately|after all|at all|in the slightest|by any means"] = "&quot;In fact&quot;"
-	nameData["entire|entirely|total|totally|utter|utterly|fully|complete|completely|whole|wholly|altogether|literal|literally|incredibly|especially|somewhat|quite|really|very"] = "&quot;Completely&quot;"
+	nameData["entire|entirely|total|totally|utter|utterly|fully|complete|completely|whole|wholly|altogether|literal|literally|incredibly|especially|really|very|ever so"] = "&quot;Completely&quot;"
+	nameData["somewhat|quite|slightly|a bit|a little|a * bit|an * bit|a * little|an * little|fractionally"] = "&quot;Somewhat&quot;"
 	nameData["beg*n* to|b*g*n* *ing|start* to|start* *ing|proceed* to|proceed* *ing|set about"] = "&quot;Started to&quot;"
 	nameData["sudden*|instant*|immediate*"] = "&quot;Suddenly&quot;"
-	nameData["stood up|stand* up|sat down|sit* down|lay* down|lie* down|lying down|jump* up|rais* up|ris* up|lift* up|gather* up|pass* by|collect* up|print* out|knelt down|kneel* down"] = "&quot;Sat down&quot;"
+	nameData["in spite|in the process|in the event|with regard*|with the exception|with the * exception|about as|as to|for the purpose"] = "&quot;In/with/as/for&quot;"
+	nameData["stood up|stand* up|sat down|sit* down|lay* down|lie* down|lying down|jump* up|rais* up|ris* up|lift* up|gather* up|pass* by|collect* up|print* out|knelt down|kneel* down|start* out"] = "&quot;Sat down&quot;"
 
 	OptionsMakeSelect(options, "RedrawSearchResults()", "Search for", "entity", nameData, "")
 	OptionsMakeTextBox(options, "RedrawSearchResults()", "", "custom")

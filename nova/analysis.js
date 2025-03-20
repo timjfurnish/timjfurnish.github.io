@@ -33,6 +33,8 @@ function MakeValidJoinersTable(table)
 const kValidJoinersSpeech = MakeValidJoinersTable({["’!"]:true, ["!?"]:true, ["’?"]:true, ["—"]:true})
 const kValidJoinersNarrative = MakeValidJoinersTable({[". ("]:true, ["? ("]:true, ["! ("]:true, [".)"]:true, ["?)"]:true, [")."]:true, [""]:false})
 
+var g_lastReadSpeech, g_lastReadChrCount, g_lastReadChunk_start, g_lastReadChunk_end
+
 //==========================================================
 // CHECKING FOR ILLEGAL SUBSTRINGS...
 //==========================================================
@@ -243,36 +245,16 @@ function SplitIntoFragments(thisBunch, splitRegex)
 	}
 }
 
-function MakeListOfValidLetters()
+function MakeRegexForSplittingIntoWords(captureJoiners)
 {
-	var validLetters = ""
-
-	for (var chr of g_tweakableSettings.allowedCharacters)
-	{
-		const chrLow = chr.toLowerCase()
-
-		if (! validLetters.includes(chrLow))
-		{
-			if (chrLow != chrLow.toUpperCase())
-			{
-				validLetters += chrLow
-			}
-		}
-	}
-
-	return validLetters
-}
-
-function MakeRegexForSplittingIntoWords(validLetters, captureJoiners)
-{
-	const matchThis = '[^' + EscapeRegExSpecialChars("-.%#&0123456789" + validLetters) + ']+'
+	const matchThis = '[^' + EscapeRegExSpecialChars("-.%#&0123456789" + g_validLetters) + ']+'
 	return captureJoiners ? new RegExp('(' + matchThis + ')', 'i') : new RegExp(matchThis, 'i')
 }
 
-function MakeRegexForRemovingLetters(validLetters)
+function MakeRegexForRemovingLetters()
 {
 	// Also remove anything that might be part of a word-like thing: digits, hyphens, apostrophes and '^' (representing '.' in an abreviation)
-	const matchThis = '[' + EscapeRegExSpecialChars(' 0123456789-^’' + validLetters) + ']'
+	const matchThis = '[' + EscapeRegExSpecialChars(' 0123456789-^’' + g_validLetters) + ']'
 	return new RegExp(matchThis, 'ig')
 }
 
@@ -326,13 +308,14 @@ function SetUpNumberRules()
 	}
 }
 
-function CheckLengthOfSomething(txtIn, term, {length}, limitName, countedWhat, category)
+function CheckLengthOfSomething(term, length, limitName, countedWhat, category, txtIn, txtInEnd)
 {
 	if (length)
 	{
 		if (length >= g_tweakableSettings[limitName])
 		{
-			IssueAdd(CapitaliseFirstLetter(term) + " contains " + length + " " + countedWhat + ": " + FixStringHTML(txtIn), category)
+			const info = txtInEnd ? (FixStringHTML(txtIn) + " to " + FixStringHTML(txtInEnd)) : FixStringHTML(txtIn)
+			IssueAdd(CapitaliseFirstLetter(term) + " contains " + length + " " + countedWhat + ": " + info, category)
 		}
 	
 		const id = countedWhat + " per " + term
@@ -352,9 +335,25 @@ function CheckOverusedPuncInPara(txtIn)
 {
 	const justPunc = txtIn.replace(g_processInputWorkspace.regexForRemovingLetters, '')
 
-	CheckLengthOfSomething(txtIn, "paragraph", justPunc, "warnParagraphAmountPunctuation", "punctuation symbols", "COMPLEX PUNCTUATION")
-	CheckLengthOfSomething(txtIn, "paragraph", Object.keys(MakeSet(...justPunc.replaceAll('“', '”'))), "warnParagraphAmountDifferentPunctuation", "distinct punctuation symbols", "COMPLEX PUNCTUATION")
-	CheckLengthOfSomething(txtIn, "paragraph", txtIn, "warnParagraphLength", "characters", "LONG TEXT")
+	CheckLengthOfSomething("paragraph", justPunc.length, "warnParagraphAmountPunctuation", "punctuation symbols", "COMPLEX PUNCTUATION", txtIn)
+	CheckLengthOfSomething("paragraph", Object.keys(MakeSet(...justPunc.replaceAll('“', '”'))).length, "warnParagraphAmountDifferentPunctuation", "distinct punctuation symbols", "COMPLEX PUNCTUATION", txtIn)
+	CheckLengthOfSomething("paragraph", txtIn.length, "warnParagraphLength", "characters", "LONG TEXT", txtIn)
+}
+
+function DoneSpeechOrNarrationChunk()
+{
+	if (g_lastReadSpeech)
+	{
+		CheckLengthOfSomething("speech block", g_lastReadChrCount, "warnBlockOfSpeech", "characters", "BIG BLOCK OF SPEECH", g_lastReadChunk_start, g_lastReadChunk_end)
+	}
+	else
+	{
+		CheckLengthOfSomething("narrative block", g_lastReadChrCount, "warnBlockOfNarrative", "characters", "BIG BLOCK OF NARRATIVE", g_lastReadChunk_start, g_lastReadChunk_end)
+	}
+
+	g_lastReadChrCount = 0
+	g_lastReadChunk_start = undefined
+	g_lastReadChunk_end = undefined
 }
 
 function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
@@ -468,6 +467,7 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 			}
 			g_processInputWorkspace.treatNextParagraphAsSpeech = false
 		}
+
 		if (isSpeech)
 		{
 			if (nextSpeechShouldStartWithCapital)
@@ -497,6 +497,7 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 				}
 			}
 		}
+
 		if (!thisBunchOfFragments)
 		{
 			continue
@@ -531,8 +532,25 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 
 			for (var s of sentences)
 			{
+				if (g_lastReadSpeech != isSpeech)
+				{
+					DoneSpeechOrNarrationChunk()
+					g_lastReadSpeech = isSpeech
+				}
+
+				if (g_lastReadChunk_start === undefined)
+				{
+					g_lastReadChunk_start = s
+				}
+				else
+				{
+					g_lastReadChunk_end = s
+				}
+				
+				g_lastReadChrCount += s.length
+
 				Tally (g_profileAnalysis, "Sentence")
-				CheckLengthOfSomething(s, "phrase", s, "warnPhraseLength", "characters", "LONG TEXT")
+				CheckLengthOfSomething("phrase", s.length, "warnPhraseLength", "characters", "LONG TEXT", s)
 
 				var followedBy = joiners.shift()
 				var precededBy = ""
@@ -663,11 +681,13 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 	{
 		IssueAdd("Characters " + FixStringHTML(remains) + " found in " + FixStringHTML(txtInRaw), "ILLEGAL CHARACTERS", remains)
 	}
+
 	//========================
 	// STORE IT
 	//========================
 
 	const pushThis = {allOfIt:txtInRaw, fragments:storeAsFragments, issues:g_issueCount - oldNumIssues}
+
 	if (bIgnoreFragments)
 	{
 		pushThis.ignoreFragments = true
@@ -685,12 +705,14 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 			}
 		}
 	}
+
 	if (g_metaDataGatherParagraphs.length == 0)
 	{
 		Tally (g_profileAnalysis, "Metadata section: create")
 		g_metaDataCurrentCompleteness = g_metaDataNextCompleteness
 		g_metaDataNextCompleteness = 100
 	}
+
 	g_metaDataGatherParagraphs.push(pushThis)
 
 	PairDoneParagraph(pushThis)
@@ -707,11 +729,14 @@ function ProcessInputBegin()
 {
 	DoEvent("clear")
 
-	const validLetters = MakeListOfValidLetters()
-
 	g_profileAnalysis = {}
 	g_checkedWords = {}
 	g_longest = {}
+	
+	g_lastReadSpeech = false
+	g_lastReadChrCount = 0
+	g_lastReadChunk_start = undefined
+	g_lastReadChunk_end = undefined
 
 	g_processInputWorkspace =
 	{
@@ -722,9 +747,9 @@ function ProcessInputBegin()
 		badWordRegExpressions:[],
 		regexForRemovingValidChars:new RegExp('[' + EscapeRegExSpecialChars(g_tweakableSettings.allowedCharacters) + ']', 'g'),
 		treatNextParagraphAsSpeech:false,
-		regexForSplittingIntoWords:MakeRegexForSplittingIntoWords(validLetters, true),
-		regexForSplittingIntoWordsNoCap:MakeRegexForSplittingIntoWords(validLetters, false),
-		regexForRemovingLetters:MakeRegexForRemovingLetters(validLetters),
+		regexForSplittingIntoWords:MakeRegexForSplittingIntoWords(true),
+		regexForSplittingIntoWordsNoCap:MakeRegexForSplittingIntoWords(false),
+		regexForRemovingLetters:MakeRegexForRemovingLetters(),
 		inputTextArray:GetInputText().split(/[\n]+/),
 		replaceRules:SettingsGetReplacementRegularExpressionsArray()
 	}
@@ -763,6 +788,10 @@ function TickProcessInternal()
 						if (ShouldProcessPara(txtInProcessed))
 						{
 							AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
+						}
+						else
+						{
+							DoneSpeechOrNarrationChunk()
 						}
 					}
 				}
@@ -815,6 +844,8 @@ function GatherNameSuggestions()
 
 function AfterProcessInput()
 {
+	DoneSpeechOrNarrationChunk()
+
 	if (g_metaDataInOrder.length)
 	{
 		CheckAllUsedInTallySet(g_processInputWorkspace.validWordJoiners)

@@ -48,7 +48,7 @@ async function pasteToInputBox()
 	g_numInputBoxes = 0
 	addInputBox(true)
 	document.getElementById("txtIn1").value = theText
-	CallTheseFunctions(ProcessInput)
+	ProcessInput()
 }
 
 function hideShowInputs(checked)

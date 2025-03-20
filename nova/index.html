@@ -32,7 +32,7 @@
    <input type="checkbox" id="showInput" checked onChange="hideShowInputs(this.checked)"><label for="showInput">&nbsp;Show inputs</label>
   </p>
   <span id=inputsControls>
-   <button onClick="addInputBox(true)">Add input text box</button><button onClick="mergeInputBoxes()">Merge input text boxes</button><button onClick="CallTheseFunctions(ClearInputBoxes, ProcessInput)">Clear</button><button onClick="pasteToInputBox()">Paste</button>
+   <button onClick="addInputBox(true)">Add input text box</button><button onClick="mergeInputBoxes()">Merge input text boxes</button><button onClick="ClearInputBoxes(); ProcessInput()">Clear</button><button onClick="pasteToInputBox()">Paste</button>
   </span>
   <p id=inputs></p>
   <P id=infoPanel align=center></P>

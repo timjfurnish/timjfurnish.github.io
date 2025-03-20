@@ -12,6 +12,7 @@ var g_nameLookup
 var g_autoTagKeys
 var g_tagsExpectedInEverySection = []
 var g_settingsName = ""
+var g_validLetters = ""
 var g_availableConfigs = []
 var g_entityNameCategories = {}
 
@@ -165,7 +166,7 @@ function AutoTagUpdate()
 	AutoTagFixData()
 	TrySetElementContents("autoTagCell", BuildAutomaticTagsBox())
 	AutoTagSave()
-	CallTheseFunctions(ProcessInput)
+	ProcessInput()
 }
 
 function MakeClickableTextBubble(txt, thePrompt, key)
@@ -204,7 +205,6 @@ function AutoTagEditText(txt, thePrompt, key)
 			Assert(kAutoTagStuff[newValue])
 			delete kAutoTagStuff[oldValue]
 			Assert(!kAutoTagStuff[oldValue])
-			console.log(kAutoTagStuff)
 		}
 
 		AutoTagUpdate()
@@ -218,7 +218,7 @@ function AutoTagUpdateOrder()
 		kAutoTagStuff[k].numericalCheck = document.getElementById(MakeElementID("AutoTagOrder", k)).value
 	}
 
-	CallTheseFunctions(ProcessInput)
+	ProcessInput()
 }
 
 function BuildAutomaticTagsBox(moreOutput)
@@ -352,7 +352,8 @@ function ConfigDelete()
 	window.localStorage.setItem("nova_configNames", g_availableConfigs.join('\n'))
 	ConfigSetSelection("")
 	Object.entries(kTweakableDefaults).forEach(InitSetting)
-	CallTheseFunctions(SettingsLoad, ProcessInput)
+	SettingsLoad()
+	ProcessInput()
 	TrySetElementContents("configCell", BuildConfigBox())
 }
 
@@ -387,7 +388,8 @@ function OnConfigChanged()
 	{
 		ConfigSetSelection(document.getElementById("configSelectBox").value)
 		Object.entries(kTweakableDefaults).forEach(InitSetting)
-		CallTheseFunctions(SettingsLoad, ProcessInput)
+		SettingsLoad()
+		ProcessInput()
 	}
 	catch(error)
 	{
@@ -448,6 +450,8 @@ const kTweakableDefaults =
 	warnParagraphAmountDifferentPunctuation:9,
 	warnParagraphLength:250,
 	warnPhraseLength:100,
+	warnBlockOfSpeech:500,
+	warnBlockOfNarrative:1000,
 	suggestNameIfSeenThisManyTimes:5,
 	numTextBoxes:1,
 	tooltips:true,
@@ -462,7 +466,26 @@ const kSettingFunctions =
 {
 	debugListQueuedFunctions:val => document.getElementById("debugOut").style.display = val ? "block" : "none",
 	debugLog:val => document.getElementById("debugLogWrapper").style.display = val ? "block" : "none",
-	tooltips:val => RedoToTop() + RedoTabTops() + RethinkEnabledTabs()
+	tooltips:val => RedoToTop() + RedoTabTops() + RethinkEnabledTabs() || true,
+	allowedCharacters:val =>
+	{
+		g_validLetters = ""
+
+		for (var chr of g_tweakableSettings.allowedCharacters)
+		{
+			const chrLow = chr.toLowerCase()
+
+			if (! g_validLetters.includes(chrLow))
+			{
+				if (chrLow != chrLow.toUpperCase())
+				{
+					g_validLetters += chrLow
+				}
+			}
+		}
+		
+		return false
+	}
 }
 
 function SettingsAddEntityName(category, theText)
@@ -470,7 +493,7 @@ function SettingsAddEntityName(category, theText)
 	g_tweakableSettings.entityNames.splice(g_tweakableSettings.entityNames.indexOf("[" + category + "]") + 1, 0, theText)
 	SettingPerformMaintenance("entityNames")
 	SettingSave("entityNames")
-	CallTheseFunctions(ProcessInput)
+	ProcessInput()
 }
 
 function SortNames(inArray)
@@ -599,6 +622,8 @@ const kSettingNames =
 		warnParagraphAmountDifferentPunctuation:"Warn when paragraph contains this^many different punctuation marks",
 		warnParagraphLength:"Warn when paragraph contains this^many characters",
 		warnPhraseLength:"Warn when phrase contains this^many characters",
+		warnBlockOfSpeech:"Warn when there are this many^consecutive characters in speech",
+		warnBlockOfNarrative:"Warn when there are this many^consecutive characters in narrative",
 		["Enabled checks"]:moreOutput => BuildIssueDefaults(false, moreOutput),
 		["Additional settings"]:moreOutput => BuildIssueDefaults(true, moreOutput),
 	},
@@ -728,8 +753,6 @@ function SettingsLoad()
 			{
 				ShowError("While parsing tag setting:\n\n" + error.stack)
 			}
-
-			console.log(kAutoTagStuff)
 		}
 
 		AutoTagFixData()
@@ -941,20 +964,25 @@ function UserChangedSetting(name)
 	var elem = document.getElementById('setting_' + name)
 
 	UpdateSettingFromText(name, GetDataType(g_tweakableSettings[name]), (elem.type == "checkbox") ? elem.checked + "" : elem.value)
+	RespondToInputChanging(name)
+}
 
+function RespondToInputChanging(name)
+{
 	const customFunc = kSettingFunctions[name]
 
-	if (customFunc)
+	if (customFunc && customFunc(g_tweakableSettings[name]))
 	{
-		customFunc(g_tweakableSettings[name])
+		return
 	}
-	else if (name == "language")
+
+	if (name == "language")
 	{
 		CallTheseFunctions(ReadVoices, PickVoicesForCurrentLanguage, ShowContentForSelectedTab)
 	}
 	else if (! kHasNoEffect.includes(name))
 	{
-		CallTheseFunctions(ProcessInput)
+		ProcessInput()
 	}
 }
 
@@ -1125,7 +1153,7 @@ function SettingsIssueToggleAll(doSettings)
 			g_currentOptions.settings[warningID] = turnThingsOn
 		}
 	}
-	CallTheseFunctions(ProcessInput)
+	ProcessInput()
 }
 
 function BuildIssueDefaults(doSettings, moreOutput)
@@ -1161,7 +1189,7 @@ function AddToSetting(whichOne, addThis)
 
 	SettingPerformMaintenance(whichOne)
 	SettingSave(whichOne)
-	CallTheseFunctions(ProcessInput)
+	RespondToInputChanging(whichOne)
 }
 
 function InitSettings()

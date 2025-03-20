@@ -137,7 +137,7 @@ function HighlighterWithDots(matched)
 
 function TurnNovaShorthandIntoRegex(txt)
 {
-	return txt.replaceAll('*', '[\\w\\-’\']*')
+	return txt.replaceAll(/\*+/g, m => '[' + g_validLetters + '0-9_\\-’\']' + ((m == '*') ? '*' : '+'))
 }
 
 //---------------------------
