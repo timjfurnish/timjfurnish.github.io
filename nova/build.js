@@ -42,7 +42,7 @@ const kIconJoin = "&#x1F9F7;"
 const kIconCheckbox = "&#x2611;&#xFE0F;"
 const kIconAbacus = "&#x1F9EE;"
 const kIconUSA = "&#x1F985;"
-const kIconMatch = "&#x1F525;"
+const kIconMatch = "&#x2714;&#xFE0F;"
 const kIconThesaurus = "&#x1F4D4;"
 const kIconNumberSign = "&#x23;&#xFE0F;&#x20E3;"
 

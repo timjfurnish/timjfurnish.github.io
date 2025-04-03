@@ -253,7 +253,7 @@ TabDefine("search", function(reply, thenCall)
 	nameData["beg*n* to|b*g*n* *ing|start* to|start* *ing|proceed* to|proceed* *ing|set about"] = "&quot;Started to&quot;"
 	nameData["sudden*|instant*|immediate*"] = "&quot;Suddenly&quot;"
 	nameData["in spite|in the process|in the event|with regard*|with the exception|with the * exception|about as|as to|for the purpose"] = "&quot;In/with/as/for&quot;"
-	nameData["stood up|stand* up|sat down|sit* down|lay* down|lie* down|lying down|jump* up|rais* up|ris* up|lift* up|gather* up|pass* by|collect* up|print* out|knelt down|kneel* down|start* out"] = "&quot;Sat down&quot;"
+	nameData["stood up|stand* up|sat down|sit* down|lay* down|lie* down|lying down|jump* up|rais* up|ris* up|though about|think* about|lift* up|gather* up|pass* by|collect* up|print* out|knelt down|kneel* down|start* out"] = "&quot;Sat down&quot;"
 
 	OptionsMakeSelect(options, "RedrawSearchResults()", "Search for", "entity", nameData, "")
 	OptionsMakeTextBox(options, "RedrawSearchResults()", "", "custom")
