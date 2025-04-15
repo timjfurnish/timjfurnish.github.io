@@ -77,6 +77,10 @@ function ReadVoices()
 				{
 					storeAs = region + " - " + storeAs
 				}
+				if (! voice.localService)
+				{
+					storeAs += " [REMOTE]"
+				}
 				g_voiceLookUp[storeAs] = voice
 			}
 		}

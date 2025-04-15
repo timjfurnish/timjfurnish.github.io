@@ -214,7 +214,7 @@ TabDefine("match", function(reply, thenCall)
 	var chunkOptions = {[""]:""}
 	Object.values(kAutoTagStuff).forEach(data => chunkOptions[data.tag] = data.tag)
 	OptionsMakeSelect(options, "MatchCompare()", "Chunk using", "chunks", chunkOptions, "", true)
-	OptionsMakeButtons(options, {Clear:"document.getElementById('compareWithThis').value = ''; MatchCompare()", Paste:"MatchInputPaste()"})
+	OptionsMakeButtons(options, {Paste:"MatchInputPaste()"})
 	reply.push(OptionsConcat(options) + "<BR>")
 	reply.push('<textarea class="docIn" id="compareWithThis" onChange="MatchCompare()"></textarea>')
 	reply.push("<BR>")
