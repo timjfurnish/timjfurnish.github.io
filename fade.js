@@ -1,4 +1,5 @@
 var g_fadeMe, g_trig, g_stillGoing, g_fadeInElementNames, g_fadeSpeed, g_tickTimerID, g_nextTimerID
+const g_regex = /&[^;]+;|[^a-z\.0-9]+/gi
 
 function FadeReset()
 {
@@ -98,4 +99,26 @@ function TickFade()
 	{
 		g_tickTimerID = setTimeout(TickFade, 20)
 	}
+}
+
+function SimplifyText(title)
+{
+	return title.replaceAll(g_regex, '')
+}
+
+function SetHash(title)
+{
+	location.hash = SimplifyText(title)
+}
+
+function FormatLine(lineIn, wrapper, moreStyle)
+{
+	const id = FadeGetNextName()
+	moreStyle = moreStyle ? "; " + moreStyle : ""
+	return "<" + wrapper + ' style="opacity:0' + moreStyle + '" id="' + id + '">' + lineIn + "</" + wrapper + ">"
+}
+
+function MakeButtonBar(cmd, text)
+{
+	return FormatLine('<br><b><small><A HREF="' + cmd + '" style="text-decoration:none; color: black; background-image: linear-gradient(white, rgba(75,125,75,0.4)); font-family: Arial, sans-serif; padding:4px 10px 4px 10px; border-radius: 15px; border:1px solid black">' + text + '</A></small></b>', 'p')
 }
