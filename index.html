@@ -16,7 +16,7 @@
 		h4 { letter-spacing: -0.066em; cursor:pointer; background: -webkit-linear-gradient(rgba(100, 100, 100, 0.5), rgba(110, 110, 110, 1)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; font-size: 20px; margin: 0px; margin-left:3%; text-align: left }
 		h5 { font-size: 10px; margin: 0px; padding: 0px }
 		.bigButton { font-size: 20px; background-image: linear-gradient(white, #FFFF88) }
-		a { color: black; font-size: 12px; font-weight: bold; text-decoration: none; padding: 8px 12px 8px 12px; background-image: linear-gradient(white, rgba(75,125,75,0.4)); border-radius: 15px; border: 1px solid #252}
+		a { cursor:pointer; color: black; font-size: 12px; font-weight: bold; text-decoration: none; padding: 8px 12px 8px 12px; background-image: linear-gradient(white, rgba(75,125,75,0.4)); border-radius: 15px; border: 1px solid #252}
 		.box { min-width:300px; width: 75%; color: #444; font-family: Arial, sans-serif; padding:20px; font-size: 20px; margin: 10px; background-image: linear-gradient(rgba(200,100,100,0.2), rgba(120,60,60,0.2)); border-radius: 2px; border: 2px solid #A55}
 		img { margin: 0px 3px 0px 3px }
 		.buttonBar { line-height:40px; margin:15px 0px 0px 0px }
@@ -29,18 +29,18 @@
 const g_hiddenSections = {}
 var g_creatingHiddenSection
 var g_openThings = []
+var g_pageOpen = undefined
 
 function AddSection(collection, section)
 {
-	if (g_creatingHiddenSection)
-	{
-		g_hiddenSections[g_creatingHiddenSection] += BuildText(section.join(''), "DIV CLASS=box")
-	}
-	else
-	{
-		collection.push(BuildText(section.join(''), 'td style="opacity:0" align=center id="' + FadeGetNextName() + '"|tr'))
-	}
+	collection.push(BuildText(section.join(''), 'td style="opacity:0" align=center id="' + FadeGetNextName() + '"|tr'))
 }
+
+function AddExpandSection(section)
+{
+	g_hiddenSections[g_creatingHiddenSection] += BuildText(section.join(''), "DIV CLASS=box")
+}
+
 function BeginExpand(collection, code, title)
 {
 	if (g_creatingHiddenSection)
@@ -52,38 +52,48 @@ function BeginExpand(collection, code, title)
 	g_hiddenSections[code] = ""
 	g_creatingHiddenSection = code
 }
+
 function EndExpand(collection)
 {
 	if (g_openThings.includes(g_creatingHiddenSection))
 	{
 		QueueFade(g_creatingHiddenSection)
-		collection.push(BuildText(g_hiddenSections[g_creatingHiddenSection], 'td td style="opacity:0" align=center id="' + g_creatingHiddenSection + '"|tr'))
+		collection.push(BuildText(g_hiddenSections[g_creatingHiddenSection], 'div align=center id="' + g_creatingHiddenSection + '"'))
 	}
 	else
 	{
-		collection.push(BuildText('', 'td align=center id="' + g_creatingHiddenSection + '"|tr'))
+		collection.push(BuildText('', 'div align=center id="' + g_creatingHiddenSection + '"'))
 	}
 	
 	g_creatingHiddenSection = undefined
 }
+
 function Expand(code)
 {
 	const elem = document.getElementById(code)
 	const index = g_openThings.indexOf(code)
-
-	if (index >= 0)
+	
+	if (elem)
 	{
-		elem.innerHTML = ""
-		g_openThings.splice(index, 1)
+		if (index >= 0)
+		{
+			elem.innerHTML = ""
+			g_openThings.splice(index, 1)
+		}
+		else
+		{
+			elem.innerHTML = g_hiddenSections[code]
+			g_openThings.push(code)
+		}
+		
+		window?.sessionStorage?.setItem?.("entertainmentmongerOpenSections", g_openThings.join('+'))
 	}
 	else
 	{
-		elem.innerHTML = g_hiddenSections[code]
-		g_openThings.push(code)
+		console.log("There's no element with ID '" + code + "'")
 	}
-	
-	window?.sessionStorage?.setItem?.("entertainmentmongerOpenSections", g_openThings.join('+'))
 }
+
 function AddButtons(big, section, ...buttons)
 {
 	section.push('<DIV class=buttonBar>')
@@ -111,11 +121,145 @@ function AddButtons(big, section, ...buttons)
 
 	section.push('</DIV>')
 }
-function SetUp()
+
+function ShowStuff(what)
 {
+	if (what == g_pageOpen)
+	{
+		what = undefined
+	}
+
+	const oldButton = document.getElementById(g_pageOpen)
+	const newButton = document.getElementById(what)
+
+	if (oldButton)
+	{
+		oldButton.style.opacity = 1
+	}
+	
+	if (newButton)
+	{
+		newButton.style.opacity = 0.25
+	}
+	
+	g_pageOpen = what
+
 	var collection = [], section
 	const gap = '<h5>&nbsp;</h5>'
 	const bigGap = '<h5>&nbsp;<BR>&nbsp;</h5>'
+
+	if (what == "fun")
+	{
+		BeginExpand(collection, 'CURRENT', '<SMALL>SECTION 0:&nbsp;</SMALL> CURRENT / RECENT / ONGOING')
+
+		section = []
+		section.push(BuildText("<big>THE FLYWHEEL</big><br>(<small>2020</small>)", "h3"))
+		section.push("An interactive story thing. It's like a text adventure in that you have to read words and then interact with the objects you find. It's also nothing like a text adventure because you do so without typing. No dead ends, just good old-fashioned puzzling and kleptomania.")
+		section.push(bigGap)
+		section.push('<IMG SRC="gfx/flywheel_rotate.png" CLASS="screeny" STYLE="max-width:850px" width=85%>')
+		AddButtons(true, section, 'flywheel/|PLAY')
+		AddExpandSection(section)
+		
+		section = []
+		section.push(BuildText("<big>ASSORTED POTTERY</big><br>(<small>2015-present</small>)", "h3"))
+		section.push("You know - songs without tunes.")
+		AddButtons(true, section, 'pottery/|READ')
+		AddExpandSection(section)
+			
+		BeginExpand(collection, 'OLD', '<SMALL>CLUSTER 1:&nbsp;</SMALL> DETRITUS / RELICS / MEMORIES')
+		
+		section = []
+		section.push(BuildText("<big>CAPTAIN FLOTMAN</big><br>(<small>2015-2018</small>)", "h3"))
+		section.push("Captain Flotman is the name under which I snuck my mash-ups onto the internet. If you've ever wanted to hear Coolio, Adele and the Beach Boys collaborate on a song you're (a) odd and (b) in a whole heap of luck.")
+		section.push(bigGap)
+		section.push('<IMG SRC="gfx/flotman-crazy.jpg" CLASS="flotman" width=30%>')
+		section.push('<IMG SRC="gfx/flotman-grapevine.jpg" CLASS="flotman" width=30%>')
+		section.push('<IMG SRC="gfx/flotman-love.jpg" CLASS="flotman" width=30%>')
+		section.push('<IMG SRC="gfx/flotman-sky.jpg" CLASS="flotman" width=30%>')
+		section.push('<IMG SRC="gfx/flotman-walk.jpg" CLASS="flotman" width=30%>')
+		AddButtons(false, section, 'https://hearthis.at/captain-flotman/|HEARTHIS', 'https://soundcloud.com/captain-flotman|SOUNDCLOUD')
+		AddExpandSection(section)
+
+		section = []
+		section.push(BuildText("<big>OUT OF ORDER</big><br>(<small>2003</small>)", "h3"))
+		section.push("An award-winning comedy science-fiction adventure game.")
+		section.push(gap)
+		section.push("Ever woken up in the middle of the night to find you've been kidnapped... and so's your bedroom? Ever had to fend for yourself in the face of strangely hypnotic music, alien doctors, talking computers a-plenty and half-finished bathrooms? Ever found something unpleasant in a burger?")
+		section.push(bigGap)
+		section.push('<IMG SRC="gfx/ooo_bedroom.png" CLASS="screeny" STYLE="max-width:640px" width=85%>')
+		AddButtons(true, section, 'https://web.archive.org/web/20110818231839fw_/http://outoforder.adventuredevelopers.com/files/OOO_full.exe|DOWNLOAD INSTALLER')
+		AddButtons(false, section, 'https://en.wikipedia.org/wiki/Out_of_Order_(video_game)|WIKIPEDIA', 'https://tvtropes.org/pmwiki/pmwiki.php/VideoGame/OutOfOrder2003|TV TROPES')
+		AddExpandSection(section)
+		
+		section = []
+		section.push(BuildText("<big>SLUDGE</big><br>(<small>2003-2008</small>)", "h3"))
+		section.push("An adventure game engine (it stands for Scripting Language for Unhindered Development of a Gaming Environment, as a nod to SCUMM). Used for Out Of Order and a whole bunch of other early-21st-century adventure-me-bobs.")
+		section.push(gap)
+		section.push("In 2008 the source code was released into the wild and the team that took it over added, among other changes, support for non-Windows platforms. In 2017 support for running SLUDGE games was added to ScummVM.")
+		AddButtons(false, section, 'https://opensludge.github.io/|GITHUB', 'https://wiki.scummvm.org/index.php/SLUDGE|SCUMMVM')
+		AddExpandSection(section)
+		
+		BeginExpand(collection, 'MISC', '<SMALL>SEGMENT 2:&nbsp;</SMALL> MISCELLANEOUS / REFERENCES / APPENDICES')
+
+		section = []
+		section.push(BuildText("<big>FURTHER READING</big>", "h3"))
+		section.push("Additional exits are available here and here.")
+		AddButtons(false, section, 'https://www.mobygames.com/person/138001/tim-furnish/credits/sort:date/|MOBYGAMES', 'https://www.instagram.com/timjfurnish/|INSTAGRAM', 'https://www.threads.net/@timjfurnish|THREADS')
+		AddExpandSection(section)
+		
+		EndExpand(collection)
+	}
+	else if (what == "work")
+	{
+		BeginExpand(collection, 'WORK_NOW', '<SMALL>COMPARTMENT A:&nbsp;</SMALL> ACTIVE / PRESENT / NOW')
+		
+		section = []
+		section.push(BuildText("<big>SUMO DIGITAL</big><br>(<small>2016-present</small>)", "h3"))
+		section.push("Associate tech director on <B>The Texas Chain Saw Massacre</B> (2023).")
+		section.push(gap)
+		section.push("Lead engineer on <B>Forza Horizon 4</B> and <B>Forza Horizon 5</B> (2021).")
+		section.push(gap)
+		section.push("Lead programmer on <B>Team Sonic Racing</B> (2019).")
+		AddButtons(false, section, 'https://www.sumo-digital.com/|SUMO DIGITAL', 'https://www.txchainsawgame.com/|THE TEXAS CHAIN SAW MASSACRE', 'https://forza.net/horizon|FORZA HORIZON', 'https://www.sonicthehedgehog.com/en-gb/teamsonicracing/|TEAM SONIC RACING')
+		AddExpandSection(section)
+		
+		BeginExpand(collection, 'WORK_PAST', '<SMALL>SUBSET B:&nbsp;</SMALL> PREVIOUS / HISTORICAL / CONCLUDED')		
+
+		section = []
+		section.push(BuildText("<big>DEEP SILVER DAMBUSTER STUDIOS</big><br>(<small>2014-2016</small>)", "h3"))
+		section.push("Senior programmer on <B>Homefront: The Revolution</B> (2016).")
+		AddButtons(false, section, 'https://www.dsdambuster.com/studio|DEEP SILVER DAMBUSTER STUDIOS')
+		AddExpandSection(section)
+		
+		section = []
+		section.push(BuildText("<big>CRYTEK UK</big><br>(<small>2009-2014</small>)", "h3"))
+		section.push("Senior programmer on <B>Crysis</B> and <B>Crysis 2</B> (2011).")
+		AddButtons(false, section, 'https://www.crytek.com/|CRYTEK')
+		AddExpandSection(section)
+		
+		section = []
+		section.push(BuildText("<big>FREE RADICAL DESIGN</big><br>(<small>2002-2009</small>)", "h3"))
+		section.push("Senior programmer on <B>Haze</B> (2008).")
+		section.push(gap)
+		section.push("Programmer on <B>TimeSplitters: Future Perfect</B> (2005).")
+		section.push(gap)
+		section.push("Designer and programmer on <B>Second Sight</B> (2004).")
+		AddButtons(false, section, 'https://en.wikipedia.org/wiki/Free_Radical_Design|WIKIPEDIA')
+		AddExpandSection(section)
+				
+		EndExpand(collection)
+	}
+	else
+	{
+		collection.push("<HR>")
+	}
+	
+	document.getElementById('flip').innerHTML = collection.join('')
+}
+
+function SetUp()
+{
+	var collection = [], section
 	
 	const openThingsString = window?.sessionStorage?.getItem?.("entertainmentmongerOpenSections")
 	
@@ -140,99 +284,14 @@ function SetUp()
 	section.push("</BIG></I>")
 	AddSection(collection, section)
 	
-	BeginExpand(collection, 'CURRENT', 'SECTION 0:&nbsp; CURRENT / RECENT / ONGOING')
-
 	section = []
-	section.push(BuildText("<big>THE FLYWHEEL</big><br>(<small>2020</small>)", "h3"))
-	section.push("An interactive story thing. It's like a text adventure in that you have to read words and then interact with the objects you find. It's also nothing like a text adventure because you do so without typing. No dead ends, just good old-fashioned puzzling and kleptomania.")
-	section.push(bigGap)
-	section.push('<IMG SRC="gfx/flywheel_rotate.png" CLASS="screeny" STYLE="max-width:850px" width=85%>')
-    AddButtons(true, section, 'flywheel/|PLAY')
-	AddSection(collection, section)
-	
-	section = []
-	section.push(BuildText("<big>ASSORTED POTTERY</big><br>(<small>2015-present</small>)", "h3"))
-	section.push("You know - songs without tunes.")
-    AddButtons(true, section, 'pottery/|READ')
-	AddSection(collection, section)
-	
-	BeginExpand(collection, 'WORK', 'COMPARTMENT 1:&nbsp; CAREER-DRIVEN / PROFESSIONALISM / CORPORATE')
-	
-	section = []
-	section.push(BuildText("<big>SUMO DIGITAL</big><br>(<small>2016-present</small>)", "h3"))
-	section.push("Associate tech director on <B>The Texas Chain Saw Massacre</B> (2023).")
-    section.push(gap)
-	section.push("Lead engineer on <B>Forza Horizon 4</B> and <B>Forza Horizon 5</B> (2021).")
-    section.push(gap)
-	section.push("Lead programmer on <B>Team Sonic Racing</B> (2019).")
-	AddButtons(false, section, 'https://www.sumo-digital.com/|SUMO DIGITAL', 'https://www.txchainsawgame.com/|THE TEXAS CHAIN SAW MASSACRE', 'https://forza.net/horizon|FORZA HORIZON', 'https://www.sonicthehedgehog.com/en-gb/teamsonicracing/|TEAM SONIC RACING')
-	AddSection(collection, section)
-	
-	section = []
-	section.push(BuildText("<big>DEEP SILVER DAMBUSTER STUDIOS</big><br>(<small>2014-2016</small>)", "h3"))
-	section.push("Senior programmer on <B>Homefront: The Revolution</B> (2016).")
-    AddButtons(false, section, 'https://www.dsdambuster.com/studio|DEEP SILVER DAMBUSTER STUDIOS')
-	AddSection(collection, section)
-	
-	section = []
-	section.push(BuildText("<big>CRYTEK UK</big><br>(<small>2009-2014</small>)", "h3"))
-	section.push("Senior programmer on <B>Crysis</B> and <B>Crysis 2</B> (2011).")
-    AddButtons(false, section, 'https://www.crytek.com/|CRYTEK')
-	AddSection(collection, section)
-	
-	section = []
-	section.push(BuildText("<big>FREE RADICAL DESIGN</big><br>(<small>2002-2009</small>)", "h3"))
-	section.push("Senior programmer on <B>Haze</B> (2008).")
-    section.push(gap)
-	section.push("Programmer on <B>TimeSplitters: Future Perfect</B> (2005).")
-    section.push(gap)
-	section.push("Designer and programmer on <B>Second Sight</B> (2004).")
-    AddButtons(false, section, 'https://en.wikipedia.org/wiki/Free_Radical_Design|WIKIPEDIA')
-	AddSection(collection, section)
-	
-	BeginExpand(collection, 'OLD', 'CLUSTER 2:&nbsp; DETRITUS / RELICS / MEMORIES')
-	
-	section = []
-	section.push(BuildText("<big>CAPTAIN FLOTMAN</big><br>(<small>2015-2018</small>)", "h3"))
-	section.push("Captain Flotman is the name under which I snuck my mash-ups onto the internet. If you've ever wanted to hear Coolio, Adele and the Beach Boys collaborate on a song you're (a) odd and (b) in a whole heap of luck.")
-	section.push(bigGap)
-	section.push('<IMG SRC="gfx/flotman-crazy.jpg" CLASS="flotman" width=30%>')
-	section.push('<IMG SRC="gfx/flotman-grapevine.jpg" CLASS="flotman" width=30%>')
-	section.push('<IMG SRC="gfx/flotman-love.jpg" CLASS="flotman" width=30%>')
-	section.push('<IMG SRC="gfx/flotman-sky.jpg" CLASS="flotman" width=30%>')
-	section.push('<IMG SRC="gfx/flotman-walk.jpg" CLASS="flotman" width=30%>')
-    AddButtons(false, section, 'https://hearthis.at/captain-flotman/|HEARTHIS', 'https://soundcloud.com/captain-flotman|SOUNDCLOUD')
+	section.push('<DIV class=buttonBar STYLE="margin-top:0px">')
+	section.push('<A ONCLICK="ShowStuff(\'fun\')" ID=fun class=bigButton><NOBR>PERSONAL / ENTERTAINMENT / FUNTIMES</NOBR></A>\n')
+	section.push('<A ONCLICK="ShowStuff(\'work\')" ID=work class=bigButton><NOBR>CAREER-DRIVEN / PROFESSIONALISM / CORPORATE</NOBR></A>')
+	section.push('</DIV>')
 	AddSection(collection, section)
 
-	section = []
-	section.push(BuildText("<big>OUT OF ORDER</big><br>(<small>2003</small>)", "h3"))
-	section.push("An award-winning comedy science-fiction adventure game.")
-    section.push(gap)
-	section.push("Ever woken up in the middle of the night to find you've been kidnapped... and so's your bedroom? Ever had to fend for yourself in the face of strangely hypnotic music, alien doctors, talking computers a-plenty and half-finished bathrooms? Ever found something unpleasant in a burger?")
-	section.push(bigGap)
-	section.push('<IMG SRC="gfx/ooo_bedroom.png" CLASS="screeny" STYLE="max-width:640px" width=85%>')
-    AddButtons(true, section, 'https://web.archive.org/web/20110818231839fw_/http://outoforder.adventuredevelopers.com/files/OOO_full.exe|DOWNLOAD INSTALLER')
-    AddButtons(false, section, 'https://en.wikipedia.org/wiki/Out_of_Order_(video_game)|WIKIPEDIA', 'https://tvtropes.org/pmwiki/pmwiki.php/VideoGame/OutOfOrder2003|TV TROPES')
-	AddSection(collection, section)
-	
-	section = []
-	section.push(BuildText("<big>SLUDGE</big><br>(<small>2003-2008</small>)", "h3"))
-	section.push("An adventure game engine (it stands for Scripting Language for Unhindered Development of a Gaming Environment, as a nod to SCUMM). Used for Out Of Order and a whole bunch of other early-21st-century adventure-me-bobs.")
-    section.push(gap)
-	section.push("In 2008 the source code was released into the wild and the team that took it over added, among other changes, support for non-Windows platforms. In 2017 support for running SLUDGE games was added to ScummVM.")
-    AddButtons(false, section, 'https://opensludge.github.io/|GITHUB', 'https://wiki.scummvm.org/index.php/SLUDGE|SCUMMVM')
-	AddSection(collection, section)
-	
-	BeginExpand(collection, 'MISC', 'SEGMENT 3:&nbsp; MISCELLANEOUS / REFERENCES / APPENDICES')
-
-	section = []
-	section.push(BuildText("<big>FURTHER READING</big>", "h3"))
-	section.push("Additional exits are available here and here.")
-    AddButtons(false, section, 'https://www.mobygames.com/person/138001/tim-furnish/credits/sort:date/|MOBYGAMES', 'https://www.instagram.com/timjfurnish/|INSTAGRAM', 'https://www.threads.net/@timjfurnish|THREADS')
-	AddSection(collection, section)
-	
-	EndExpand(collection)
-	
+	AddSection(collection, ["<DIV ID=flip><HR></DIV>"])
 	AddSection(collection, [BuildText("&copy; Tim Furnish " + (new Date().getUTCFullYear()), "small|p")])
 	
 	document.getElementById('toHere')

@@ -118,7 +118,8 @@ function FormatLine(lineIn, wrapper, moreStyle)
 	return "<" + wrapper + ' style="opacity:0' + moreStyle + '" id="' + id + '">' + lineIn + "</" + wrapper + ">"
 }
 
-function MakeButtonBar(cmd, text)
+function MakeButtonBar(cmd, text, close)
 {
-	return FormatLine('<br><b><small><A HREF="' + cmd + '" style="text-decoration:none; color: black; background-image: linear-gradient(white, rgba(75,125,75,0.4)); font-family: Arial, sans-serif; padding:4px 10px 4px 10px; border-radius: 15px; border:1px solid black">' + text + '</A></small></b>', 'p')
+	const start = close ? "" : "<BR>"
+	return FormatLine(start + '<b><small><A HREF="' + cmd + '" style="text-decoration:none; color: black; background-image: linear-gradient(white, rgba(75,125,75,0.4)); font-family: Arial, sans-serif; padding:4px 10px 4px 10px; border-radius: 15px; border:1px solid black">' + text + '</A></small></b>', 'p')
 }

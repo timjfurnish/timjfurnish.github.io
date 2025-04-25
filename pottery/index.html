@@ -51,17 +51,17 @@ function DrawPage()
 			g_seen[t] = true
 			const bodyBits = []
 			
-			var theText = g_all[key]
+			var theText = g_all[key]			var titleText = t.replace(/\|/g, '<BR>')						if (titleText != t)			{				titleText = "<NOBR>" + titleText + "</NOBR>"			}
 			
 			if (theText.centre)
 			{
-				title.innerHTML = "<CENTER>" + t.replace(/\|/g, '<BR>') + "</CENTER>"
+				title.innerHTML = "<CENTER>" + titleText + "</CENTER>"
 				bodyBits.push("<CENTER>")
 				theText = theText.text
 			}
 			else
 			{
-				title.innerHTML = t.replace(/\|/g, '<BR>')
+				title.innerHTML = titleText
 			}
 			
 			for (var line of theText.split('|'))
@@ -76,7 +76,7 @@ function DrawPage()
 				}
 			}
 			
-			content.innerHTML = bodyBits.join('') + FormatLine('<I>Tim Furnish</I>', 'P') + MakeButtonBar("javascript:SetHash(&quot;Menu&quot;)", "MENU")
+			content.innerHTML = "<NOBR>" + bodyBits.join('') + "</NOBR>" + FormatLine('<I>Tim Furnish</I>', 'P') + MakeButtonBar("javascript:SetHash(&quot;Menu&quot;)", "MENU")
 			StartFading(30, 0)
 			return
 		}
@@ -89,7 +89,7 @@ function DrawPage()
 		const [t, emo] = key.split('=', 2)
 		const extra = g_seen[t] ? '; opacity: 0.5' : ''
 		const after = emo ? ' <SMALL>' + g_tags[emo] + '</SMALL>' : ''
-		collect.push(FormatLine('<A STYLE="text-shadow: 1px 1px 1px #00000040; text-decoration: none' + extra + '" HREF="javascript:SetHash(&quot;' + SimplifyText(t) + '&quot;)">' + t.replace(/\|/g, ' ') + after + '</A>', 'DIV'))
+		collect.push(FormatLine('<A STYLE="font-weight:800; text-shadow: 1px 1px 1px #00000040; text-decoration: none' + extra + '" HREF="javascript:SetHash(&quot;' + SimplifyText(t) + '&quot;)">' + t.replace(/\|/g, ' ') + after + '</A>', 'DIV', "padding-bottom:8px"))
 	}
 	
 	title.innerHTML = "Assorted Pottery"
@@ -115,10 +115,8 @@ window.onhashchange = function()
 						<table border=0 cellpadding=20 cellspacing=0>
 							<tr>
 								<td align=left id=cell>
-									<nobr>
-										<h1 style="margin-top:0px" id='title'></h1>
-										<big id='content'></big>
-									</nobr>
+									<h1 style="margin-top:0px" id='title'></h1>
+									<big id='content'></big>
 								</td>
 							</tr>
 						</table>
