@@ -140,7 +140,23 @@ function SetUp()
 	section.push("</BIG></I>")
 	AddSection(collection, section)
 	
-	BeginExpand(collection, 'WORK', 'COMPARTMENT 0:&nbsp; CAREER-DRIVEN / PROFESSIONALISM / CORPORATE')
+	BeginExpand(collection, 'CURRENT', 'SECTION 0:&nbsp; CURRENT / RECENT / ONGOING')
+
+	section = []
+	section.push(BuildText("<big>THE FLYWHEEL</big><br>(<small>2020</small>)", "h3"))
+	section.push("An interactive story thing. It's like a text adventure in that you have to read words and then interact with the objects you find. It's also nothing like a text adventure because you do so without typing. No dead ends, just good old-fashioned puzzling and kleptomania.")
+	section.push(bigGap)
+	section.push('<IMG SRC="gfx/flywheel_rotate.png" CLASS="screeny" STYLE="max-width:850px" width=85%>')
+    AddButtons(true, section, 'flywheel/|PLAY')
+	AddSection(collection, section)
+	
+	section = []
+	section.push(BuildText("<big>ASSORTED POTTERY</big><br>(<small>2015-present</small>)", "h3"))
+	section.push("You know - songs without tunes.")
+    AddButtons(true, section, 'pottery/|READ')
+	AddSection(collection, section)
+	
+	BeginExpand(collection, 'WORK', 'COMPARTMENT 1:&nbsp; CAREER-DRIVEN / PROFESSIONALISM / CORPORATE')
 	
 	section = []
 	section.push(BuildText("<big>SUMO DIGITAL</big><br>(<small>2016-present</small>)", "h3"))
@@ -172,22 +188,6 @@ function SetUp()
     section.push(gap)
 	section.push("Designer and programmer on <B>Second Sight</B> (2004).")
     AddButtons(false, section, 'https://en.wikipedia.org/wiki/Free_Radical_Design|WIKIPEDIA')
-	AddSection(collection, section)
-	
-	BeginExpand(collection, 'CURRENT', 'SECTION 1:&nbsp; CURRENT / RECENT / ONGOING')
-
-	section = []
-	section.push(BuildText("<big>THE FLYWHEEL</big><br>(<small>2020</small>)", "h3"))
-	section.push("An interactive story thing. It's like a text adventure in that you have to read words and then interact with the objects you find. It's also nothing like a text adventure because you do so without typing. No dead ends, just good old-fashioned puzzling and kleptomania.")
-	section.push(bigGap)
-	section.push('<IMG SRC="gfx/flywheel_rotate.png" CLASS="screeny" STYLE="max-width:850px" width=85%>')
-    AddButtons(true, section, 'flywheel/|PLAY')
-	AddSection(collection, section)
-	
-	section = []
-	section.push(BuildText("<big>ASSORTED POTTERY</big><br>(<small>2015-present</small>)", "h3"))
-	section.push("You know - songs without tunes.")
-    AddButtons(true, section, 'pottery/|READ')
 	AddSection(collection, section)
 	
 	BeginExpand(collection, 'OLD', 'CLUSTER 2:&nbsp; DETRITUS / RELICS / MEMORIES')
