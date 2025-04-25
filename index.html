@@ -16,7 +16,7 @@
 		h4 { letter-spacing: -0.066em; cursor:pointer; background: -webkit-linear-gradient(rgba(100, 100, 100, 0.5), rgba(110, 110, 110, 1)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; font-size: 20px; margin: 0px; margin-left:3%; text-align: left }
 		h5 { font-size: 10px; margin: 0px; padding: 0px }
 		.bigButton { font-size: 20px; background-image: linear-gradient(white, #FFFF88) }
-		a { cursor:pointer; color: black; font-size: 12px; font-weight: bold; text-decoration: none; padding: 8px 12px 8px 12px; background-image: linear-gradient(white, rgba(75,125,75,0.4)); border-radius: 15px; border: 1px solid #252}
+		a { font-family: Arial, sans-serif; cursor:pointer; color: black; font-size: 12px; font-weight: bold; text-decoration: none; padding: 8px 12px 8px 12px; background-image: linear-gradient(white, rgba(75,125,75,0.4)); border-radius: 15px; border: 1px solid #252}
 		.box { min-width:300px; width: 75%; color: #444; font-family: Arial, sans-serif; padding:20px; font-size: 20px; margin: 10px; background-image: linear-gradient(rgba(200,100,100,0.2), rgba(120,60,60,0.2)); border-radius: 2px; border: 2px solid #A55}
 		img { margin: 0px 3px 0px 3px }
 		.buttonBar { line-height:40px; margin:15px 0px 0px 0px }
@@ -286,8 +286,8 @@ function SetUp()
 	
 	section = []
 	section.push('<DIV class=buttonBar STYLE="margin-top:0px">')
-	section.push('<A ONCLICK="ShowStuff(\'fun\')" ID=fun class=bigButton><NOBR>PERSONAL / ENTERTAINMENT / FUNTIMES</NOBR></A>\n')
-	section.push('<A ONCLICK="ShowStuff(\'work\')" ID=work class=bigButton><NOBR>CAREER-DRIVEN / PROFESSIONALISM / CORPORATE</NOBR></A>')
+	section.push('<A ONCLICK="ShowStuff(\'fun\')" ID=fun><NOBR>PERSONAL / ENTERTAINMENT / FUNTIMES</NOBR></A>\n')
+	section.push('<A ONCLICK="ShowStuff(\'work\')" ID=work><NOBR>CAREER-DRIVEN / PROFESSIONALISM / CORPORATE</NOBR></A>')
 	section.push('</DIV>')
 	AddSection(collection, section)
 
