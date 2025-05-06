@@ -60,6 +60,7 @@ const kIllegalSubstrings =
 [
 	["numbers", /#?[A-Z\/\-\.]*[0-9]+[A-Z\/\-0-9]*%?/gi, ShouldIgnoreNumberFoundInText],
 	["misused hyphen", /( \-)|(\- )/g],
+//	["repeated character", /(.)\1{2,}/g],
 	["irregular dash spacing", /( —[^ ])|([^ ]— )/g],
 	["misused opening quote", /[^“\( ][‘“]/g],
 	["double space", "  "],

@@ -91,7 +91,7 @@ function TableShowTally(tally, options)
 	var total = 0
 	var totalIgnored = 0
 
-	const {colours, colourEntireLine, showTotal, keyHeading, valueHeading, custom, customHeading, addSearchIcon, matchMode, showMoreFunc} = options ?? {}
+	const {colours, colourEntireLine, showTotal, keyHeading, valueHeading, custom, customHeading, addSearchIcon, matchMode, showMoreFunc, formatFunc} = options ?? {}
 	const keysInOrder = Object.keys(tally).sort((p1, p2) => (tally[p2] - tally[p1]))
 	const {length} = keysInOrder
 	const addColourColumn = colours && !colourEntireLine
@@ -128,7 +128,7 @@ function TableShowTally(tally, options)
 				TableAddCell(reply, key)
 			}
 
-			reply.push('<td align=right class=cell>' + value + '</td>')
+			reply.push('<td align=right class=cell>' + (formatFunc ? formatFunc(value) : value) + '</td>')
 
 			if (addColourColumn)
 			{

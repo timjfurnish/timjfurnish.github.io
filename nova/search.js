@@ -49,7 +49,7 @@ function RedrawSearchResults()
 			customTextBox.readOnly = false
 		}
 
-		const {onlyShow, colourUsing, matchMode} = g_currentOptions.search
+		const {onlyShow, colourUsing, matchMode, speechNarrativeBoth} = g_currentOptions.search
 		
 		Assert(matchMode in kMatchModes, "Bad match mode '" + matchMode + "'")
 
@@ -68,23 +68,26 @@ function RedrawSearchResults()
 			var anchorCount = 0
 
 			const matchThis = new RegExp(before + "(?:" + TurnNovaShorthandIntoRegex(entityNames) + ")" + after, flags)
+			const bFindInSpeech = speechNarrativeBoth != "narrative"
+			const bFindInNarrative = speechNarrativeBoth != "speech"
+			
+			NovaLog("Searching for " + matchThis + " (" + speechNarrativeBoth + ": speech=" + bFindInSpeech + ", narrative=" + bFindInNarrative + ")")
 
 			for (var metadata of g_metaDataInOrder)
 			{
-				const info = metadata.info
-
-				if (((onlyShow == "ALL") || ((onlyShow == "MENTIONS") ? metadata.Mentions[showThis] : (info[onlyShow] == showThis))))
+				if (((onlyShow == "ALL") || ((onlyShow == "MENTIONS") ? metadata.Mentions[showThis] : (metadata.info[onlyShow] == showThis))))
 				{
+					const {info, Paragraphs, myParagraphs} = metadata
 					const useColour = info[colourUsing]
 
-					GraphAddBackgroundBlock(g_searchDataForGraph, metadata.Paragraphs, useColour)
+					GraphAddBackgroundBlock(g_searchDataForGraph, Paragraphs, useColour)
 
 					var addAfterSkippedLines = "<H3 recolourHeading=\"" + useColour + "\">" + MetaDataMakeFragmentDescription(metadata) + "</H3>"
 					var keepShowingCountdown = 0
 					var showThisToo = null
 					var skippedLines = true
 
-					for (var {ignoreFragments, fragments, issues} of metadata.myParagraphs)
+					for (var {ignoreFragments, fragments, issues} of myParagraphs)
 					{
 						if (! ignoreFragments)
 						{
@@ -97,7 +100,7 @@ function RedrawSearchResults()
 							}
 
 							var grabForPara = {}
-							var s2 = FormatParagraphForDisplay(fragments, fragment => fragment.text.replace(matchThis, GotAMatch) + fragment.followedBy)
+							var s2 = FormatParagraphForDisplay(fragments, fragment => ((fragment.isSpeech ? bFindInSpeech : bFindInNarrative) ? fragment.text.replace(matchThis, GotAMatch) : fragment.text) + fragment.followedBy)
 
 							const plain = FormatParagraphForDisplay(fragments, fragment => fragment.text + fragment.followedBy)
 							const foundTextHere = (plain != s2)
@@ -243,6 +246,14 @@ function SettingsGetMentionList(firstElementText, useNameAsKey)
 TabDefine("search", function(reply, thenCall)
 {
 	var options = CreateOnlyShowSelectBox(reply, "RedrawSearchResults()", "Search within", "ALL")
+
+	const speechNarrativeBoth =
+	{
+		speech:"Speech",
+		narrative:"Narrative",
+		both:"All text"
+	}
+
 	const nameData = SettingsGetMentionList("Custom")
 
 	nameData["twent*|thirt*|forty|fortie*|fift*|eight*|one|ones|two*|three*|four*|five*|six*|seven*|nine*|ten|tens|tenth*|third*|fourth*|ninth*|eleven*|twelfth*|twelve*|hundred*|thousand*|billion*|million*|trillion*"] = "Numbers (words)"
@@ -255,6 +266,8 @@ TabDefine("search", function(reply, thenCall)
 	nameData["in spite|in the process|in the event|with regard*|with the exception|with the * exception|about as|as to|for the purpose"] = "&quot;In/with/as/for&quot;"
 	nameData["stood up|stand* up|sat down|sit* down|lay* down|lie* down|lying down|jump* up|rais* up|ris* up|though about|think* about|lift* up|gather* up|pass* by|collect* up|print* out|knelt down|kneel* down|start* out"] = "&quot;Sat down&quot;"
 
+	OptionsMakeSelect(options, "RedrawSearchResults()", "Check", "speechNarrativeBoth", speechNarrativeBoth, "both", true)
+	options.push("|")
 	OptionsMakeSelect(options, "RedrawSearchResults()", "Search for", "entity", nameData, "")
 	OptionsMakeTextBox(options, "RedrawSearchResults()", "", "custom")
 	options.push("|")
@@ -486,7 +499,7 @@ function CreateOnlyShowSelectBox(reply, callThis, prefix, theDefault)
 	Object.keys(g_metaDataAvailableColumns).forEach(eachCol => columns[eachCol] = CapitaliseFirstLetter(eachCol.toLowerCase()))
 
 	columns["MENTIONS"] = "Sections that mention"
-	columns["ALL"] = "All text"
+	columns["ALL"] = "Whole book"
 
 	OptionsMakeSelect(options, "ShowContentForSelectedTab()", prefix, "onlyShow", columns, theDefault, true)
 
@@ -512,13 +525,13 @@ function CreateOnlyShowSelectBox(reply, callThis, prefix, theDefault)
 		OptionsMakeSelect(options, callThis, "", "showThis_" + onlyShow, nameData, undefined, true)
 	}
 
-	options.push("|")
 	return options
 }
 
 TabDefine("voice", function(reply, thenCall)
 {
 	var options = CreateOnlyShowSelectBox(reply, "RedrawThread()", "Show")
+	options.push("|")
 	OptionsMakeCheckbox(options, "RedrawThread()", "headings", "Show headings", true)
 
 	if (g_hasSummaries)
@@ -555,6 +568,7 @@ function SwitchToMentionsAndSearchEntity(txt)
 			NovaLog("Searching for entity '" + searchFor + "' (matchMode=" + matchMode + ")")
 			
 			OptionsMakeKey("search", "matchMode", "Phrase contains", true)
+			OptionsMakeKey("search", "speechNarrativeBoth", "both", true)
 			OptionsMakeKey("search", "onlyShow", "ALL", true)
 			OptionsMakeKey("search", "entity", searchFor, true)
 			OptionsMakeKey("search", "custom", searchFor, true)
@@ -576,6 +590,7 @@ function SwitchToMentionsAndSearch(txt, matchMode)
 	NovaLog("Searching for custom text '" + txt + "' (matchMode=" + matchMode + ")")
 
 	OptionsMakeKey("search", "matchMode", matchMode ?? "Phrase contains", true)
+	OptionsMakeKey("search", "speechNarrativeBoth", "both", true)
 	OptionsMakeKey("search", "onlyShow", "ALL", true)
 	OptionsMakeKey("search", "entity", "", true)
 	OptionsMakeKey("search", "custom", txt, true)
