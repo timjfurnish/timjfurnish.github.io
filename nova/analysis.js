@@ -409,6 +409,7 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 	var isTreatingAsSpeech = false
 
 	const storeAsFragments = []
+	const speechBitsOnly = []
 
 	for (const eachIn of talkyNonTalky)
 	{
@@ -510,26 +511,6 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 		if (numSentences)
 		{
 			Tally (g_profileAnalysis, "Chunk (" + (isSpeech ? "speech" : "narrative") + (bScriptMode ? ", script)" : ")"))
-			if (g_stillLookingForTagText)
-			{
-				Tally (g_profileAnalysis, "Look for tag text")
-				const putBackTogether = sentences.join(' ').toLowerCase()
-				const entries = Object.entries(g_stillLookingForTagText)
-				for (var [lookForKey, lookForVal] of entries)
-				{
-					if (putBackTogether.includes(lookForVal))
-					{
-						if (entries.length > 1)
-						{
-							delete g_stillLookingForTagText[lookForKey]
-						}
-						else
-						{
-							g_stillLookingForTagText = null
-						}
-					}
-				}
-			}
 
 			for (var s of sentences)
 			{
@@ -599,6 +580,11 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 					}
 					else if (word)
 					{
+						if (isSpeech)
+						{
+							speechBitsOnly.push(word)
+						}
+
 						if (myListOfJoiners.length)
 						{
 							CheckAgainstTallySet(g_processInputWorkspace.validWordJoiners, join, () => "Unexpected punctuation [" + FixStringHTML(join) + "] found in " + FixStringHTML(s))
@@ -681,6 +667,34 @@ function AnalyseParagraph(txtInRaw, txtInProcessed, oldNumIssues)
 	if (remains != '')
 	{
 		IssueAdd("Characters " + FixStringHTML(remains) + " found in " + FixStringHTML(txtInRaw), "ILLEGAL CHARACTERS", remains)
+	}
+	
+	//==========================================
+	// CHECK FOR CHAPTER NAMES ETC. IN TEXT
+	//==========================================
+
+	// TODO: Don't use 'talkyNonTalky' here, build up list of speech words and narrative words
+	if (g_stillLookingForTagText)
+	{
+		Tally (g_profileAnalysis, "Look for tag text")
+		const checkHereAll = talkyNonTalky.join(' ').toLowerCase()
+		const checkHereSpeech = speechBitsOnly.join(' ').toLowerCase()
+		const entries = Object.entries(g_stillLookingForTagText)
+		var numLeft = entries.length
+
+		for (var [lookForKey, lookForVal] of entries)
+		{
+			if (checkHereAll.includes(lookForVal) || checkHereSpeech.includes(lookForVal))
+			{
+				-- numLeft
+				delete g_stillLookingForTagText[lookForKey]
+			}
+		}
+
+		if (numLeft <= 0)
+		{
+			g_stillLookingForTagText = null
+		}
 	}
 
 	//========================

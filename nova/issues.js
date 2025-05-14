@@ -181,6 +181,7 @@ function DisableIssueCheck(theType)
 	g_currentOptions.settings[theType] = false
 	ProcessInput()
 }
+
 OnEvent("processingDone", false, () =>
 {
 	if (! g_disabledWarnings["UNSEEN NAMES"])
@@ -194,7 +195,9 @@ OnEvent("processingDone", false, () =>
 		}
 	}
 })
+
 OnEvent("processingDone", true, () => SetTabTitle('issues', g_issueCount || undefined))
+
 SetMarkupFunction('@', strIn =>
 {
 	var [key, val] = strIn.split(':', 2)
