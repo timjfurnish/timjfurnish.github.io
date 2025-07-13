@@ -194,7 +194,9 @@ function MakeColourLookUpTable(arr, forceMult, offset, scale)
 	var reply = {}
 	var count = 0
 	var total = arr.length
-
+	
+	forceMult = forceMult ?? 0.3
+	
 	offset = offset ?? 0
 
 	if (scale === undefined)
@@ -206,12 +208,28 @@ function MakeColourLookUpTable(arr, forceMult, offset, scale)
 	{
 		var colourWheelAngle = Math.PI * 2 * count / total + offset
 		++ count
-		var mult = (forceMult ?? ((count & 1) ? (count & 2) ? 0.05 : 0.08 : 0.15))
-		var add = (1 - mult)
-		reply[each] = rgbToHex(
-			scale * Math.sqrt(add + Math.sin(colourWheelAngle) * mult),
-			scale *          (add + Math.sin(colourWheelAngle * 3 + 2) * mult),
-			scale * Math.sqrt(add + Math.sin(colourWheelAngle * 2) * mult))
+
+		const mult = (count & 1) ? forceMult : (forceMult * Math.sqrt(forceMult))
+		const add = (1 - mult)
+
+		var colR = add + Math.sin(colourWheelAngle - 2) * mult
+		var colG = add + Math.sin(colourWheelAngle) * mult
+		var colB = add + Math.sin(colourWheelAngle + 2) * mult
+
+		if (count & 1)
+		{
+			colR = Math.sqrt(colR)
+			colG = Math.sqrt(colG)
+			colB = Math.sqrt(colB)
+		}
+		else
+		{
+			colR *= colR
+			colG *= colG
+			colB *= colB
+		}
+		
+		reply[each] = rgbToHex(scale * colR, scale * colG, scale * colB)
 	}
 
 	return reply
