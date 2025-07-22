@@ -64,6 +64,8 @@ function FadeStartNext()
 
 		g_trig[name] = {style:elem.style, op:0}
 		
+		elem.style.position = "relative"
+		
 		// Speed up if this element is off the top of the screen...
 		const time = (-rect.y >= rect.height) ? 2 : g_fadeSpeed
 		g_nextTimerID = setTimeout(FadeStartNext, time)
@@ -82,15 +84,20 @@ function TickFade()
 
 	for (var [k,v] of Object.entries(g_trig))
 	{
-		v.op += 0.015
-		if (v.op >= 1)
+		v.op += 0.03
+		const {op, style} = v
+
+		if (op >= 1)
 		{
-			v.style.opacity = 1
+			style.opacity = 1
+			style.top = "0px"
 			delete g_trig[k]
 		}
 		else
 		{
-			v.style.opacity = v.op
+			const inv = 1 - op
+			style.opacity = op
+			style.top = (inv * inv * 50) + "px"
 			didSomething = true
 		}
 	}
