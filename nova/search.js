@@ -426,7 +426,6 @@ function RedrawThread(goToTop)
 				if (addNext)
 				{
 					const escapedText = txt.replaceAll("'", "\\'")
-	//				console.log("Escaped: " + escapedText)
 					output.push('<P ALIGN=right STYLE="padding-right:20px"><BUTTON ID=nextChunk ONCLICK="' + AddEscapeChars('window.scrollTo(0,0); document.getElementById(\'voice.showThis_' + onlyShow + '\').value = \'' + escapedText + '\'; UpdateOptions(); RedrawThread(true)') + '">Next: ' + txt + '</BUTTON></p>')
 					break
 				}

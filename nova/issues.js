@@ -124,8 +124,13 @@ OnEvent("clear", false, ClearEarlyIssues)
 
 function AutoFix(theType, param)
 {
-	NovaLog("Auto-fixing " + theType + " issue, param=" + param + " by calling " + (g_autoFixIssues[theType]?.func?.name ?? "???"))
-	g_autoFixIssues[theType]?.func?.(param)
+	const func = g_autoFixIssues[theType]?.func
+
+	if (func)
+	{
+		NovaLog("Auto-fixing " + theType + " issue, param=" + param + " by calling " + DescribeFunction(func))
+		func(param)
+	}
 }
 
 function IssueAdd(addThis, theType, fixMeParam, overrideIssueHeading)
@@ -153,7 +158,7 @@ function IssueAdd(addThis, theType, fixMeParam, overrideIssueHeading)
 			const autoFix = g_autoFixIssues[theType]
 			if (autoFix)
 			{
-				addThis += ' ' + MakeFixMeButton(autoFix.msg, 'AutoFix(\'' + theType + '\', \'' + AddEscapeChars(fixMeParam.replace("'", "\\'")) + '\')')
+				addThis += ' ' + MakeFixMeButton(autoFix.msg, 'AutoFix(\'' + theType + '\', \'' + AddEscapeChars(fixMeParam.replace("'", "\\'"), true) + '\')')
 			}
 		}
 	}

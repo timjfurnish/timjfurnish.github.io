@@ -430,7 +430,7 @@ const kTweakableDefaults =
 	speakRate:1,
 	voiceDefault:"",
 	voiceSpeech:"",
-	badWords:"tg* vice-versa midair half-way part-way partway cliche* *cafes *cafe accomodation naive dance-floor dancefloor stage-show eon* *defense*",
+	badWords:"tg* vice-versa midair half-way part-way partway re-* cliche* *cafes *cafe accomodation naive dance-floor dancefloor stage-show eon* *defense*",
 	allowedStartCharacters:'ABCDEFGHIJKLMNOPQRSTUVWXYZ(“',
 	allowedCharacters:kCharacterElipsis + kCharacterEmDash + 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789%[]# ()‘’“”?;:-/.,!',
 	startOfSpeech:kCharacterElipsis + "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxy’…",
@@ -439,9 +439,9 @@ const kTweakableDefaults =
 	endOfParagraphNarrative:kCharacterElipsis + ".!?:",
 	skip:["Contents"],
 	wordsContainingFullStops:['etc.', 'Dr.', 'Mr.', 'Mrs.', 'i.e.', 'e.g.'],
-	wordJoiners:[', ', ' ' + kCharacterEmDash + ' ', kCharacterElipsis + ' '],
+	wordJoiners:[', ', ' ' + kCharacterEmDash + ' ', kCharacterElipsis + ' ', ' ', ' (', ') '],
 	replace:['\\b([a-z]+)\\(([a-z]+)\\)/$1$2/i', '([0-9]+),([0-9]+)/$1$2', '\\bO\\.S\\./OFFSCREEN', '([0-9]+)\\.([0-9]+)/$1^$2', '^== (.*) ==$/$1.', "[!\\?]’/’", "\\bCONT’D\\b/CONTINUED", "^EXT\\./EXTERIOR", "^INT\\./INTERIOR"],
-	hyphenCheckPairs:["sat-nav*", "set-up", "under-cover", "self-reliance reliant control esteem respect awareness aware", "proof-read*", "short-term", "love-bird* heart* potion* sick*", "hand-writing written write*", "left right-hand*", "sand egg-timer*", "back-stage* hand* ground* garden*", "stage-left right", "slow-motion", "some-thing where how what body one", "heart-break* broken", "car-park*", "brain-wave*", "mind lip-read*", "twenty thirty forty fifty sixty seventy eighty ninety-one two three four five six seven eight nine", "one two three four five six seven eight nine ten-hundred thousand million billion trillion"],
+	hyphenCheckPairs:["sat-nav*", "set-up", "under-cover", "self-reliance reliant control esteem respect awareness aware", "proof-read*", "short-term", "love-bird* heart* potion* sick*", "hand-writing written write*", "left right-hand*", "sand egg-timer*", "back-stage* hand* ground* garden* pedal* ward*", "stage-left right", "slow-motion", "some-thing where how what body one", "heart-break* broken", "car-park*", "brain-wave*", "mind lip-read*", "twenty thirty forty fifty sixty seventy eighty ninety-one two three four five six seven eight nine", "one two three four five six seven eight nine ten-hundred thousand million billion trillion"],
 	entityNames:["[PEOPLE]", "me I my myself"],
 	splitInfinitiveIgnoreList:[],
 	adverbHyphenIgnoreList:[],
@@ -790,6 +790,8 @@ function SettingSave(name)
 
 function SettingPerformMaintenance(whichOne)
 {
+	Assert(whichOne in g_tweakableSettings, () => "No entry called '" + whichOne + "' in tweakable settings, only: [" + Object.keys(g_tweakableSettings).join(', ') + "]")
+	
 	if (whichOne in kMaintenanceFunctions)
 	{
 //		NovaLog("Calling " + DescribeFunction(kMaintenanceFunctions[whichOne]) + " for " + g_tweakableSettings[whichOne])
@@ -1050,10 +1052,12 @@ function SettingsMakeCustomColumn_Add(callThis)
 function SettingsAdd(reply, txt, formBits, className, customColumnCell, moreArgs)
 {
 	var args = ['td class="' + className + '"']
+
 	if (moreArgs)
 	{
 		args.push(moreArgs)
 	}
+
 	if (txt != '')
 	{
 		reply.push('<tr><td valign="top" align="right" class="cellNoWrap">' + txt.replaceAll('^', "<BR>") + '</td>')
@@ -1063,6 +1067,7 @@ function SettingsAdd(reply, txt, formBits, className, customColumnCell, moreArgs
 	{
 		args.push("colspan=3")
 	}
+
 	reply.push('</td><' + args.join(' ') + '>' + formBits + "</td></tr>")
 }
 
@@ -1176,14 +1181,21 @@ function BuildIssueDefaults(doSettings, moreOutput)
 
 function AddToSetting(whichOne, addThis)
 {
-	NovaLog("Adding " + addThis + " to " + whichOne + " which is currently " + g_tweakableSettings[whichOne])
-
 	if (Array.isArray(g_tweakableSettings[whichOne]))
 	{
-		g_tweakableSettings[whichOne].push(addThis)
+		if (g_tweakableSettings[whichOne].includes(addThis))
+		{
+			NovaWarn(GetCharCodes(addThis) + " is already in setting called '" + whichOne + "'")
+			return
+		}
+		else
+		{
+			g_tweakableSettings[whichOne].push(addThis)
+		}
 	}
 	else
 	{
+		NovaLog("Adding " + addThis + " to " + whichOne + " which is currently " + g_tweakableSettings[whichOne])
 		g_tweakableSettings[whichOne] += addThis
 	}
 
@@ -1205,6 +1217,7 @@ function InitSettings()
 	IssueAutoFixDefine("INVALID FIRST SPEECH CHARACTER", "Ignore characters", characters => AddToSetting("startOfSpeech", characters))
 	IssueAutoFixDefine("INVALID FINAL SPEECH CHARACTER", "Ignore characters", characters => AddToSetting("endOfSpeech", characters))
 }
+
 TabDefine("settings", function(reply, thenCall)
 {
 	TabBuildButtonsBar(reply, Object.keys(kSettingNames))

@@ -109,9 +109,10 @@ function FixStringHTML(stringIn)
 	return "<B ID=issueText>" + AddEscapeChars(stringIn.replaceAll('^', '.')) + "</B>"
 }
 
-function AddEscapeChars(stringIn)
+function AddEscapeChars(stringIn, leaveSpacesAlone)
 {
-	return stringIn.replace(/\&/g, '&amp;').replace(/\[/g, '&lt;').replace(/\]/g, '&gt;').replace(/\'/g, '&apos;').replace(/\"/g, '&quot;').replaceAll(/^ | $/g, '&nbsp;')
+	const reply = stringIn.replace(/\&/g, '&amp;').replace(/\[/g, '&lt;').replace(/\]/g, '&gt;').replace(/\'/g, '&apos;').replace(/\"/g, '&quot;')
+	return leaveSpacesAlone ? reply : reply.replaceAll(/^ | $/g, '&nbsp;')
 }
 
 function Highlighter(matched, colour, extra)
@@ -163,6 +164,16 @@ function GetDataType(data)
 function GetDataTypeVerbose(data)
 {
 	return GetDataTypeShared(data) ?? (Array.isArray(data) ? "array of length " + data.length : typeof(data))
+}
+
+function GetCharCodes(str)
+{
+	var out = []
+	for (var n = 0; n < str.length; ++ n)
+	{
+		out.push(str.charCodeAt(n))
+	}
+	return('"' + str + '" [' + out.join(' ') + ']')
 }
 
 //---------------------------
@@ -270,7 +281,11 @@ function MakeTallySet(issueID, theBits)
 	{
 		set[name] = 0
 	}
-	return {issueID:issueID, set:set}
+	for (var name of theBits.sort())
+	{
+		Assert(name in set, () => "MAKE: Failed to find [" + name + "] in set")
+	}
+	return {issueID:issueID, set:set, ignoreSet:{}}
 }
 
 function CheckAgainstTallySet(tallySet, value, errorMsg)
@@ -279,9 +294,21 @@ function CheckAgainstTallySet(tallySet, value, errorMsg)
 	{
 		++ tallySet.set[value]
 	}
+	else if (value in tallySet.ignoreSet)
+	{
+	}
 	else
 	{
+		/*
+		for (var t of Object.keys(tallySet.set))
+		{
+			console.log("Does " + GetCharCodes(value) + " == " + GetCharCodes(t) + "? " + (value == t))
+		}
+		*/
+
 		IssueAdd(errorMsg(), tallySet.issueID, value)
+
+		tallySet.ignoreSet[value] = true
 	}
 }
 

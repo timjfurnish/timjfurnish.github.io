@@ -768,7 +768,7 @@ function ProcessInputBegin()
 		inputTextArray:GetInputText().split(/[\n]+/),
 		replaceRules:SettingsGetReplacementRegularExpressionsArray()
 	}
-
+	
 	SetUpBadWordRules()
 	SetUpNumberRules()
 	CallTheseFunctions(TickProcessInput)

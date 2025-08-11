@@ -43,7 +43,7 @@ function NovaWarn(message)
 
 	if (g_tweakableSettings.warningPopUp)
 	{
-		alert(message)
+		g_tweakableSettings.warningPopUp = confirm(message + "\n\n" + new Error().stack + "\n\nKeep showing errors?")
 	}
 }
 
@@ -56,11 +56,6 @@ function NovaLogClear(message)
 function ShowError(message)
 {
 	NovaWarn("ERROR: " + message)
-
-	if (g_canShowError)
-	{
-		g_canShowError = confirm(message + "\n\n" + new Error().stack + "\n\nKeep showing errors?")
-	}
 }
 
 function Assert(condition, err)
