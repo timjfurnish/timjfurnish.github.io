@@ -13,7 +13,7 @@
 		h1 { color: #778fbd; font-size: 40px; word-spacing: -0.1em; font-family: Monospace; font-weight: 500; line-height: 32px; margin-top: 4px }
 		h2 { color: #444; font-size: 18px; font-family: Arial, sans-serif; margin: 0.83em 0 0 }
 		h3 { color: #333; font-size: 26px; word-spacing: -0.3em; font-family: Monospace; margin-top: 4px; margin-bottom:24px; font-weight: bold; line-height: 27px; width: auto }
-		h4 { letter-spacing: -0.066em; cursor:pointer; background: -webkit-linear-gradient(rgba(100, 100, 100, 0.5), rgba(110, 110, 110, 1)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; font-size: 20px; margin: 0px; margin-left:3%; text-align: left }
+		h4 { letter-spacing: -0.066em; cursor:pointer; background: -webkit-linear-gradient(rgba(100, 100, 100, 0.5), rgba(110, 110, 110, 1)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; font-size: 20px; margin: 0px; text-align: center }
 		h5 { font-size: 10px; margin: 0px; padding: 0px }
 		.bigButton { font-size: 20px; background-image: linear-gradient(white, #FFFF88) }
 		a { letter-spacing:-0.08em; font-family: Arial, sans-serif; cursor:pointer; color: black; font-size: 14px; font-weight: bold; text-decoration: none; padding: 8px 12px 8px 12px; background-image: linear-gradient(white, rgba(75,125,75,0.4)); border-radius: 15px; border: 1px solid #252}
@@ -207,13 +207,6 @@ function ShowStuff(what)
 		AddButtons(false, section, 'https://opensludge.github.io/|GITHUB', 'https://wiki.scummvm.org/index.php/SLUDGE|SCUMMVM')
 		AddExpandSection(section)
 		
-		BeginExpand(collection, 'FURTHER READING')
-
-		section = []
-		section.push("Additional exits are available here and here.")
-		AddButtons(false, section, 'https://www.mobygames.com/person/138001/tim-furnish/credits/sort:date/|MOBYGAMES', 'https://www.instagram.com/timjfurnish/|INSTAGRAM', 'https://www.threads.net/@timjfurnish|THREADS')
-		AddExpandSection(section)
-		
 		EndExpand(collection)
 		collection.push("<BR>")
 	}
@@ -222,12 +215,14 @@ function ShowStuff(what)
 		BeginExpand(collection, 'SUMO DIGITAL', '2016-present')
 		
 		section = []
+		section.push("Programmer on <B>Gears of War: Reloaded</B> (2025).")
+		section.push(gap)
 		section.push("Associate tech director on <B>The Texas Chain Saw Massacre</B> (2023).")
 		section.push(gap)
 		section.push("Lead engineer on <B>Forza Horizon 4</B> and <B>Forza Horizon 5</B> (2021).")
 		section.push(gap)
 		section.push("Lead programmer on <B>Team Sonic Racing</B> (2019).")
-		AddButtons(false, section, 'https://www.sumo-digital.com/|SUMO DIGITAL', 'https://www.txchainsawgame.com/|THE TEXAS CHAIN SAW MASSACRE', 'https://forza.net/horizon|FORZA HORIZON', 'https://www.sonicthehedgehog.com/en-gb/teamsonicracing/|TEAM SONIC RACING')
+		AddButtons(false, section, 'https://www.sumo-digital.com/|SUMO DIGITAL', 'https://www.gearsofwar.com/games/gears-reloaded/|GEARS OF WAR: RELOADED', 'https://www.txchainsawgame.com/|THE TEXAS CHAIN SAW MASSACRE', 'https://forza.net/horizon|FORZA HORIZON', 'https://www.sonicthehedgehog.com/en-gb/teamsonicracing/|TEAM SONIC RACING')
 		AddExpandSection(section)
 		
 		BeginExpand(collection, 'DEEP SILVER DAMBUSTER STUDIOS', '2014-2016')
@@ -255,6 +250,18 @@ function ShowStuff(what)
 		AddButtons(false, section, 'https://en.wikipedia.org/wiki/Free_Radical_Design|WIKIPEDIA')
 		AddExpandSection(section)
 				
+		EndExpand(collection)
+		collection.push("<BR>")
+	}
+	else if (what == "more")
+	{	
+		BeginExpand(collection, 'FURTHER READING')
+
+		section = []
+		section.push("Additional exits are available here and here.")
+		AddButtons(false, section, 'https://www.mobygames.com/person/138001/tim-furnish/credits/sort:date/|MOBYGAMES', 'https://www.instagram.com/timjfurnish/|INSTAGRAM', 'https://www.threads.net/@timjfurnish|THREADS')
+		AddExpandSection(section)
+		
 		EndExpand(collection)
 		collection.push("<BR>")
 	}
@@ -296,7 +303,8 @@ function SetUp()
 	section = []
 	section.push('<DIV class=buttonBar STYLE="margin-top:0px">')
 	section.push('<A ONCLICK="ShowStuff(\'fun\')" ID=fun><NOBR>PERSONAL / FUNTIMES / INTERACTIVE</NOBR></A>\n')
-	section.push('<A ONCLICK="ShowStuff(\'work\')" ID=work><NOBR>CAREER / PROFESSIONALISM / CORPORATE</NOBR></A>')
+	section.push('<A ONCLICK="ShowStuff(\'work\')" ID=work><NOBR>CAREER / PROFESSIONALISM / CORPORATE</NOBR></A>\n')
+	section.push('<A ONCLICK="ShowStuff(\'more\')" ID=more><NOBR>MISCELLANY / SOCIAL / WAFFLE</NOBR></A>')
 	section.push('</DIV>')
 	AddSection(collection, section)
 
