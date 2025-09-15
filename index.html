@@ -35,7 +35,6 @@ const kImages = {}
 
 function PreloadImage(src)
 {
-	console.log("Preloading '" + src + "'")
 	const img = new Image()
 	img.src = src
 	kImages[src] = img
@@ -70,7 +69,7 @@ function BeginExpand(collection, title, years)
 	
 	if (years)
 	{
-		title += ' <SMALL>[' + years + ']</SMALL>'
+		title += ' <NOBR><SMALL>[' + years + ']</SMALL></NOBR>'
 	}
 	
 	const tag = kAlwaysOpen.includes(code) ? 'h4' : ('h4 style="cursor:pointer" onClick="Expand(\'' + code + '\')"')
