@@ -31,6 +31,23 @@ var g_creatingHiddenSection
 var g_openThings = []
 var g_pageOpen = undefined
 const kAlwaysOpen = ["FURTHERREADING"]
+const kImages = {}
+
+function PreloadImage(src)
+{
+	console.log("Preloading '" + src + "'")
+	const img = new Image()
+	img.src = src
+	kImages[src] = img
+}
+
+PreloadImage("gfx/flywheel_rotate.png")
+PreloadImage("gfx/flotman-crazy.jpg")
+PreloadImage("gfx/flotman-grapevine.jpg")
+PreloadImage("gfx/flotman-love.jpg")
+PreloadImage("gfx/flotman-sky.jpg")
+PreloadImage("gfx/flotman-walk.jpg")
+PreloadImage("gfx/ooo_bedroom.png")
 
 function AddSection(collection, section)
 {
@@ -94,6 +111,7 @@ function Expand(code)
 		{
 			elem.innerHTML = g_hiddenSections[code]
 			g_openThings.push(code)
+			elem.scrollIntoView({behavior:"smooth", block:"center"})
 		}
 		
 		window?.sessionStorage?.setItem?.("entertainmentmongerOpenSections", g_openThings.join('+'))
