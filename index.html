@@ -13,7 +13,7 @@
 		h1 { color: #778fbd; font-size: 40px; word-spacing: -0.1em; font-family: Monospace; font-weight: 500; line-height: 32px; margin-top: 4px }
 		h2 { color: #444; font-size: 18px; font-family: Arial, sans-serif; margin: 0.83em 0 0 }
 		h3 { color: #333; font-size: 26px; word-spacing: -0.3em; font-family: Monospace; margin-top: 4px; margin-bottom:24px; font-weight: bold; line-height: 27px; width: auto }
-		h4 { letter-spacing: -0.066em; cursor:pointer; background: -webkit-linear-gradient(rgba(100, 100, 100, 0.5), rgba(110, 110, 110, 1)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; font-size: 20px; margin: 0px; text-align: center }
+		h4 { letter-spacing: -0.066em; background: -webkit-linear-gradient(rgba(100, 100, 100, 0.5), rgba(110, 110, 110, 1)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; font-size: 20px; margin: 0px; text-align: center }
 		h5 { font-size: 10px; margin: 0px; padding: 0px }
 		.bigButton { font-size: 20px; background-image: linear-gradient(white, #FFFF88) }
 		a { letter-spacing:-0.08em; font-family: Arial, sans-serif; cursor:pointer; color: black; font-size: 14px; font-weight: bold; text-decoration: none; padding: 8px 12px 8px 12px; background-image: linear-gradient(white, rgba(75,125,75,0.4)); border-radius: 15px; border: 1px solid #252}
@@ -26,10 +26,11 @@
 	</style>
 	<script type="text/javascript" src="fade.js"></script>
 	<script type="text/javascript">
-const g_hiddenSections = {}
+var g_hiddenSections = {}
 var g_creatingHiddenSection
 var g_openThings = []
 var g_pageOpen = undefined
+const kAlwaysOpen = ["FURTHERREADING"]
 
 function AddSection(collection, section)
 {
@@ -55,16 +56,17 @@ function BeginExpand(collection, title, years)
 		title += ' <SMALL>[' + years + ']</SMALL>'
 	}
 	
-	AddSection(collection, [BuildText(title, 'h4 onClick="Expand(\'' + code + '\')"')])
+	const tag = kAlwaysOpen.includes(code) ? 'h4' : ('h4 style="cursor:pointer" onClick="Expand(\'' + code + '\')"')
+	AddSection(collection, [BuildText(title, tag)])
 	g_hiddenSections[code] = ""
 	g_creatingHiddenSection = code
 }
 
 function EndExpand(collection)
 {
-	if (g_openThings.includes(g_creatingHiddenSection))
+	if (g_openThings.includes(g_creatingHiddenSection) || kAlwaysOpen.includes(g_creatingHiddenSection))
 	{
-		QueueFade(g_creatingHiddenSection)
+//		QueueFade(g_creatingHiddenSection)
 		collection.push(BuildText(g_hiddenSections[g_creatingHiddenSection], 'div align=center id="' + g_creatingHiddenSection + '"'))
 	}
 	else
@@ -78,10 +80,11 @@ function EndExpand(collection)
 function Expand(code)
 {
 	const elem = document.getElementById(code)
-	const index = g_openThings.indexOf(code)
 	
 	if (elem)
 	{
+		const index = g_openThings.indexOf(code)
+
 		if (index >= 0)
 		{
 			elem.innerHTML = ""
@@ -131,6 +134,8 @@ function AddButtons(big, section, ...buttons)
 
 function ShowStuff(what)
 {
+	g_hiddenSections = []
+
 	if (what == g_pageOpen)
 	{
 		what = undefined
