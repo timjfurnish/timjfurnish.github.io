@@ -8,9 +8,19 @@
 	<meta property="og:description" content="Nonogram puzzles - plus puzzle creator and solver.">
 	<style type="text/css" media="screen">
 		body { overflow-y: scroll }
-		p { color: #666; font-size: 20px; font-family: Arial, sans-serif; margin-top: 10px; margin-bottom: 10px; margin-left: 5vw; margin-right: 5vw }
+		h1, h2, h3, h4 { font-family: Arial, Helvetica, sans-serif }
+		.buttonPuzzleName { font-family: Arial, Helvetica, sans-serif; font-size: 20px; font-weight: 1000 }
+		.clues {font-family: monospace; font-weight: 1000; font-size: 20px; letter-spacing: -2px }
+		.puzzleButton { padding: 5px 10px; margin: 5px; border-radius: 6px }
+		td { border: 2px solid #888888 }
+		table { border-collapse: collapse }
+		.tag { border:1px solid rgba(0, 0, 0, 0.2);	border-radius:4px; background-color:rgba(0, 0, 0, 0.05); padding:1px 2px 1px 2px; font-size:70%; font-family:Arial, Helvetica, sans-serif }
 	</style>
 	<script type="text/javascript" src="nono.js"></script>
+	<script type="text/javascript" src="solve.js"></script>
+	<script type="text/javascript" src="designer.js"></script>
+	<script type="text/javascript" src="puzzles.js"></script>
+	<script type="text/javascript" src="encode_decode.js"></script>
     <title>Tim Furnish - Nonography</title>
 </head>
 <body onLoad="NonoSetUp()" background="../gfx/paper.png">
