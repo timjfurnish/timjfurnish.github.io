@@ -5,6 +5,7 @@ var s_oldHighlightId = null
 var s_easyText = ["EASY", "EASYISH", "MEDIUM", "TRICKSY", "HARD", "EVIL"]
 
 const s_cycle = {[' ']:'1', ['1']:'.', ['.']:' '}
+const s_cycleReverse = {[' ']:'.', ['.']:'1', ['1']:' '}
 const s_cellWidthHeight = 25
 
 const kIconRedCross = "&#x274C;"
@@ -129,7 +130,8 @@ function SetUpPuzzle(title, puzzleIn)
 		output.push("<TR align=center><TD STYLE=\"border-left: none; padding-left: 8px; padding-right: 8px\" CLASS=clues id=\"row" + y + "\" align=right>" + FormatClues(rowClues, '&nbsp;') + "</TD>")
 		for (var x = 0; x < width; ++ x)
 		{
-			output.push('<TD id="gridCell' + x + '.' + y + '" ' + cellWH + ' onClick="ClickGrid(' + x + ',' + y + ')" BGCOLOR=#FFEEEE></TD>')
+			const coords = x + ',' + y
+			output.push('<TD id="gridCell' + x + '.' + y + '" ' + cellWH + ' onClick="ClickGrid(' + coords + ')" onContextMenu="return ClickGrid(' + coords + ', true)" BGCOLOR=#FFEEEE></TD>')
 			buildLine.push(" ")
 		}
 		output.push(AddCellTickCross("rowsTick" + y, "padding-left:3px; ", rowClues.length))
@@ -154,12 +156,13 @@ function SetUpPuzzle(title, puzzleIn)
 	s_completeness = {rows:[], cols:[], total:0}
 }
 
-function ClickGrid(x, y)
+function ClickGrid(x, y, reverse)
 {
 	if (! s_autoSolveData)
 	{
-		SetCell(x, y, s_cycle[s_activePuzzleSolutionSoFar[y][x]])
+		SetCell(x, y, (reverse ? s_cycleReverse : s_cycle)[s_activePuzzleSolutionSoFar[y][x]])
 	}
+	return false
 }
 
 function GetElement(id)
