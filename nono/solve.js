@@ -130,6 +130,7 @@ function SolveStep()
 		if (s_autoSolveData.stopAfterSingleHint)
 		{
 			SetBusy(false)
+			s_autoSolveData = null
 		}
 		else if (s_completeness.total < (s_clues.rows.length + s_clues.cols.length))
 		{
