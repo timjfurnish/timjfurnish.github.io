@@ -3,40 +3,131 @@ var s_completeness = null
 var s_clues = null
 var s_oldHighlightId = null
 var s_easyText = ["EASY", "EASYISH", "MEDIUM", "TRICKSY", "HARD", "EVIL"]
+var s_playingID = null
 
 const s_cycle = {[' ']:'1', ['1']:'.', ['.']:' '}
 const s_cycleReverse = {[' ']:'.', ['.']:'1', ['1']:' '}
-const s_cellWidthHeight = 25
 
 const kIconRedCross = "&#x274C;"
 const kIconMatch = "&#x2714;&#xFE0F;"
 
-function Deploy(title, contents, backFunc, backName)
+function BuildMainMenu()
 {
-	GetElement("toHere").innerHTML = '<h2>' + title + '</h2>' + contents + '<P><BUTTON onClick="' + (backFunc ?? 'NonoSetUp()') + '">' + (backName ?? "MAIN MENU") + '</BUTTON></P>'
+	const output = []
+	output.push('<BUTTON onClick="SetHash(\'Play\')">PLAY</BUTTON> ')
+	output.push('<BUTTON onClick="SetHash(\'Design\')">DESIGN</BUTTON>')
+	return {content:output.join(''), exitName:"EXIT", exitURL:(location.host ? (location.protocol + "//" + location.host) : "")}
+}
+
+function SetHash(newHash, param)
+{
+	if (param)
+	{
+		newHash += "=" + param
+	}
+
+	location.hash = newHash
+}
+
+const s_menusWithNames =
+{
+	["Play"]:param =>
+	{
+		const output = []
+		output.push(BuildButtonsForPuzzles("Puzzle"))
+		output.push('<P><B>Or enter a puzzle code here!</B><BR><INPUT STYLE="max-width: 100%" ID="puzzleData" TYPE=text SIZE=80 ONCHANGE="SetUpPuzzleFromTextBoxTrigger()"></P>')
+		return {content:output.join('')}
+	},
+	["Puzzle"]:param =>
+	{
+		const data = NonoDecodePuzzle(s_puzzles[param]?.data)
+
+		if (data)
+		{
+			return SetUpPuzzle(s_puzzles[param].name, data, param)
+		}
+		else
+		{
+			return {content:"Failed to find a puzzle with ID '" + param + "'"}
+		}
+	},
+	["Custom"]:param =>
+	{
+		const data = NonoDecodePuzzle(param)
+
+		if (data)
+		{
+			return SetUpPuzzle("Custom Puzzle", data)
+		}
+		else
+		{
+			return {content:"Invalid puzzle definition! Sorry!"}
+		}
+	},
+	["Design"]:param =>
+	{
+		const output = []
+		output.push('<BUTTON onClick="SetHash(\'DesignSize\', \'15x25\')">15 x 25</BUTTON> ')
+		output.push('<BUTTON onClick="SetHash(\'DesignSize\', \'20x20\')">20 x 20</BUTTON> ')
+		output.push('<BUTTON onClick="SetHash(\'DesignSize\', \'25x15\')">25 x 15</BUTTON><P><B>Or start from one of these!</B><BR>')
+		output.push(BuildButtonsForPuzzles("DesignFrom"))
+		output.push('</P><P><B>Or enter a puzzle code here!</B><BR><INPUT ID="puzzleData" TYPE=text STYLE="max-width: 100%" SIZE=80 ONCHANGE="SetUpDesignerFromTextBox()"></P>')
+		return {content:output.join('')}
+	},
+	["DesignFrom"]:param =>
+	{
+		return SetUpDesignerFromID(param)
+	},
+	["DesignSize"]:param =>
+	{
+		const [width, height] = param.split('x')
+		return SetUpDesigner(parseInt(width), parseInt(height))
+	},
+}
+
+function NonoSetUp()
+{
+	window.onhashchange = NonoBuildPage
+	NonoBuildPage()
+}
+
+function NonoBuildPage()
+{
+	var [goHere, param] = location.hash?.replace('#', '').split('=', 2)
 	
+	// Defaults if we don't find what we're looking for...
+	var callFunc = BuildMainMenu
+	var useName = "Main Menu"
+
+	// Nullify some things
+	s_designing = null
+
+	console.log("Looking for '" + goHere + "' with param '" + param + "'")
+
+	// Try and find some overrides for a particular page
+	for (var [key, func] of Object.entries(s_menusWithNames))
+	{
+		if (goHere == key.replaceAll(g_regex, ''))
+		{
+			console.log("Found definition for " + goHere)
+			callFunc = func
+			useName = key
+			break
+		}
+	}
+
+	console.log("Displaying page '" + useName + "'")
+
 	s_activePuzzleSolutionSoFar = null
 	s_completeness = null
 	s_autoSolveData = null
 	s_clues = null
 	s_oldHighlightId = null
-}
+	s_playingID = null
 
-function NonoSetUp()
-{
-	const output = []
-	output.push('<BUTTON onClick="SetUpPrePlay()">PLAY</BUTTON>')
-	output.push('<BUTTON onClick="SetUpPreDesigner()">DESIGN</BUTTON>')
-	const exitURL = (location.host ? (location.protocol + "//" + location.host) : "")
-	Deploy("Welcome", output.join(' '), "navigation.navigate('" + exitURL + "/')", "EXIT")
+	const setup = callFunc(param)
 
-	s_designing = null
-}
-
-function SetUpPrePlay()
-{
-	const buttonHTML = BuildButtonsForPuzzles("SetUpPuzzleFromID")
-	Deploy("Pick A Puzzle", buttonHTML + '<P><B>Or enter a puzzle code here!</B><BR><INPUT ID="puzzleData" TYPE=text SIZE=80 ONCHANGE="SetUpPuzzleFromTextBox()"></P>')
+	GetElement("toHere").innerHTML = '<h2>' + (setup?.name ?? useName) + '</h2>' + setup?.content + '<P><BUTTON onClick="' + (setup?.exitURL ?? 'SetHash(\'MainMenu\')') + '">' + (setup?.exitName ?? "MAIN MENU") + '</BUTTON></P>'	
 }
 
 function SetBusy(onOff)
@@ -64,19 +155,10 @@ function Highlight(id, col)
 	s_oldHighlightId = id
 }
 
-function SetUpPuzzleFromTextBox()
+function SetUpPuzzleFromTextBoxTrigger()
 {
 	const {value} = GetElement("puzzleData")
-	const data = NonoDecodePuzzle(value)
-
-	if (data)
-	{
-		SetUpPuzzle("Custom Puzzle", data)
-	}
-	else
-	{
-		alert("Invalid puzzle definition! Sorry!")
-	}
+	SetHash("Custom", value)
 }
 
 function SetUpPuzzleFromID(myID)
@@ -85,7 +167,7 @@ function SetUpPuzzleFromID(myID)
 
 	if (data)
 	{
-		SetUpPuzzle(s_puzzles[myID].name, data)
+		SetUpPuzzle(s_puzzles[myID].name, data, myID)
 	}
 }
 
@@ -103,23 +185,39 @@ function AddCellTickCross(name, extraStyle, bHasClues)
 	return '<TD ID="' + name + '" STYLE="' + extraStyle + 'border:none; opacity: ' + op + '">' + icon + '</TD>'
 }
 
-function SetUpPuzzle(title, puzzleIn)
+function CalcCellWidthHeight(gridWidth, gridHeight)
+{
+	gridWidth -= 5
+	gridHeight -= 5
+	const biggest = Math.min(30, Math.max(gridWidth * 2, gridHeight))
+	const reply = Math.floor((90 - biggest) / 3)
+	console.log("CalcCellWidthHeight returning " + reply)
+	return reply
+}
+
+function SetUpPuzzle(title, puzzleIn, playingID)
 {
 	const output = []
 	const height = puzzleIn.length
 	const width = puzzleIn[0].length
-	const cellWH = 'width="' + s_cellWidthHeight + '" height="' + s_cellWidthHeight + '"'
 	const emptyGrid = []
 	const buildColumnClues = []
 	const buildRowClues = []
+
+	var maxColumnClues = 0
 
 	output.push("<TABLE><TR><TD STYLE=\"border-left: none; border-top: none \"></TD>")
 	for (var x = 0; x < width; ++ x)
 	{
 		const columnClues = CalcClues(GetColumnFromGrid(puzzleIn, x))
 		buildColumnClues.push(columnClues)
-		output.push('<TD STYLE=\"border-top: none\" CLASS=clues id="col' + x + '" align=center valign=bottom width="' + s_cellWidthHeight + '">' + FormatClues(columnClues, '<BR>') + '</TD>')
+		output.push('<TD STYLE=\"border-top: none\" CLASS=clues id="col' + x + '" align=center valign=bottom>' + FormatClues(columnClues, '<BR>') + '</TD>')
+		maxColumnClues = Math.max(maxColumnClues, columnClues.length)
 	}
+
+	const cellWidthHeight = CalcCellWidthHeight(width, height + maxColumnClues)
+	const cellWH = 'width="' + cellWidthHeight + '" height="' + cellWidthHeight + '"'
+
 	output.push('<TD STYLE=\"border-top: none; border-right: none; border-bottom: none\"></TD>')
 	output.push("</TR>")
 	for (var y = 0; y < height; ++ y)
@@ -148,12 +246,14 @@ function SetUpPuzzle(title, puzzleIn)
 	output.push("</TABLE><BR>")
 	output.push('<BUTTON onClick="SolveStart(false)">SOLVE</BUTTON> ')
 	output.push('<BUTTON onClick="SolveStart(true)">HINT</BUTTON>')
-	Deploy(FormatPuzzleNameAndSize(title, width, height), output.join(''), "SetUpPrePlay()", 'BACK')
 
 	s_activePuzzleSolutionSoFar = emptyGrid
 	s_clues = {cols:buildColumnClues, rows:buildRowClues}
 	s_oldHighlightId = null
 	s_completeness = {rows:[], cols:[], total:0}
+	s_playingID = playingID
+	
+	return {name:FormatPuzzleNameAndSize(title, width, height), content:output.join(''), exitURL:"SetHash('Play')", exitName:'BACK'}
 }
 
 function ClickGrid(x, y, reverse)
@@ -161,6 +261,14 @@ function ClickGrid(x, y, reverse)
 	if (! s_autoSolveData)
 	{
 		SetCell(x, y, (reverse ? s_cycleReverse : s_cycle)[s_activePuzzleSolutionSoFar[y][x]])
+		if (s_completeness.total == s_clues.rows.length + s_clues.cols.length)
+		{
+			if (s_playingID)
+			{
+				s_solved[s_playingID] = true
+			}
+			alert("Completed! Well done!")
+		}
 	}
 	return false
 }

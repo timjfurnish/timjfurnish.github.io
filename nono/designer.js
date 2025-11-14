@@ -2,24 +2,13 @@ var s_designing = null
 
 const s_cycleDesigner = {[' ']:'1', ['1']:' '}
 
-function SetUpPreDesigner()
-{
-	const output = []
-	output.push('<BUTTON onClick="SetUpDesigner(15,25)">15 x 25</BUTTON> ')
-	output.push('<BUTTON onClick="SetUpDesigner(20,20)">20 x 20</BUTTON> ')
-	output.push('<BUTTON onClick="SetUpDesigner(25,15)">25 x 15</BUTTON><P><B>Or start from one of these!</B><BR>')
-	output.push(BuildButtonsForPuzzles("SetUpDesignerFromID"))
-
-	Deploy('Puzzle Designer', output.join('') + '</P><P><B>Or enter a puzzle code here!</B><BR><INPUT ID="puzzleData" TYPE=text SIZE=80 ONCHANGE="SetUpDesignerFromTextBox()"></P>')
-}
-
 function SetUpDesignerFromID(myID)
 {
 	const data = NonoDecodePuzzle(s_puzzles[myID].data)
 
 	if (data)
 	{
-		SetUpDesignerForGrid(data)
+		return SetUpDesignerForGrid(data)
 	}
 }
 
@@ -52,7 +41,7 @@ function SetUpDesigner(width, height)
 		emptyGrid.push(buildLine)
 	}
 	
-	SetUpDesignerForGrid(emptyGrid)
+	return SetUpDesignerForGrid(emptyGrid)
 }
 
 function SetUpDesignerForGrid(grid)
@@ -64,13 +53,14 @@ function SetUpDesignerForGrid(grid)
 	}
 
 	s_designing = grid
-	RebuildDesignScreen()
+	return RebuildDesignScreen()
 }
 
 function RebuildDesignScreen()
 {	
 	const output = []
-	const cellWH = 'width="' + s_cellWidthHeight + '" height="' + s_cellWidthHeight + '"'
+	const cellWidthHeight = CalcCellWidthHeight(s_designing[0].length, s_designing.length)
+	const cellWH = 'width="' + cellWidthHeight + '" height="' + cellWidthHeight + '"'
 
 	output.push("<TABLE>")
 	for (var y = 0; y < s_designing.length; ++ y)
@@ -88,7 +78,7 @@ function RebuildDesignScreen()
 	output.push('<BUTTON onClick="DesignerTrim()">TRIM</BUTTON> ')
 	output.push('<BUTTON onClick="DesignerInv()">INVERT</BUTTON> ')
 	output.push('<BUTTON onClick="SetUpDesigner(' + s_designing[0].length + ', ' + s_designing.length + ')">CLEAR</BUTTON>')
-	Deploy('Puzzle Designer', output.join(''))
+	return {content:output.join(''), name:s_designing[0].length + " x " + s_designing.length, exitURL:"SetHash('Design')", exitName:"BACK"}
 }
 
 function DesignerSave()
