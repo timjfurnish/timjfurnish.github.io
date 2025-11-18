@@ -16,7 +16,7 @@ function BuildMainMenu()
 	const output = []
 	output.push('<BUTTON onClick="SetHash(\'Play\')">PLAY</BUTTON> ')
 	output.push('<BUTTON onClick="SetHash(\'Design\')">DESIGN</BUTTON>')
-	return {content:output.join(''), exitName:"EXIT", exitURL:(location.host ? (location.protocol + "//" + location.host) : "")}
+	return {name:"Main Menu", content:output.join(''), exitName:"EXIT", exitURL:(location.host ? (location.protocol + "//" + location.host) : "")}
 }
 
 function SetHash(newHash, param)
@@ -31,13 +31,18 @@ function SetHash(newHash, param)
 
 const s_menusWithNames =
 {
+	//==============================
+	// Play
+	//==============================
+
 	["Play"]:param =>
 	{
 		const output = []
 		output.push(BuildButtonsForPuzzles("Puzzle"))
-		output.push('<P><B>Or enter a puzzle code here!</B><BR><INPUT STYLE="max-width: 100%" ID="puzzleData" TYPE=text SIZE=80 ONCHANGE="SetUpPuzzleFromTextBoxTrigger()"></P>')
+		output.push('<P><B>Or enter a puzzle code here!</B><BR><INPUT STYLE="max-width: 100%" ID="puzzleData" TYPE=text SIZE=80 ONCHANGE="EnteredCustom(\'Custom\')"></P>')
 		return {content:output.join('')}
 	},
+	
 	["Puzzle"]:param =>
 	{
 		const data = NonoDecodePuzzle(s_puzzles[param]?.data)
@@ -51,6 +56,7 @@ const s_menusWithNames =
 			return {content:"Failed to find a puzzle with ID '" + param + "'"}
 		}
 	},
+	
 	["Custom"]:param =>
 	{
 		const data = NonoDecodePuzzle(param)
@@ -59,25 +65,42 @@ const s_menusWithNames =
 		{
 			return SetUpPuzzle("Custom Puzzle", data)
 		}
-		else
-		{
-			return {content:"Invalid puzzle definition! Sorry!"}
-		}
 	},
+
+	//==============================
+	// Design
+	//==============================
+
 	["Design"]:param =>
 	{
 		const output = []
-		output.push('<BUTTON onClick="SetHash(\'DesignSize\', \'15x25\')">15 x 25</BUTTON> ')
-		output.push('<BUTTON onClick="SetHash(\'DesignSize\', \'20x20\')">20 x 20</BUTTON> ')
-		output.push('<BUTTON onClick="SetHash(\'DesignSize\', \'25x15\')">25 x 15</BUTTON><P><B>Or start from one of these!</B><BR>')
+		output.push('<P><B>Start from an empty grid!</B><BR>')
+		output.push(BuildBigButton("#DDDDFF", "SetHash('DesignSize', '15x15')", FormatPuzzleNameAndSize("Empty", 15, 15)))
+		output.push('<WBR>')
+		output.push(BuildBigButton("#DDDDFF", "SetHash('DesignSize', '20x20')", FormatPuzzleNameAndSize("Empty", 20, 20)))
+		output.push('<WBR>')
+		output.push(BuildBigButton("#DDDDFF", "SetHash('DesignSize', '25x25')", FormatPuzzleNameAndSize("Empty", 25, 25)))
+		output.push('</P><P><B>Or start from one of these!</B><BR>')
 		output.push(BuildButtonsForPuzzles("DesignFrom"))
-		output.push('</P><P><B>Or enter a puzzle code here!</B><BR><INPUT ID="puzzleData" TYPE=text STYLE="max-width: 100%" SIZE=80 ONCHANGE="SetUpDesignerFromTextBox()"></P>')
+		output.push('</P><P><B>Or enter a puzzle code here!</B><BR><INPUT ID="puzzleData" TYPE=text STYLE="max-width: 100%" SIZE=80 ONCHANGE="EnteredCustom(\'DesignCustom\')"></P>')
 		return {content:output.join('')}
 	},
+	
+	["DesignCustom"]:param =>
+	{
+		const data = NonoDecodePuzzle(param)
+
+		if (data)
+		{
+			return SetUpDesignerForGrid(data)
+		}
+	},
+	
 	["DesignFrom"]:param =>
 	{
 		return SetUpDesignerFromID(param)
 	},
+	
 	["DesignSize"]:param =>
 	{
 		const [width, height] = param.split('x')
@@ -97,27 +120,10 @@ function NonoBuildPage()
 	
 	// Defaults if we don't find what we're looking for...
 	var callFunc = BuildMainMenu
-	var useName = "Main Menu"
+	var useName
 
 	// Nullify some things
 	s_designing = null
-
-	console.log("Looking for '" + goHere + "' with param '" + param + "'")
-
-	// Try and find some overrides for a particular page
-	for (var [key, func] of Object.entries(s_menusWithNames))
-	{
-		if (goHere == key.replaceAll(g_regex, ''))
-		{
-			console.log("Found definition for " + goHere)
-			callFunc = func
-			useName = key
-			break
-		}
-	}
-
-	console.log("Displaying page '" + useName + "'")
-
 	s_activePuzzleSolutionSoFar = null
 	s_completeness = null
 	s_autoSolveData = null
@@ -125,9 +131,29 @@ function NonoBuildPage()
 	s_oldHighlightId = null
 	s_playingID = null
 
-	const setup = callFunc(param)
+	// Try and find some overrides for a particular page
+	for (var [key, func] of Object.entries(s_menusWithNames))
+	{
+		if (goHere == key.replaceAll(g_regex, ''))
+		{
+			callFunc = func
+			useName = key
+			break
+		}
+	}
 
-	GetElement("toHere").innerHTML = '<h2>' + (setup?.name ?? useName) + '</h2>' + setup?.content + '<P><BUTTON onClick="' + (setup?.exitURL ?? 'SetHash(\'MainMenu\')') + '">' + (setup?.exitName ?? "MAIN MENU") + '</BUTTON></P>'	
+	console.log("Displaying page '" + useName + "'" + (param ? " with param '" + param + "'" : ""))
+
+	var setup = callFunc(param)
+	
+	if (! setup)
+	{
+		// Emergency! Show Main Menu ater all!
+		setup = BuildMainMenu()
+	}
+
+	GetElement("toHere").innerHTML = '<h2>' + (setup.name ?? useName) + '</h2>' + setup.content + '<P><BUTTON onClick="' + (setup.exitURL ?? 'SetHash(\'MainMenu\')') + '">' + (setup.exitName ?? "MAIN MENU") + '</BUTTON></P>'	
+	setup.thenCall?.()
 }
 
 function SetBusy(onOff)
@@ -155,10 +181,15 @@ function Highlight(id, col)
 	s_oldHighlightId = id
 }
 
-function SetUpPuzzleFromTextBoxTrigger()
+function EnteredCustom(whichScreen)
 {
 	const {value} = GetElement("puzzleData")
-	SetHash("Custom", value)
+	const data = NonoDecodePuzzle(value)
+
+	if (data)
+	{
+		SetHash(whichScreen, value)
+	}
 }
 
 function SetUpPuzzleFromID(myID)

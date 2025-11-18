@@ -1,7 +1,7 @@
 const s_puzzles = {}
 const s_tags = {}
 const g_regex = /&[^;]+;|[^a-z\.0-9]+/gi
-const s_solved = {Frosty:true}
+const s_solved = {}
 
 var s_lowestDifficulty = 1000
 var s_highestDifficulty = 0
@@ -31,24 +31,35 @@ function AddPuzzle(name, w, h, data, tags, complexity)
 	s_highestDifficulty = Math.max(s_highestDifficulty, complexity)
 }
 
+AddPuzzle("Sticky", 5, 11, "AAqEAv0_RieG", "Tutorial", 34)
 AddPuzzle("Sweet", 10, 12, "BI4cvhAWEPefNAknbFoNA5f", "Object", 41)
-AddPuzzle("Cheese Me", 10, 12, "BI.GiRfEJ0o7WhmbUTRRQEx", "Animal", 78)
-AddPuzzle("Oh The Drama", 25, 15, "BfAheS9rpnpQbQpl6pLoxwr0G65p6k2zY0drYvgNNIPoybCRVtEguV1_Q8uowxfEox", "Object", 245)
-AddPuzzle("Tinselitis", 9, 11, "tHctRFjM2j.d9aGIf2Ff", "Xmas", 37)
-AddPuzzle("Frosty", 9, 12, "8HQFcdlEWJeKz1MP_e1qi", "Xmas", 53)
-AddPuzzle("Alas", 13, 17, "nOkM_w8IxAiE3pY3fW..P.8tNB_XMY3zJY37HxB3", "Object", 88)
-AddPuzzle("Meow Do You Do", 13, 9, "AOBZjJVsi4z.RzM.fdoV_FD", "Animal", 46)
-AddPuzzle("You Big Phoney", 12, 10, "BMq6N.7IBvVIvNR.1BtDfzv", "Object", 64)
-AddPuzzle("Loved Up", 13, 11, "ZObTH5.5YvqS1bD6uQU8mUh3.77", "Abstract", 54)
-AddPuzzle("The King", 25, 15, "BfA5b7vpJTnwUVrCgRNaLXOo02uDwX7E5I.z0KLAhjaSlb5pZ9tVuOuf6MBFgVmLDY", "Animal", 162)
-AddPuzzle("Sticky", 5, 11, "AAqEAv0_RieG", "Tutorial", 31)
-AddPuzzle("Lens Me Your Ears", 13, 6, "YOLDTpQ8pQcyuc47", "Object", 83)
-AddPuzzle("Super Soaker", 17, 20, "dV89NSc.Ov_gf1B..5J37P.7.Pv_wP6kjy2AzAaByiV..x.j4y9YkptBD.HP", "Animal", 98)
-AddPuzzle("How Very PC", 20, 17, "dZLZ.6u0HiWcd5UxL1L00ZUL23awRpXv_h.65MAC3.Ah8Kqv257km39OD.nI", "Object", 89)
-AddPuzzle("Deep In Thought", 20, 19, "GZFfge.gm8sVNQtuR8HPs0Bbf.wR_Zbx8kGPi_CegBE6IJq2F5NyC.24L6egfaH6K3", "Abstract", 111)
-AddPuzzle("Downward", 20, 19, "GZGh.DGx65L66pnbTMzy3tI8pNb4MACo9KI.SFL9IFj2pL2dsL_aLnGq_Zh08YZSeV", "Abstract", 305)
-AddPuzzle("Meep Morp Zeep", 15, 23, "iRilLmKZsQ7qUM_zqU8QxLvAQ_7LZg3SoKZr.0yRAZRi33.3O597OMXDnCgu", "Object", 115)
-AddPuzzle("High Three", 12, 10, "BMqL3hegqftFlmhQfBdhcg5", "Animal", 65)
+AddPuzzle("Tinselitis", 9, 11, "tHctRFjM2j.d9aGIf2Ff", "Xmas", 42)
+AddPuzzle("Warning", 14, 13, "BPMcaVXDeGrBYTIoKb.mvbt__.fHX5EA.A", "Abstract", 42)
+AddPuzzle("Meow Do You Do", 13, 9, "AOBZjJVsi4z.RzM.fdoV_FD", "Animal", 56)
+AddPuzzle("Frosty", 9, 12, "8HQFcdlEWJeKz1MP_e1qi", "Xmas", 73)
+AddPuzzle("You Big Phoney", 12, 10, "BMq6N.7IBvVIvNR.1BtDfzv", "Object", 76)
+AddPuzzle("High Three", 12, 10, "BMqL3hegqftFlmhQfBdhcg5", "Animal", 79)
+AddPuzzle("Loved Up", 13, 11, "ZObTH5.5YvqS1bD6uQU8mUh3.77", "Abstract", 82)
+AddPuzzle("Out Of Space", 13, 11, "qb3r3zLPvPvPjL2CPvABMs13IDE5.PQnMZznPf.225..zn.2zz7jvMyDHz2xgg", "Abstract", 83)
+AddPuzzle("Lens Me Your Ears", 13, 6, "YOLDTpQ8pQcyuc47", "Object", 98)
+AddPuzzle("Quavering", 11, 9, "tKXgETe6xufEoDI_xS8M", "Abstract", 107)
+AddPuzzle("Lochdown", 22, 8, "3bQR..4id3oAhD3DGOs4HOTQNCl87R0Ti", "Animal", 108)
+AddPuzzle("How Very PC", 20, 17, "dZLZ.6u0HiWcd5UxL1L00ZUL23awRpXv_h.65MAC3.Ah8Kqv257km39OD.nI", "Object", 109)
+AddPuzzle("Cheese Me", 10, 12, "BI.GiRfEJ0o7WhmbUTRRQEx", "Animal", 112)
+AddPuzzle("Super Soaker", 17, 20, "dV89NSc.Ov_gf1B..5J37P.7.Pv_wP6kjy2AzAaByiV..x.j4y9YkptBD.HP", "Animal", 123)
+AddPuzzle("Alas", 13, 17, "nOkM_w8IxAiE3pY3fW..P.8tNB_XMY3zJY37HxB3", "Object|Halloween", 123)
+AddPuzzle("Getting Jiggy", 24, 24, "LejDbb..n.nuib6FD.PjL.Ouib577.nPDb_Ns_7RijOrsmXP2C..2C.zcGXRijOrkuWvDb..n.nuib6FD.PjL.Ouib577.nPDb.", "Abstract", 130)
+AddPuzzle("Grab Bag", 13, 15, "NOspxoG04H..B239_TJXgnuiBIMsmixDH8Gs", "Object", 158)
+AddPuzzle("Deep In Thought", 20, 19, "GZFfge.gm8sVNQtuR8HPs0Bbf.wR_Zbx8kGPi_CegBE6IJq2F5NyC.24L6egfaH6K3", "Abstract", 162)
+AddPuzzle("Meep Morp Zeep", 15, 23, "iRilLmKZsQ7qUM_zqU8QxLvAQ_7LZg3SoKZr.0yRAZRi33.3O597OMXDnCgu", "Object", 163)
+AddPuzzle("Picking Up The Pieces", 24, 18, "3eylHzLjx7x757VjlLxJx95Xvfffd3RrXvbZznMl..1j..3Dd.ZH..f1dRNjd.ZTR31nJzhLPTz", "Object", 202)
+AddPuzzle("The Ruins", 20, 17, "dZNXPPf5ZwhXnm8GEt.on2A2wvwbN73bbznMMoSRTzzvtSjL862DpRBojwBj", "Object|Halloween", 219)
+AddPuzzle("The King", 25, 15, "BfA5b7vpJTnwUVrCgRNaLXOo02uDwX7E5I.z0KLAhjaSlb5pZ9tVuOuf6MBFgVmLDY", "Animal", 260)
+AddPuzzle("Do You Smell Carrots?", 17, 20, "dV8OsJXXDfbDmSAFw4Lw2RARtG09sfQtwAH_Itc_Kx7674VSMDG9pN_WxDX.", "Xmas", 338)
+AddPuzzle("Bamboozled", 19, 19, "0X8QgPOQ_fgwdghcBCAHW1CyvpPlJXqWtb7nIgHOYwS9ro6xko9t9EYxso52Pwu", "Animal", 363)
+AddPuzzle("Oh The Drama", 25, 15, "BfAheS9rpnpQbQpl6pLoxwr0G65p6k2zY0drYvgNNIPoybCRVtEguV1_Q8uowxfEox", "Object", 365)
+AddPuzzle("Downward", 20, 19, "GZGh.DGx65L66pnbTMzy3tI8pNb4MACo9KI.SFL9IFj2pL2dsL_aLnGq_Zh08YZSeV", "Abstract", 447)
+AddPuzzle("So Bright", 21, 25, "Yak2CnUakaolGRhSK6mj1zHMIUxc6x..jABq9YkYibHFAgxi4C2GJy9r5uQi365sfAI9yzEUgkDHLDEr08geABcfAeQ", "Animal|Xmas", 515)
 
 function FormatPuzzleNameAndSize(name, width, height)
 {
@@ -58,6 +69,21 @@ function FormatPuzzleNameAndSize(name, width, height)
 function ByComplexity(a, b)
 {
 	return s_puzzles[a].complexity - s_puzzles[b].complexity
+}
+
+function BuildBigButton(col, click, name, tagsHTML)
+{
+	const output = []
+	output.push('<BUTTON CLASS="puzzleButton" STYLE="background-color: ' + col + '" onClick="' + click + '"><DIV class=buttonPuzzleName>' + name + '</DIV>')
+
+	if (tagsHTML && tagsHTML != "")
+	{
+		output.push('<DIV STYLE="padding:5px">' + tagsHTML + '</DIV>')
+	}
+
+	output.push('</BUTTON>')
+
+	return output.join('')
 }
 
 function BuildButtonsForPuzzles(pageName)
@@ -74,7 +100,7 @@ function BuildButtonsForPuzzles(pageName)
 		const green = 1 - complexityFraction
 		const scaleCol = (id in s_solved) ? 90 : 127
 		const col = "rgb(" + Math.floor(scaleCol + scaleCol * Math.sqrt(red)) + ", " + Math.floor(scaleCol + scaleCol * Math.sqrt(green)) + ", " + scaleCol + ")"
-		output.push('<BUTTON CLASS="puzzleButton" STYLE="background-color: ' + col + '" onClick="SetHash(\'' + pageName + '\', \'' + id + '\')"><DIV class=buttonPuzzleName>' + FormatPuzzleNameAndSize(puzzle.name, puzzle.width, puzzle.height) + '</DIV><DIV STYLE="padding:5px">' + tagsHTML.join(" ") + '</DIV></BUTTON>')
+		output.push(BuildBigButton(col, "SetHash('" + pageName + "', '" + id + "')", FormatPuzzleNameAndSize(puzzle.name, puzzle.width, puzzle.height), tagsHTML.join(' ')))
 	}
 	
 	return output.join('<wbr>')

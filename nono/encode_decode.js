@@ -1,5 +1,10 @@
 const s_encodeDecodeString = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0987654321_."
 
+const kMaxHeight = 25
+const kMinHeight = 5
+const kMaxWidth = 25
+const kMinWidth = 5
+
 //====================================================================
 // Pack 0s and 1s using enableDecodeString
 //====================================================================
@@ -134,7 +139,7 @@ function NonoEncodePuzzle(data)
 	const height = data.length
 	const workspace = {buildString:""}
 	
-	var bOk = NonoEncodeValue(0, 0, 1, workspace) && NonoEncodeValue(width, 5, 25, workspace) && NonoEncodeValue(height, 5, 25, workspace)
+	var bOk = NonoEncodeValue(0, 0, 1, workspace) && NonoEncodeValue(width, kMinWidth, kMaxWidth, workspace) && NonoEncodeValue(height, kMinHeight, kMaxHeight, workspace)
 	
 	if (bOk)
 	{
@@ -153,8 +158,8 @@ function NonoEncodePuzzle(data)
 	{
 		const decodeWorkspace = NonoUnpackStringForDecoding(NonoPackString(workspace.buildString))
 		const checkVer = NonoDecode(decodeWorkspace, 0, 1)
-		const checkWidth = NonoDecode(decodeWorkspace, 5, 25)
-		const checkHeight = NonoDecode(decodeWorkspace, 5, 25)
+		const checkWidth = NonoDecode(decodeWorkspace, kMinWidth, kMaxWidth)
+		const checkHeight = NonoDecode(decodeWorkspace, kMinHeight, kMaxHeight)
 
 		if (checkVer != 0 || checkWidth != width || checkHeight != height)
 		{
@@ -170,7 +175,7 @@ function NonoEncodePuzzle(data)
 // Create a puzzle from a string
 //====================================================================
 
-function NonoDecodePuzzle(stringIn)
+function NonoDecodePuzzleInner(stringIn)
 {
 	const decodeWorkspace = NonoUnpackStringForDecoding(stringIn)
 
@@ -188,8 +193,8 @@ function NonoDecodePuzzle(stringIn)
 		return null
 	}
 	
-	const width = NonoDecode(decodeWorkspace, 5, 25)
-	const height = NonoDecode(decodeWorkspace, 5, 25)
+	const width = NonoDecode(decodeWorkspace, kMinWidth, kMaxWidth)
+	const height = NonoDecode(decodeWorkspace, kMinHeight, kMaxHeight)
 	var dataOut = []
 
 	for (var y = 0; y < height; ++ y)
@@ -222,4 +227,16 @@ function NonoDecodePuzzle(stringIn)
 	}
 	
 	return dataOut
+}
+
+function NonoDecodePuzzle(stringIn)
+{
+	const reply = NonoDecodePuzzleInner(stringIn)
+	
+	if (! reply)
+	{
+		alert("Invalid puzzle definition! Sorry!")
+	}
+
+	return reply
 }

@@ -2,9 +2,120 @@ var s_autoSolveData = null
 
 function SolveStart(stopAfterSingleHint)
 {
-	s_autoSolveData = {count: 0, solveColumns: false, solveIndex: 0, anythingChanged: true, skip: {cols: {}, rows: {}}, stopAfterSingleHint:stopAfterSingleHint}
+	s_autoSolveData = {solveColumns: false, solveIndex: 0, anythingChanged: true, skip: {cols: {}, rows: {}}, stopAfterSingleHint:stopAfterSingleHint}
 	SetBusy(true)
 	SolveStep()
+}
+
+function SolveForDesigner(grid, solveColumns)
+{
+	var skip = {cols:{}, rows:{}}
+	var solveIndex = 0
+	var count = 0
+	var anythingChanged = true
+
+	const clues = {cols:[], rows:[]}
+	const sizes = {cols:grid[0].length, rows:grid.length}
+	const solveHere = CreateEmptyGridOfSize(sizes.cols, sizes.rows)
+	const completeness = {rows:[], cols:[], total:0, needed:sizes.cols + sizes.rows}
+
+	console.time("BuildClues")
+
+	// Build clues
+	for (var x = 0; x < sizes.cols; ++ x)
+	{
+		clues.cols.push(CalcClues(GetColumnFromGrid(grid, x)))
+	}
+
+	for (var y = 0; y < sizes.rows; ++ y)
+	{
+		clues.rows.push(CalcClues(grid[y]))
+	}
+
+	console.timeEnd("BuildClues")
+	console.time("SolveForDesigner")
+	
+	// Solve
+	for (;;)
+	{
+		const colsOrRows = solveColumns ? "cols" : "rows"
+		const skipColsOrRows = solveColumns ? "rows" : "cols"
+	
+		if (! skip[colsOrRows][solveIndex] && !completeness[colsOrRows][solveIndex])
+		{
+			const already = solveColumns ? GetColumnFromGrid(solveHere, solveIndex) : solveHere[solveIndex]
+			var bCompleteNow = !already.includes(' ')
+			
+			if (!bCompleteNow)
+			{
+				const newData = TryToSolve(already, clues[colsOrRows][solveIndex])
+				
+				if (newData)
+				{
+					for (var i = 0; i < newData.length; ++ i)
+					{
+						if (solveColumns)
+						{
+							if (solveHere[i][solveIndex] != newData[i])
+							{
+								delete skip.rows[i]
+								solveHere[i][solveIndex] = newData[i]
+							}
+						}
+						else
+						{
+							if (solveHere[solveIndex][i] != newData[i])
+							{
+								delete skip.cols[i]
+								solveHere[solveIndex][i] = newData[i]
+							}
+						}
+					}
+
+					bCompleteNow = !newData.includes(' ')
+					anythingChanged = true
+				}
+
+				if (! bCompleteNow)
+				{
+					++ count
+				}
+			}
+			
+			if (bCompleteNow)
+			{
+				completeness[colsOrRows][solveIndex] = true
+				++ completeness.total
+				
+				if (completeness.total == completeness.needed)
+				{
+					console.log("Solved puzzle! Count=" + count)
+					console.timeEnd("SolveForDesigner")
+					solveHere.difficulty = count
+					return solveHere
+				}
+			}
+
+			skip[colsOrRows][solveIndex] = true
+		}
+		
+		++ solveIndex
+
+		if (solveIndex >= sizes[colsOrRows])
+		{
+			solveColumns = !solveColumns
+			solveIndex = 0
+			
+			if (! anythingChanged)
+			{
+				console.log("Could not solve puzzle!")
+				console.timeEnd("SolveForDesigner")
+				return solveHere
+			}
+			
+			anythingChanged = false
+		}
+	}
 }
 
 function Hint()
@@ -47,11 +158,6 @@ function Hint()
 					s_autoSolveData.skip.cols[s_autoSolveData.solveIndex] = true
 				}
 				
-				if (bUnfinished)
-				{
-					++ s_autoSolveData.count
-				}
-				
 				bDidSomething = true
 			}
 			
@@ -89,11 +195,6 @@ function Hint()
 				{
 					Highlight("row" + s_autoSolveData.solveIndex, "red")
 					s_autoSolveData.skip.rows[s_autoSolveData.solveIndex] = true
-				}
-
-				if (bUnfinished)
-				{
-					++ s_autoSolveData.count
 				}
 
 				bDidSomething = true
@@ -138,7 +239,7 @@ function SolveStep()
 		}
 		else
 		{
-			setTimeout(SolveDone, 200)
+			setTimeout(SolveDone, 1)
 		}
 	}
 	else
@@ -150,7 +251,6 @@ function SolveStep()
 function SolveDone()
 {
 	SetBusy(false)
-	alert("Solved!\nCount = " + s_autoSolveData.count)
 	s_autoSolveData = null
 }
 
@@ -161,68 +261,89 @@ function SolveFail()
 	s_autoSolveData = null
 }
 
-function TryToSolveSection(combineHere, startWith, clues, fromClueIndex, alreadyContains)
+function CombineSolve(combineHere, startWith, alreadyContains)
 {
-	if (fromClueIndex >= clues.length)
+	var paddedWithDots = startWith.padEnd(alreadyContains.length, ".")
+
+	for (var checkMatch in alreadyContains)
 	{
-		var paddedWithDots = startWith
-		while (paddedWithDots.length < combineHere.length)
+		const chr = alreadyContains[checkMatch]
+		if (! (chr == ' ' || chr == paddedWithDots[checkMatch]))
 		{
-			paddedWithDots += '.' 
+			return false
 		}
-			
-		for (var checkMatch = 0; checkMatch < alreadyContains.length; ++ checkMatch)
+	}
+	
+	if (combineHere.length)
+	{
+		for (var combine in paddedWithDots)
 		{
-			if (! (alreadyContains[checkMatch] == ' ' || alreadyContains[checkMatch] == paddedWithDots[checkMatch]))
-			{
-				return false
-			}
-		}
-		
-		for (var combine = 0; combine < combineHere.length; ++ combine)
-		{
-			if (combineHere[combine] == '?')
-			{
-				combineHere[combine] = paddedWithDots[combine]
-			}
-			else if (combineHere[combine] != paddedWithDots[combine])
+			if (combineHere[combine] != paddedWithDots[combine])
 			{
 				combineHere[combine] = ' '
 			}
 		}
+	}
+	else
+	{
+		for (var chr of paddedWithDots)
+		{
+			combineHere.push(chr)
+		}
+	}
+}
 
-		return
+function TryToSolveSection(combineHere, startWith, clues, fromClueIndex, alreadyContains)
+{
+	if (fromClueIndex >= clues.length)
+	{
+		return CombineSolve(combineHere, startWith, alreadyContains)
 	}
 
 	var buildPotential = startWith
-	var spacer = ""
 
-	if (startWith != "")
+	if (buildPotential != "")
 	{
+		if (alreadyContains[buildPotential.length] == '1')
+		{
+			return
+		}
 		buildPotential += '.'
 	}
 	
 	const thisClue = clues[fromClueIndex]
-	for (var i = buildPotential.length; i <= combineHere.length - thisClue; ++ i)
+	const thisClueTxt = "".padEnd(thisClue, "1")
+
+	while (buildPotential.length <= alreadyContains.length - thisClue)
 	{
-		var possible = buildPotential + spacer
-		for (var j = 0; j < thisClue; ++ j)
+		const len = buildPotential.length
+		
+		var bCheckIt = (len == 0 || alreadyContains[len - 1] != '1')
+		
+		for (var t = 0; bCheckIt && t < thisClue; ++ t)
 		{
-			possible += '1'
+			if (alreadyContains[len + t] == '.')
+			{
+				bCheckIt = false
+			}
 		}
-		TryToSolveSection(combineHere, possible, clues, fromClueIndex + 1, alreadyContains)
-		spacer += "."
+		
+		if (bCheckIt)
+		{
+			TryToSolveSection(combineHere, buildPotential + thisClueTxt, clues, fromClueIndex + 1, alreadyContains)
+		}
+
+		if (alreadyContains[len] == '1')
+		{
+			return
+		}
+		buildPotential += "."
 	}
 }
 
 function TryToSolve(alreadyContains, clues)
 {
 	var combineHere = []
-	for (var ch of alreadyContains)
-	{
-		combineHere.push('?')
-	}
-
 	TryToSolveSection(combineHere, "", clues, 0, alreadyContains)
 
 	var was = alreadyContains.join('')
