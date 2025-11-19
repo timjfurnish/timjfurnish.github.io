@@ -3,6 +3,8 @@ var s_autoSolveData = null
 function SolveStart(stopAfterSingleHint)
 {
 	s_autoSolveData = {solveColumns: false, solveIndex: 0, anythingChanged: true, skip: {cols: {}, rows: {}}, stopAfterSingleHint:stopAfterSingleHint}
+	s_autoPaint = null
+
 	SetBusy(true)
 	SolveStep()
 }
@@ -135,7 +137,7 @@ function Hint()
 				
 				if (newDataForColumn)
 				{
-					Highlight("col" + s_autoSolveData.solveIndex, "#66FF66")
+					Highlight(["col" + s_autoSolveData.solveIndex], "#66FF66")
 					for (var y = 0; y < newDataForColumn.length; ++ y)
 					{
 						if (SetCell(s_autoSolveData.solveIndex, y, newDataForColumn[y]))
@@ -146,7 +148,7 @@ function Hint()
 
 					if (s_autoSolveData.stopAfterSingleHint)
 					{
-						Highlight(null)
+						Highlight()
 						return true
 					}
 
@@ -154,7 +156,7 @@ function Hint()
 				}
 				else
 				{
-					Highlight("col" + s_autoSolveData.solveIndex, "red")
+					Highlight(["col" + s_autoSolveData.solveIndex], "red")
 					s_autoSolveData.skip.cols[s_autoSolveData.solveIndex] = true
 				}
 				
@@ -174,7 +176,7 @@ function Hint()
 
 				if (newDataForRow)
 				{
-					Highlight("row" + s_autoSolveData.solveIndex, "#66FF66")
+					Highlight(["row" + s_autoSolveData.solveIndex], "#66FF66")
 					for (var x = 0; x < newDataForRow.length; ++ x)
 					{
 						if (SetCell(x, s_autoSolveData.solveIndex, newDataForRow[x]))
@@ -185,7 +187,7 @@ function Hint()
 
 					if (s_autoSolveData.stopAfterSingleHint)
 					{
-						Highlight(null)
+						Highlight()
 						return true
 					}
 
@@ -193,7 +195,7 @@ function Hint()
 				}
 				else
 				{
-					Highlight("row" + s_autoSolveData.solveIndex, "red")
+					Highlight(["row" + s_autoSolveData.solveIndex], "red")
 					s_autoSolveData.skip.rows[s_autoSolveData.solveIndex] = true
 				}
 
@@ -213,7 +215,7 @@ function Hint()
 			
 			if (! s_autoSolveData.anythingChanged)
 			{
-				Highlight(null)
+				Highlight()
 				return true
 			}
 			

@@ -9,8 +9,8 @@ const kDesignModes =
 {
 	["Draw"]:(x,y) =>
 	{
-		s_designing[y][x] = s_cycleDesigner[s_designing[y][x]]
-		DesignerShowSolvability()
+		s_autoPaint = s_cycleDesigner[s_designing[y][x]]
+		NonoDesignMouseOverGrid(x, y)
 	},
 	["Duplicate Row"]:(x,y) =>
 	{
@@ -102,7 +102,7 @@ function RebuildDesignScreen()
 		output.push("<TR>")
 		for (var x = 0; x < s_designing[y].length; ++ x)
 		{
-			output.push('<TD id="gridCell' + x + '.' + y + '" ' + cellWH + ' onClick="ClickGridDesigner(' + x + ',' + y + ')"></TD>')
+			output.push('<TD id="designCell.' + x + '.' + y + '" ' + cellWH + ' onDragStart="return false" onMouseOver="NonoDesignMouseOverGrid(' + x + ',' + y + ')" onContextMenu="return false""></TD>')
 		}
 		output.push("</TR>")
 	}
@@ -120,7 +120,25 @@ function RebuildDesignScreen()
 	output.push('<BUTTON onClick="DesignerInv()">INVERT</BUTTON> ')
 	output.push('<BUTTON onClick="DesignerClear()">CLEAR</BUTTON> ')
 	output.push('<BUTTON onClick="DesignToPlay()">PLAY</BUTTON>')
-	return {content:output.join(''), name:s_designing[0].length + " x " + s_designing.length, exitURL:"SetHash('Design')", exitName:"BACK", thenCall:DesignerShowSolvability}
+	return {content:output.join(''), name:s_designing[0].length + " x " + s_designing.length, exitURL:"SetHash('Design')", exitName:"BACK", thenCall:DesignerBegin}
+}
+
+function DesignerBegin()
+{
+	for (var y in s_designing)
+	{
+		for (var x in s_designing[0])
+		{
+			const elem = GetElement("designCell." + x + "." + y)
+			elem.gridX = x
+			elem.gridY = y
+			elem.onmousedown = NonoDesignMouseDown
+		}
+	}
+	
+	document.onmouseup = NonoDesignMouseUp
+
+	DesignerShowSolvability()
 }
 
 function DesignerSave()
@@ -208,10 +226,34 @@ function DesignerTrim()
 	}
 }
 
-function ClickGridDesigner(x, y)
+function NonoDesignMouseOverGrid(x, y)
 {
-	const func = kDesignModes[GetElement("designMode").value]
-	func(x, y)
+	if (s_autoPaint && s_designing[y][x] != s_autoPaint)
+	{
+		s_designing[y][x] = s_autoPaint
+		GetElement('designCell.' + x + '.' + y).bgColor = (s_autoPaint == '1') ? '#222222' : '#DDDDDD'
+	}
+}
+
+function NonoDesignMouseUp()
+{
+	if (s_autoPaint)
+	{
+		s_autoPaint = null
+		DesignerShowSolvability()
+	}
+}
+
+function NonoDesignMouseDown(e)
+{
+	if (! s_autoPaint)
+	{
+		const {target} = e
+		const func = kDesignModes[GetElement("designMode").value]
+		func(target.gridX, target.gridY)
+	}
+	
+	return false
 }
 
 function DesignerShowSolvability()
@@ -236,7 +278,7 @@ function DesignerShowSolvability()
 		const row = s_designing[y]
 		for (var x in row)
 		{
-			const elem = GetElement('gridCell' + x + '.' + y)
+			const elem = GetElement('designCell.' + x + '.' + y)
 			if (row[x] == '1')
 			{
 				elem.bgColor = (howDidItFail[y][x] == ' ') ? '#660000' : '#222222'

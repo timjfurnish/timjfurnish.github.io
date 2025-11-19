@@ -55,9 +55,12 @@ AddPuzzle("Meep Morp Zeep", 15, 23, "iRilLmKZsQ7qUM_zqU8QxLvAQ_7LZg3SoKZr.0yRAZR
 AddPuzzle("Picking Up The Pieces", 24, 18, "3eylHzLjx7x757VjlLxJx95Xvfffd3RrXvbZznMl..1j..3Dd.ZH..f1dRNjd.ZTR31nJzhLPTz", "Object", 202)
 AddPuzzle("The Ruins", 20, 17, "dZNXPPf5ZwhXnm8GEt.on2A2wvwbN73bbznMMoSRTzzvtSjL862DpRBojwBj", "Object|Halloween", 219)
 AddPuzzle("The King", 25, 15, "BfA5b7vpJTnwUVrCgRNaLXOo02uDwX7E5I.z0KLAhjaSlb5pZ9tVuOuf6MBFgVmLDY", "Animal", 260)
+AddPuzzle("Stocking Filler", 11, 20, "lLsHC46Eisx8OReupw.gjYvqKZ3f23wF4jXvRdCk", "Xmas", 269)
+AddPuzzle("Warp Speed", 25, 25, "2fffAcB2F6E1wPg.m7AKrF_yvPQG9BYaL.GE33FrZzEQlDIKm2zxVbTJMEFrIgQwdHksh1ZVFQ4NtI_tJUyjHSk.HTvPhbBD14jhdV3zg7P", "Object", 281)
 AddPuzzle("Do You Smell Carrots?", 17, 20, "dV8OsJXXDfbDmSAFw4Lw2RARtG09sfQtwAH_Itc_Kx7674VSMDG9pN_WxDX.", "Xmas", 338)
 AddPuzzle("Bamboozled", 19, 19, "0X8QgPOQ_fgwdghcBCAHW1CyvpPlJXqWtb7nIgHOYwS9ro6xko9t9EYxso52Pwu", "Animal", 363)
 AddPuzzle("Oh The Drama", 25, 15, "BfAheS9rpnpQbQpl6pLoxwr0G65p6k2zY0drYvgNNIPoybCRVtEguV1_Q8uowxfEox", "Object", 365)
+AddPuzzle("Pirhana", 20, 17, "dZLGtbvnPf.fd1jf.xwaiAXmchSNuon.gLSxyi018NAgd652_uJJCKw1ooAi", "Animal", 377)
 AddPuzzle("Downward", 20, 19, "GZGh.DGx65L66pnbTMzy3tI8pNb4MACo9KI.SFL9IFj2pL2dsL_aLnGq_Zh08YZSeV", "Abstract", 447)
 AddPuzzle("So Bright", 21, 25, "Yak2CnUakaolGRhSK6mj1zHMIUxc6x..jABq9YkYibHFAgxi4C2GJy9r5uQi365sfAI9yzEUgkDHLDEr08geABcfAeQ", "Animal|Xmas", 515)
 

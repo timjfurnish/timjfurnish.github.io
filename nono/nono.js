@@ -1,9 +1,10 @@
 var s_activePuzzleSolutionSoFar = null
 var s_completeness = null
 var s_clues = null
-var s_oldHighlightId = null
+var s_oldHighlightIdArray = []
 var s_easyText = ["EASY", "EASYISH", "MEDIUM", "TRICKSY", "HARD", "EVIL"]
 var s_playingID = null
+var s_autoPaint = null
 
 const s_cycle = {[' ']:'1', ['1']:'.', ['.']:' '}
 const s_cycleReverse = {[' ']:'.', ['.']:'1', ['1']:' '}
@@ -128,8 +129,10 @@ function NonoBuildPage()
 	s_completeness = null
 	s_autoSolveData = null
 	s_clues = null
-	s_oldHighlightId = null
+	s_oldHighlightIdArray = []
 	s_playingID = null
+	s_autoPaint = null
+	document.onmouseup = null
 
 	// Try and find some overrides for a particular page
 	for (var [key, func] of Object.entries(s_menusWithNames))
@@ -164,21 +167,35 @@ function SetBusy(onOff)
 	}
 }
 
-function Highlight(id, col)
+function Highlight(idArray, col)
 {
-	const oldElem = s_oldHighlightId ? GetElement(s_oldHighlightId) : null
-	if (oldElem)
+	if (!idArray)
 	{
-		oldElem.bgColor = ""
+		idArray = []
+	}
+
+	for (var oldId of s_oldHighlightIdArray)
+	{
+		if (! idArray.includes(oldId))
+		{
+			const oldElem = GetElement(oldId)
+			if (oldElem)
+			{
+				oldElem.bgColor = ""
+			}
+		}
+	}
+
+	for (var newId of idArray)
+	{
+		const newElem = GetElement(newId)
+		if (newElem)
+		{
+			newElem.bgColor = col
+		}
 	}
 	
-	const newElem = id ? GetElement(id) : null
-	if (newElem)
-	{
-		newElem.bgColor = col
-	}
-	
-	s_oldHighlightId = id
+	s_oldHighlightIdArray = idArray
 }
 
 function EnteredCustom(whichScreen)
@@ -221,9 +238,7 @@ function CalcCellWidthHeight(gridWidth, gridHeight)
 	gridWidth -= 5
 	gridHeight -= 5
 	const biggest = Math.min(30, Math.max(gridWidth * 2, gridHeight))
-	const reply = Math.floor((90 - biggest) / 3)
-	console.log("CalcCellWidthHeight returning " + reply)
-	return reply
+	return Math.floor((90 - biggest) / 3)
 }
 
 function SetUpPuzzle(title, puzzleIn, playingID)
@@ -260,7 +275,7 @@ function SetUpPuzzle(title, puzzleIn, playingID)
 		for (var x = 0; x < width; ++ x)
 		{
 			const coords = x + ',' + y
-			output.push('<TD id="gridCell' + x + '.' + y + '" ' + cellWH + ' onClick="ClickGrid(' + coords + ')" onContextMenu="return ClickGrid(' + coords + ', true)" BGCOLOR=#FFEEEE></TD>')
+			output.push('<TD id="gridCell.' + x + '.' + y + '" ' + cellWH + ' onDragStart="return false" onMouseOver="NonoPlayMouseOverGrid(' + coords + ')" onMouseOut="MouseOutGrid(' + coords + ')" onContextMenu="return false"></TD>')
 			buildLine.push(" ")
 		}
 		output.push(AddCellTickCross("rowsTick" + y, "padding-left:3px; ", rowClues.length))
@@ -280,18 +295,58 @@ function SetUpPuzzle(title, puzzleIn, playingID)
 
 	s_activePuzzleSolutionSoFar = emptyGrid
 	s_clues = {cols:buildColumnClues, rows:buildRowClues}
-	s_oldHighlightId = null
 	s_completeness = {rows:[], cols:[], total:0}
 	s_playingID = playingID
 	
-	return {name:FormatPuzzleNameAndSize(title, width, height), content:output.join(''), exitURL:"SetHash('Play')", exitName:'BACK'}
+	return {name:FormatPuzzleNameAndSize(title, width, height), content:output.join(''), exitURL:"SetHash('Play')", exitName:'BACK', thenCall:SetUpPlayMouseHandlers}
 }
 
-function ClickGrid(x, y, reverse)
+function SetUpPlayMouseHandlers()
+{
+	for (var y in s_activePuzzleSolutionSoFar)
+	{
+		for (var x in s_activePuzzleSolutionSoFar[0])
+		{
+			const elem = GetElement("gridCell." + x + "." + y)
+			elem.gridX = x
+			elem.gridY = y
+			elem.onmousedown = NonoPlayMouseDown
+		}
+	}
+	
+	document.onmouseup = NonoPlayMouseUp
+}
+
+function NonoPlayMouseOverGrid(x, y)
 {
 	if (! s_autoSolveData)
 	{
-		SetCell(x, y, (reverse ? s_cycleReverse : s_cycle)[s_activePuzzleSolutionSoFar[y][x]])
+		Highlight(["col" + x, "row" + y], "#FFFFAA")
+		
+		if (s_autoPaint)
+		{
+			if (s_autoPaint.to != "1" || s_activePuzzleSolutionSoFar[y][x] == s_autoPaint.from)
+			{
+				SetCell(x, y, s_autoPaint.to)
+			}
+		}
+	}
+}
+
+function MouseOutGrid(x, y)
+{
+	if (! s_autoSolveData)
+	{
+		Highlight()
+	}
+}
+
+function NonoPlayMouseUp()
+{
+	if (s_autoPaint)
+	{
+		s_autoPaint = null
+		
 		if (s_completeness.total == s_clues.rows.length + s_clues.cols.length)
 		{
 			if (s_playingID)
@@ -301,6 +356,18 @@ function ClickGrid(x, y, reverse)
 			alert("Completed! Well done!")
 		}
 	}
+}
+
+function NonoPlayMouseDown(e)
+{
+	if (! s_autoSolveData && ! s_autoPaint)
+	{
+		const {target, button} = e
+		const from = s_activePuzzleSolutionSoFar[target.gridY][target.gridX]
+		s_autoPaint = {from:from, to:(button ? s_cycleReverse : s_cycle)[from]}
+		SetCell(target.gridX, target.gridY, s_autoPaint.to)
+	}
+	
 	return false
 }
 
@@ -352,7 +419,7 @@ function SetCell(x, y, newContents)
 	{
 		s_activePuzzleSolutionSoFar[y][x] = newContents
 
-		const elem = GetElement('gridCell' + x + '.' + y)
+		const elem = GetElement('gridCell.' + x + '.' + y)
 		
 		if (elem)
 		{
@@ -370,7 +437,7 @@ function SetCell(x, y, newContents)
 				}
 				else
 				{
-					elem.bgColor = '#FFEEEE'
+					elem.bgColor = ''
 				}
 			}
 		}
