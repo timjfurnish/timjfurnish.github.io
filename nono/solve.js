@@ -5,8 +5,31 @@ function SolveStart(stopAfterSingleHint)
 	s_autoSolveData = {solveColumns: false, solveIndex: 0, anythingChanged: true, skip: {cols: {}, rows: {}}, stopAfterSingleHint:stopAfterSingleHint}
 	s_autoPaint = null
 
-	SetBusy(true)
+	DisableButtonsIn("toHere")
+	DisableButtonsIn("backButtonHere")
 	SolveStep()
+}
+
+function ShouldSkipInitialPass(clues, cells)
+{
+	if (clues.length)
+	{
+		var cellsNeeded = 0
+		var pad = 0
+		var biggest = 0
+
+		for (var n of clues)
+		{
+			cellsNeeded += pad + n
+			pad = 1
+			biggest = Math.max(biggest, n)
+		}
+		
+//		console.log("Clues [" + clues + "] need " + cellsNeeded + "/" + cells + " cells, biggest=" + biggest)
+		return biggest <= cells - cellsNeeded
+	}
+	
+	return false
 }
 
 function SolveForDesigner(grid, solveColumns)
@@ -21,22 +44,35 @@ function SolveForDesigner(grid, solveColumns)
 	const solveHere = CreateEmptyGridOfSize(sizes.cols, sizes.rows)
 	const completeness = {rows:[], cols:[], total:0, needed:sizes.cols + sizes.rows}
 
-	console.time("BuildClues")
-
 	// Build clues
 	for (var x = 0; x < sizes.cols; ++ x)
 	{
-		clues.cols.push(CalcClues(GetColumnFromGrid(grid, x)))
+		const cluesForColumn = CalcClues(GetColumnFromGrid(grid, x))
+		clues.cols.push(cluesForColumn)
+		if (ShouldSkipInitialPass(cluesForColumn, sizes.rows))
+		{
+			skip.cols[x] = true
+		}
 	}
 
 	for (var y = 0; y < sizes.rows; ++ y)
 	{
+		const cluesForRow = CalcClues(grid[y])
 		clues.rows.push(CalcClues(grid[y]))
+		if (ShouldSkipInitialPass(cluesForRow, sizes.cols))
+		{
+			skip.rows[y] = true
+		}
 	}
 
-	console.timeEnd("BuildClues")
-	console.time("SolveForDesigner")
-	
+/*
+	console.log("==============================================================")
+	console.log("Trying to solve puzzle - " + (solveColumns ? "columns" : "rows") + " first")
+	console.log("Skip columns " + Object.keys(skip.cols).join(" "))
+	console.log("Skip rows " + Object.keys(skip.rows).join(" "))
+	console.time(solveColumns ? "Solve_cols" : "Solve_rows")
+*/
+
 	// Solve
 	for (;;)
 	{
@@ -91,8 +127,7 @@ function SolveForDesigner(grid, solveColumns)
 				
 				if (completeness.total == completeness.needed)
 				{
-					console.log("Solved puzzle! Count=" + count)
-					console.timeEnd("SolveForDesigner")
+//					console.timeEnd("Solve_" + colsOrRows)
 					solveHere.difficulty = count
 					return solveHere
 				}
@@ -105,16 +140,17 @@ function SolveForDesigner(grid, solveColumns)
 
 		if (solveIndex >= sizes[colsOrRows])
 		{
+//			console.timeEnd("Solve_" + colsOrRows)
+
 			solveColumns = !solveColumns
 			solveIndex = 0
 			
 			if (! anythingChanged)
 			{
-				console.log("Could not solve puzzle!")
-				console.timeEnd("SolveForDesigner")
 				return solveHere
 			}
 			
+//			console.time("Solve_" + skipColsOrRows)
 			anythingChanged = false
 		}
 	}
@@ -232,7 +268,7 @@ function SolveStep()
 	{
 		if (s_autoSolveData.stopAfterSingleHint)
 		{
-			SetBusy(false)
+			EnableButtons()
 			s_autoSolveData = null
 		}
 		else if (s_completeness.total < (s_clues.rows.length + s_clues.cols.length))
@@ -252,13 +288,14 @@ function SolveStep()
 
 function SolveDone()
 {
-	SetBusy(false)
+	s_completeness.done = true
+	EnableButtons()
 	s_autoSolveData = null
 }
 
 function SolveFail()
 {
-	SetBusy(false)
+	EnableButtons()
 	alert("Failed to solve puzzle!")
 	s_autoSolveData = null
 }

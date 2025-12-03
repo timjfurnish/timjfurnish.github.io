@@ -15,8 +15,7 @@ const kIconMatch = "&#x2714;&#xFE0F;"
 function BuildMainMenu()
 {
 	const output = []
-	output.push('<BUTTON onClick="SetHash(\'Play\')">PLAY</BUTTON> ')
-	output.push('<BUTTON onClick="SetHash(\'Design\')">DESIGN</BUTTON>')
+	output.push(BuildButtons({PLAY:"SetHash('Play')", DESIGN:"SetHash('Design')"}))
 	return {name:"Main Menu", content:output.join(''), exitName:"EXIT", exitURL:(location.host ? (location.protocol + "//" + location.host) : "")}
 }
 
@@ -41,7 +40,7 @@ const s_menusWithNames =
 		const output = []
 		output.push(BuildButtonsForPuzzles("Puzzle"))
 		output.push('<P><B>Or enter a puzzle code here!</B><BR><INPUT STYLE="max-width: 100%" ID="puzzleData" TYPE=text SIZE=80 ONCHANGE="EnteredCustom(\'Custom\')"></P>')
-		return {content:output.join('')}
+		return {name:"Choose A Puzzle", content:output.join('')}
 	},
 	
 	["Puzzle"]:param =>
@@ -76,11 +75,11 @@ const s_menusWithNames =
 	{
 		const output = []
 		output.push('<P><B>Start from an empty grid!</B><BR>')
-		output.push(BuildBigButton("#DDDDFF", "SetHash('DesignSize', '15x15')", FormatPuzzleNameAndSize("Empty", 15, 15)))
+		output.push(BuildBigButton("#DDDDFF", "SetHash('DesignSize', '15x15')", FormatPuzzleNameAndSize("Empty", "15 x 15")))
 		output.push('<WBR>')
-		output.push(BuildBigButton("#DDDDFF", "SetHash('DesignSize', '20x20')", FormatPuzzleNameAndSize("Empty", 20, 20)))
+		output.push(BuildBigButton("#DDDDFF", "SetHash('DesignSize', '20x20')", FormatPuzzleNameAndSize("Empty", "20 x 20")))
 		output.push('<WBR>')
-		output.push(BuildBigButton("#DDDDFF", "SetHash('DesignSize', '25x25')", FormatPuzzleNameAndSize("Empty", 25, 25)))
+		output.push(BuildBigButton("#DDDDFF", "SetHash('DesignSize', '25x25')", FormatPuzzleNameAndSize("Empty", "25 x 25")))
 		output.push('</P><P><B>Or start from one of these!</B><BR>')
 		output.push(BuildButtonsForPuzzles("DesignFrom"))
 		output.push('</P><P><B>Or enter a puzzle code here!</B><BR><INPUT ID="puzzleData" TYPE=text STYLE="max-width: 100%" SIZE=80 ONCHANGE="EnteredCustom(\'DesignCustom\')"></P>')
@@ -120,11 +119,12 @@ function NonoBuildPage()
 	var [goHere, param] = location.hash?.replace('#', '').split('=', 2)
 	
 	// Defaults if we don't find what we're looking for...
-	var callFunc = BuildMainMenu
+	var callFunc
 	var useName
 
 	// Nullify some things
 	s_designing = null
+	s_designCanBeSolved = null
 	s_activePuzzleSolutionSoFar = null
 	s_completeness = null
 	s_autoSolveData = null
@@ -145,26 +145,77 @@ function NonoBuildPage()
 		}
 	}
 
-	console.log("Displaying page '" + useName + "'" + (param ? " with param '" + param + "'" : ""))
-
-	var setup = callFunc(param)
+	var setup = callFunc?.(param)
 	
-	if (! setup)
+	if (setup)
 	{
-		// Emergency! Show Main Menu ater all!
+		console.log("Displaying page '" + useName + "'" + (param ? " with param '" + param + "'" : ""))
+	}
+	else
+	{
+		// If no function (or if function returned something nullish) then show main menu
 		setup = BuildMainMenu()
+		console.log("Displaying main menu")
+	}
+	
+	if (setup.name)
+	{
+		useName = setup.name
 	}
 
-	GetElement("toHere").innerHTML = '<h2>' + (setup.name ?? useName) + '</h2>' + setup.content + '<P><BUTTON onClick="' + (setup.exitURL ?? 'SetHash(\'MainMenu\')') + '">' + (setup.exitName ?? "MAIN MENU") + '</BUTTON></P>'	
+	document.title = "Nonography: " + useName
+
+	if (setup.subtitle)
+	{
+		useName = FormatPuzzleNameAndSize(useName, setup.subtitle)
+	}
+
+	GetElement("subtitle").innerHTML = useName
+	GetElement("toHere").innerHTML = setup.content
+	GetElement("backButtonHere").innerHTML = '<BUTTON onClick="' + (setup.exitURL ?? 'SetHash(\'MainMenu\')') + '">' + (setup.exitName ?? "MAIN MENU") + '</BUTTON>'
 	setup.thenCall?.()
 }
 
-function SetBusy(onOff)
+const kButtonAvailabilityChecks =
 {
-	for (var eachButton of GetElement("toHere").getElementsByTagName("BUTTON"))
+	["button:SHARE"]: () => s_designCanBeSolved,
+	["button:SOLVE"]: () => !s_completeness.done,
+	["button:HINT"]:  () => !s_completeness.done
+}
+
+function DisableButtonsIn(here)
+{
+	for (var eachButton of GetElement(here).getElementsByTagName("BUTTON"))
 	{
-		eachButton.disabled = onOff
+		eachButton.disabled = true
 	}
+}
+
+function EnableButtonsIn(here)
+{
+	for (var eachButton of GetElement(here).getElementsByTagName("BUTTON"))
+	{
+		const func = kButtonAvailabilityChecks[eachButton.id]
+		eachButton.disabled = func ? !func() : false
+	}
+}
+
+function EnableButtons()
+{
+	EnableButtonsIn("toHere")
+	EnableButtonsIn("backButtonHere")
+}
+
+function BuildButtons(info)
+{
+	const output = []
+	
+	for (var [label, callThis] of Object.entries(info))
+	{
+		output.push('<BUTTON id="button:' + label + '" onClick="' + callThis + '">' + label + '</BUTTON>')
+	}
+	
+	return output.join(' ')
 }
 
 function Highlight(idArray, col)
@@ -257,7 +308,7 @@ function SetUpPuzzle(title, puzzleIn, playingID)
 	{
 		const columnClues = CalcClues(GetColumnFromGrid(puzzleIn, x))
 		buildColumnClues.push(columnClues)
-		output.push('<TD STYLE=\"border-top: none\" CLASS=clues id="col' + x + '" align=center valign=bottom>' + FormatClues(columnClues, '<BR>') + '</TD>')
+		output.push('<TD STYLE="border-top: none" CLASS="topClues" id="col' + x + '" align=center valign=bottom>' + FormatClues(columnClues, '<BR>') + '</TD>')
 		maxColumnClues = Math.max(maxColumnClues, columnClues.length)
 	}
 
@@ -271,7 +322,7 @@ function SetUpPuzzle(title, puzzleIn, playingID)
 		var buildLine = []
 		const rowClues = CalcClues(puzzleIn[y])
 		buildRowClues.push(rowClues)
-		output.push("<TR align=center><TD STYLE=\"border-left: none; padding-left: 8px; padding-right: 8px\" CLASS=clues id=\"row" + y + "\" align=right>" + FormatClues(rowClues, '&nbsp;') + "</TD>")
+		output.push('<TR align=center><TD STYLE="border-left: none; padding-left: 8px; padding-right: 8px" CLASS="sideClues" id="row' + y + '" align="right">' + FormatClues(rowClues, '&nbsp;') + '</TD>')
 		for (var x = 0; x < width; ++ x)
 		{
 			const coords = x + ',' + y
@@ -290,15 +341,14 @@ function SetUpPuzzle(title, puzzleIn, playingID)
 	output.push('<TD STYLE=\"border: none\"></TD>')
 	output.push("</TR>")
 	output.push("</TABLE><BR>")
-	output.push('<BUTTON onClick="SolveStart(false)">SOLVE</BUTTON> ')
-	output.push('<BUTTON onClick="SolveStart(true)">HINT</BUTTON>')
+	output.push(BuildButtons({SOLVE:"SolveStart(false)", HINT:"SolveStart(true)"}))
 
 	s_activePuzzleSolutionSoFar = emptyGrid
 	s_clues = {cols:buildColumnClues, rows:buildRowClues}
 	s_completeness = {rows:[], cols:[], total:0}
 	s_playingID = playingID
 	
-	return {name:FormatPuzzleNameAndSize(title, width, height), content:output.join(''), exitURL:"SetHash('Play')", exitName:'BACK', thenCall:SetUpPlayMouseHandlers}
+	return {name:title, subtitle:width + " x " + height, content:output.join(''), exitURL:"SetHash('Play')", exitName:'BACK', thenCall:SetUpPlayMouseHandlers}
 }
 
 function SetUpPlayMouseHandlers()
@@ -353,6 +403,8 @@ function NonoPlayMouseUp()
 			{
 				s_solved[s_playingID] = true
 			}
+			s_completeness.done = true
+			EnableButtons()
 			alert("Completed! Well done!")
 		}
 	}
@@ -360,7 +412,7 @@ function NonoPlayMouseUp()
 
 function NonoPlayMouseDown(e)
 {
-	if (! s_autoSolveData && ! s_autoPaint)
+	if (! s_autoSolveData && ! s_autoPaint && ! s_completeness.done)
 	{
 		const {target, button} = e
 		const from = s_activePuzzleSolutionSoFar[target.gridY][target.gridX]

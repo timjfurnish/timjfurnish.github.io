@@ -1,4 +1,5 @@
 var s_designing = null
+var s_designCanBeSolved = null
 
 const s_cycleDesigner = {[' ']:'1', ['1']:' '}
 
@@ -45,6 +46,8 @@ const kDesignModes =
 		}
 	},
 }
+
+const kDesignerButtons = {SHARE:"DesignerSave()", TRIM:"DesignerTrim()", INVERT:"DesignerInv()", CLEAR:"DesignerClear()", PLAY:"DesignToPlay()"}
 
 function SetUpDesignerFromID(myID)
 {
@@ -115,12 +118,8 @@ function RebuildDesignScreen()
 	}
 
 	output.push('</SELECT> ')
-	output.push('<BUTTON onClick="DesignerSave()">SAVE</BUTTON> ')
-	output.push('<BUTTON onClick="DesignerTrim()">TRIM</BUTTON> ')
-	output.push('<BUTTON onClick="DesignerInv()">INVERT</BUTTON> ')
-	output.push('<BUTTON onClick="DesignerClear()">CLEAR</BUTTON> ')
-	output.push('<BUTTON onClick="DesignToPlay()">PLAY</BUTTON>')
-	return {content:output.join(''), name:s_designing[0].length + " x " + s_designing.length, exitURL:"SetHash('Design')", exitName:"BACK", thenCall:DesignerBegin}
+	output.push(BuildButtons(kDesignerButtons))
+	return {content:output.join(''), name:"Puzzle Designer", subtitle:s_designing[0].length + " x " + s_designing.length, exitURL:"SetHash('Design')", exitName:"BACK", thenCall:DesignerBegin}
 }
 
 function DesignerBegin()
@@ -258,20 +257,28 @@ function NonoDesignMouseDown(e)
 
 function DesignerShowSolvability()
 {
+	console.time("SolveForDesignerRowsFirst")
 	var howDidItFail = SolveForDesigner(s_designing)
+	console.timeEnd("SolveForDesignerRowsFirst")
+
 	var difficulty = howDidItFail.difficulty
 	
 	if (difficulty !== undefined)
 	{
+		console.time("SolveForDesignerColsFirst")
 		difficulty += SolveForDesigner(s_designing, true).difficulty
+		console.timeEnd("SolveForDesignerColsFirst")
+
 		GetElement("diffHere").innerHTML = "Difficulty: <B>" + difficulty + "</B>"
+		s_designCanBeSolved = (difficulty > 0)
 	}
 	else
 	{
 		GetElement("diffHere").innerHTML = "Difficulty: <B>unsolvable</B>"
+		s_designCanBeSolved = false
 	}
 	
-	console.log("Total difficulty = " + difficulty)
+	EnableButtons()
 	
 	for (var y in s_designing)
 	{
