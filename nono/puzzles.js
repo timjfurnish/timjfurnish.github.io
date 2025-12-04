@@ -40,6 +40,7 @@ AddPuzzle("You Big Phoney", 12, 10, "BMq6N.7IBvVIvNR.1BtDfzv", "Object", 47)
 AddPuzzle("Frosty", 9, 12, "8HQFcdlEWJeKz1MP_e1qi", "Xmas", 48)
 AddPuzzle("High Three", 12, 10, "BMqL3hegqftFlmhQfBdhcg5", "Animal", 58)
 AddPuzzle("Out Of Space", 13, 11, "qb3r3zLPvPvPjL2CPvABMs13IDE5.PQnMZznPf.225..zn.2zz7jvMyDHz2xgg", "Abstract", 59)
+AddPuzzle("What Say You?", 13, 13, "0OTc_ffJSHpjM5GbFPenJDQkNJFa_0S", "Abstract", 60)
 AddPuzzle("Loved Up", 13, 11, "ZObTH5.5YvqS1bD6uQU8mUh3.77", "Abstract", 60)
 AddPuzzle("Lochdown", 22, 8, "3bQR..4id3oAhD3DGOs4HOTQNCl87R0Ti", "Animal", 62)
 AddPuzzle("Lens Me Your Ears", 13, 6, "YOLDTpQ8pQcyuc47", "Object", 76)
@@ -47,6 +48,7 @@ AddPuzzle("Quavering", 11, 9, "tKXgETe6xufEoDI_xS8M", "Abstract", 76)
 AddPuzzle("How Very PC", 20, 17, "dZLZ.6u0HiWcd5UxL1L00ZUL23awRpXv_h.65MAC3.Ah8Kqv257km39OD.nI", "Object", 83)
 AddPuzzle("Cheese Me", 10, 12, "BI.GiRfEJ0o7WhmbUTRRQEx", "Animal", 84)
 AddPuzzle("Getting Jiggy", 24, 24, "LejDbb..n.nuib6FD.PjL.Ouib577.nPDb_Ns_7RijOrsmXP2C..2C.zcGXRijOrkuWvDb..n.nuib6FD.PjL.Ouib577.nPDb.", "Abstract", 84)
+AddPuzzle("Shelly", 20, 9, "_YFf6YZsWmVsoTxMJM0LJUHrEzmYi1l.2", "Animal", 87)
 AddPuzzle("Alas", 13, 17, "nOkM_w8IxAiE3pY3fW..P.8tNB_XMY3zJY37HxB3", "Object|Halloween", 90)
 AddPuzzle("Super Soaker", 17, 20, "dV89NSc.Ov_gf1B..5J37P.7.Pv_wP6kjy2AzAaByiV..x.j4y9YkptBD.HP", "Animal", 103)
 AddPuzzle("WooOOooOOoo", 20, 20, "ZZ1m2D_.wPG8BxeOY5wa9dsnXPQegBgkpTnPf..77uYnfqGxmRc4rAh2opcG7oh4yXAOvg", "Halloween", 117)
@@ -92,11 +94,11 @@ function BuildBigButton(col, click, name, tagsHTML)
 	return output.join('')
 }
 
-function BuildButtonsForPuzzles(pageName)
+function BuildButtonsForPuzzles(pageName, set, darkIfHere)
 {
 	const output = []
 
-	for (var id of Object.keys(s_puzzles).sort(ByComplexity))
+	for (var id of Object.keys(set).sort(ByComplexity))
 	{
 		const puzzle = s_puzzles[id]
 		const tagsHTML = []
@@ -104,7 +106,7 @@ function BuildButtonsForPuzzles(pageName)
 		const complexityFraction = ((puzzle.complexity - s_lowestDifficulty) / (s_highestDifficulty - s_lowestDifficulty))
 		const red = Math.sqrt(complexityFraction)
 		const green = 1 - complexityFraction
-		const scaleCol = (id in s_solved) ? 90 : 127
+		const scaleCol = (id in darkIfHere) ? 90 : 127
 		const col = "rgb(" + Math.floor(scaleCol + scaleCol * Math.sqrt(red)) + ", " + Math.floor(scaleCol + scaleCol * Math.sqrt(green)) + ", " + scaleCol + ")"
 		output.push(BuildBigButton(col, "SetHash('" + pageName + "', '" + id + "')", FormatPuzzleNameAndSize(puzzle.name, puzzle.width + " x " + puzzle.height), tagsHTML.join(' ')))
 	}

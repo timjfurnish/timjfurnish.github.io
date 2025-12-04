@@ -5,8 +5,7 @@ function SolveStart(stopAfterSingleHint)
 	s_autoSolveData = {solveColumns: false, solveIndex: 0, anythingChanged: true, skip: {cols: {}, rows: {}}, stopAfterSingleHint:stopAfterSingleHint}
 	s_autoPaint = null
 
-	DisableButtonsIn("toHere")
-	DisableButtonsIn("backButtonHere")
+	DisableButtonsIn("buttonsGoHere")
 	SolveStep()
 }
 

@@ -96,10 +96,11 @@ function SetUpDesignerForGrid(grid)
 function RebuildDesignScreen()
 {	
 	const output = []
+	const controls = []
 	const cellWidthHeight = CalcCellWidthHeight(s_designing[0].length, s_designing.length)
-	const cellWH = 'width="' + cellWidthHeight + '" height="' + cellWidthHeight + '"'
+	const cellWH = 'style="width: ' + cellWidthHeight + 'vmax; height: ' + cellWidthHeight + 'vmax"'
 
-	output.push("<TABLE>")
+	output.push("<TABLE HEIGHT=0>")
 	for (var y = 0; y < s_designing.length; ++ y)
 	{
 		output.push("<TR>")
@@ -109,17 +110,19 @@ function RebuildDesignScreen()
 		}
 		output.push("</TR>")
 	}
-	output.push("</TABLE><P ID=diffHere></P>")
-	output.push('<SELECT ID="designMode">')
+	output.push("</TABLE>")
+
+	controls.push("<P ID=diffHere></P>")
+	controls.push('<P><SELECT ID="designMode">')
 
 	for (var modeName of Object.keys(kDesignModes))
 	{
-		output.push('<OPTION>' + modeName + '</OPTION>')
+		controls.push('<OPTION>' + modeName + '</OPTION>')
 	}
 
-	output.push('</SELECT> ')
-	output.push(BuildButtons(kDesignerButtons))
-	return {content:output.join(''), name:"Puzzle Designer", subtitle:s_designing[0].length + " x " + s_designing.length, exitURL:"SetHash('Design')", exitName:"BACK", thenCall:DesignerBegin}
+	controls.push('</SELECT></P>')
+	controls.push(BuildButtons(kDesignerButtons))
+	return {content:controls.join(''), side:output.join(''), name:"Puzzle Designer", subtitle:s_designing[0].length + " x " + s_designing.length, exitURL:"SetHash('Design')", exitName:"BACK", thenCall:DesignerBegin}
 }
 
 function DesignerBegin()

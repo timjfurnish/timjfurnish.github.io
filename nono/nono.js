@@ -38,7 +38,7 @@ const s_menusWithNames =
 	["Play"]:param =>
 	{
 		const output = []
-		output.push(BuildButtonsForPuzzles("Puzzle"))
+		output.push(BuildButtonsForPuzzles("Puzzle", s_puzzles, s_solved))
 		output.push('<P><B>Or enter a puzzle code here!</B><BR><INPUT STYLE="max-width: 100%" ID="puzzleData" TYPE=text SIZE=80 ONCHANGE="EnteredCustom(\'Custom\')"></P>')
 		return {name:"Choose A Puzzle", content:output.join('')}
 	},
@@ -80,8 +80,13 @@ const s_menusWithNames =
 		output.push(BuildBigButton("#DDDDFF", "SetHash('DesignSize', '20x20')", FormatPuzzleNameAndSize("Empty", "20 x 20")))
 		output.push('<WBR>')
 		output.push(BuildBigButton("#DDDDFF", "SetHash('DesignSize', '25x25')", FormatPuzzleNameAndSize("Empty", "25 x 25")))
-		output.push('</P><P><B>Or start from one of these!</B><BR>')
-		output.push(BuildButtonsForPuzzles("DesignFrom"))
+		
+		const solvedPuzzleButtons = BuildButtonsForPuzzles("DesignFrom", s_solved, {})
+		if (solvedPuzzleButtons != "")
+		{
+			output.push('</P><P><B>Or start from a puzzle you\'ve solved!</B><BR>')
+			output.push(solvedPuzzleButtons)
+		}
 		output.push('</P><P><B>Or enter a puzzle code here!</B><BR><INPUT ID="puzzleData" TYPE=text STYLE="max-width: 100%" SIZE=80 ONCHANGE="EnteredCustom(\'DesignCustom\')"></P>')
 		return {content:output.join('')}
 	},
@@ -170,9 +175,23 @@ function NonoBuildPage()
 		useName = FormatPuzzleNameAndSize(useName, setup.subtitle)
 	}
 
-	GetElement("subtitle").innerHTML = useName
-	GetElement("toHere").innerHTML = setup.content
-	GetElement("backButtonHere").innerHTML = '<BUTTON onClick="' + (setup.exitURL ?? 'SetHash(\'MainMenu\')') + '">' + (setup.exitName ?? "MAIN MENU") + '</BUTTON>'
+	const buildHere = []
+
+	buildHere.push('<DIV STYLE="flex-grow: 0.05; text-align: center" id="buttonsGoHere"><H1>NONOGRAPHY</H1><H2 ID="subtitle">' + useName + '</H2>')
+
+	if (setup.content)
+	{
+		buildHere.push(setup.content)
+	}
+
+	buildHere.push('<P><BUTTON onClick="' + (setup.exitURL ?? 'SetHash(\'MainMenu\')') + '">' + (setup.exitName ?? "MAIN MENU") + '</BUTTON></P></DIV>')
+
+	if (setup.side)
+	{
+		buildHere.push('<DIV style="flex-grow: 0.05"><CENTER>' + setup.side + '</CENTER></DIV>')
+	}
+	
+	GetElement("outer").innerHTML = buildHere.join('')
 	setup.thenCall?.()
 }
 
@@ -202,8 +221,7 @@ function EnableButtonsIn(here)
 
 function EnableButtons()
 {
-	EnableButtonsIn("toHere")
-	EnableButtonsIn("backButtonHere")
+	EnableButtonsIn("buttonsGoHere")
 }
 
 function BuildButtons(info)
@@ -281,20 +299,20 @@ function AddCellTickCross(name, extraStyle, bHasClues)
 {
 	const op = bHasClues ? 0 : 0.2
 	const icon = bHasClues ? kIconRedCross : kIconMatch
-	return '<TD ID="' + name + '" STYLE="' + extraStyle + 'border:none; opacity: ' + op + '">' + icon + '</TD>'
+	return '<TD ID="' + name + '" STYLE="' + extraStyle + '; border:none; opacity: ' + op + '">' + icon + '</TD>'
 }
 
 function CalcCellWidthHeight(gridWidth, gridHeight)
 {
-	gridWidth -= 5
-	gridHeight -= 5
-	const biggest = Math.min(30, Math.max(gridWidth * 2, gridHeight))
-	return Math.floor((90 - biggest) / 3)
+	const size = 37 / Math.max(gridHeight, gridWidth)
+	console.log(size)
+	return Math.min(2.5, size)
 }
 
 function SetUpPuzzle(title, puzzleIn, playingID)
 {
 	const output = []
+	const buttons = []
 	const height = puzzleIn.length
 	const width = puzzleIn[0].length
 	const emptyGrid = []
@@ -303,52 +321,56 @@ function SetUpPuzzle(title, puzzleIn, playingID)
 
 	var maxColumnClues = 0
 
-	output.push("<TABLE><TR><TD STYLE=\"border-left: none; border-top: none \"></TD>")
+	output.push('<TABLE HEIGHT=0><TR><TD STYLE="border: none"></TD>')
 	for (var x = 0; x < width; ++ x)
 	{
 		const columnClues = CalcClues(GetColumnFromGrid(puzzleIn, x))
 		buildColumnClues.push(columnClues)
-		output.push('<TD STYLE="border-top: none" CLASS="topClues" id="col' + x + '" align=center valign=bottom>' + FormatClues(columnClues, '<BR>') + '</TD>')
 		maxColumnClues = Math.max(maxColumnClues, columnClues.length)
 	}
 
 	const cellWidthHeight = CalcCellWidthHeight(width, height + maxColumnClues)
-	const cellWH = 'width="' + cellWidthHeight + '" height="' + cellWidthHeight + '"'
+	const clueFontSize = 'font-size: ' + (cellWidthHeight * 0.8) + 'vmax'
+	const cellWH = 'style="' +clueFontSize + '; width: ' + cellWidthHeight + 'vmax; height: ' + cellWidthHeight + 'vmax"'
 
-	output.push('<TD STYLE=\"border-top: none; border-right: none; border-bottom: none\"></TD>')
+	for (var x = 0; x < width; ++ x)
+	{
+		output.push('<TD STYLE="' + clueFontSize + '; border-top: none" CLASS="topClues" id="col' + x + '" align=center valign=bottom>' + FormatClues(buildColumnClues[x], '<BR>') + '</TD>')
+	}
+
+	output.push('<TD STYLE="border: none"></TD>')
 	output.push("</TR>")
 	for (var y = 0; y < height; ++ y)
 	{
 		var buildLine = []
 		const rowClues = CalcClues(puzzleIn[y])
 		buildRowClues.push(rowClues)
-		output.push('<TR align=center><TD STYLE="border-left: none; padding-left: 8px; padding-right: 8px" CLASS="sideClues" id="row' + y + '" align="right">' + FormatClues(rowClues, '&nbsp;') + '</TD>')
+		output.push('<TR align=center><TD STYLE="' + clueFontSize + '; border-left: none; padding-left: 0.75vmax; padding-right: 0.75vmax" CLASS="sideClues" id="row' + y + '" align="right">' + FormatClues(rowClues, '&nbsp;') + '</TD>')
 		for (var x = 0; x < width; ++ x)
 		{
 			const coords = x + ',' + y
 			output.push('<TD id="gridCell.' + x + '.' + y + '" ' + cellWH + ' onDragStart="return false" onMouseOver="NonoPlayMouseOverGrid(' + coords + ')" onMouseOut="MouseOutGrid(' + coords + ')" onContextMenu="return false"></TD>')
 			buildLine.push(" ")
 		}
-		output.push(AddCellTickCross("rowsTick" + y, "padding-left:3px; ", rowClues.length))
+		output.push(AddCellTickCross("rowsTick" + y, clueFontSize + "; padding-left:3px", rowClues.length))
 		output.push("</TR>")
 		emptyGrid.push(buildLine)
 	}
 	output.push("<TR><TD STYLE=\"border: none\"></TD>")
 	for (var x = 0; x < width; ++ x)
 	{
-		output.push(AddCellTickCross("colsTick" + x, "", buildColumnClues[x].length))
+		output.push(AddCellTickCross("colsTick" + x, clueFontSize, buildColumnClues[x].length))
 	}
 	output.push('<TD STYLE=\"border: none\"></TD>')
 	output.push("</TR>")
-	output.push("</TABLE><BR>")
-	output.push(BuildButtons({SOLVE:"SolveStart(false)", HINT:"SolveStart(true)"}))
+	output.push("</TABLE>")
 
 	s_activePuzzleSolutionSoFar = emptyGrid
 	s_clues = {cols:buildColumnClues, rows:buildRowClues}
 	s_completeness = {rows:[], cols:[], total:0}
 	s_playingID = playingID
 	
-	return {name:title, subtitle:width + " x " + height, content:output.join(''), exitURL:"SetHash('Play')", exitName:'BACK', thenCall:SetUpPlayMouseHandlers}
+	return {name:title, subtitle:width + " x " + height, content:BuildButtons({SOLVE:"SolveStart(false)", HINT:"SolveStart(true)"}), side:output.join(''), exitURL:"SetHash('Play')", exitName:'BACK', thenCall:SetUpPlayMouseHandlers}
 }
 
 function SetUpPlayMouseHandlers()
