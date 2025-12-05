@@ -9,16 +9,21 @@
 		<style type="text/css" media="screen">
 			body { overflow-y: scroll }
 			html { margin: auto; }
-			button { cursor:pointer; }
+			button { opacity: 1; color: black; cursor:pointer; font-size: 1.5vmax; font-family:Arial, Helvetica, sans-serif; font-weight: 1000; border: 1px solid #000000DD; border-radius:1.7vmax; padding: 5px 20px; margin: 5px; background-color:rgba(0, 0, 0, 0.1); transition: opacity 0.3s }
+			button:hover { opacity: 0.7 }
+			button:disabled { opacity: 0.4; color: #00000066}
 			h1, h2, h3, h4 { font-family: Arial, Helvetica, sans-serif }
-			.buttonPuzzleName { font-family: Arial, Helvetica, sans-serif; font-size: 20px; font-weight: 1000 }
-			.topClues, .sideClues {font-family: monospace; font-weight: 1000; font-size: 17px; letter-spacing: -2px }
+			h1 { font-size: 3.0vmax }
+			h2 { font-size: 2.2vmax }
+			h3 { font-size: 1.6vmax }
+			h4 { font-size: 1.2vmax }
+			.buttonPuzzleName { font-family: Arial, Helvetica, sans-serif; font-size: 1.5vmax; font-weight: 1000 }
+			.topClues, .sideClues {font-family: monospace; font-weight: 1000; letter-spacing: -0.02em }
 			.sideClues { text-align: right }
-			.puzzleButton { padding: 5px 10px; margin: 5px; border-radius: 6px }
 			td { border: 2px solid #888888; text-align: center }
 			table { border-collapse: collapse }
 			div { margin: 10px; vertical-align: middle }
-			.tag { border:1px solid rgba(0, 0, 0, 0.2);	border-radius:4px; background-color:rgba(0, 0, 0, 0.1); padding:2px 3px 2px 3px; font-size:80%; font-family:Arial, Helvetica, sans-serif }
+			.tag { border:1px solid rgba(0, 0, 0, 0.2);	border-radius:4px; background-color:rgba(0, 0, 0, 0.1); padding:2px 3px 2px 3px; font-size:1vmax; font-family:Arial, Helvetica, sans-serif }
 		</style>
 		<script type="text/javascript" src="nono.js"></script>
 		<script type="text/javascript" src="solve.js"></script>

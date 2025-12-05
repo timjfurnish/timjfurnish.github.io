@@ -39,7 +39,7 @@ const s_menusWithNames =
 	{
 		const output = []
 		output.push(BuildButtonsForPuzzles("Puzzle", s_puzzles, s_solved))
-		output.push('<P><B>Or enter a puzzle code here!</B><BR><INPUT STYLE="max-width: 100%" ID="puzzleData" TYPE=text SIZE=80 ONCHANGE="EnteredCustom(\'Custom\')"></P>')
+		output.push('<P><B>Or enter a puzzle code here!</B><BR><INPUT STYLE="max-width: 85vw" ID="puzzleData" TYPE=text SIZE=80 ONCHANGE="EnteredCustom(\'Custom\')"></P>')
 		return {name:"Choose A Puzzle", content:output.join('')}
 	},
 	
@@ -87,7 +87,7 @@ const s_menusWithNames =
 			output.push('</P><P><B>Or start from a puzzle you\'ve solved!</B><BR>')
 			output.push(solvedPuzzleButtons)
 		}
-		output.push('</P><P><B>Or enter a puzzle code here!</B><BR><INPUT ID="puzzleData" TYPE=text STYLE="max-width: 100%" SIZE=80 ONCHANGE="EnteredCustom(\'DesignCustom\')"></P>')
+		output.push('</P><P><B>Or enter a puzzle code here!</B><BR><INPUT ID="puzzleData" TYPE=text STYLE="max-width: 85vw" SIZE=80 ONCHANGE="EnteredCustom(\'DesignCustom\')"></P>')
 		return {content:output.join('')}
 	},
 	
@@ -304,9 +304,8 @@ function AddCellTickCross(name, extraStyle, bHasClues)
 
 function CalcCellWidthHeight(gridWidth, gridHeight)
 {
-	const size = 37 / Math.max(gridHeight, gridWidth)
-	console.log(size)
-	return Math.min(2.5, size)
+	const baseSize = navigator?.userAgentData?.mobile ? 32 : 37
+	return Math.min(2.5, baseSize / Math.max(gridHeight, gridWidth))
 }
 
 function SetUpPuzzle(title, puzzleIn, playingID)
