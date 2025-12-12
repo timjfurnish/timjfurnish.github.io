@@ -1,5 +1,6 @@
 var s_designing = null
 var s_designCanBeSolved = null
+var s_designerEditMode = "Draw"
 
 const s_cycleDesigner = {[' ']:'1', ['1']:' '}
 
@@ -90,7 +91,13 @@ function SetUpDesignerForGrid(grid)
 	}
 
 	s_designing = grid
+
 	return RebuildDesignScreen()
+}
+
+function DesignerUpdateEditMode()
+{
+	s_designerEditMode = GetElement("designMode").value
 }
 
 function RebuildDesignScreen()
@@ -113,16 +120,17 @@ function RebuildDesignScreen()
 	output.push("</TABLE>")
 
 	controls.push("<P ID=diffHere></P>")
-	controls.push('<P><SELECT ID="designMode">')
+	controls.push('<P><SELECT ID="designMode" ONCHANGE="DesignerUpdateEditMode()">')
 
 	for (var modeName of Object.keys(kDesignModes))
 	{
-		controls.push('<OPTION>' + modeName + '</OPTION>')
+		const openTag = (modeName == s_designerEditMode) ? "<OPTION SELECTED>" : "<OPTION>"
+		controls.push(openTag + modeName + '</OPTION>')
 	}
 
 	controls.push('</SELECT></P>')
 	controls.push(BuildButtons(kDesignerButtons))
-	return {content:controls.join(''), side:output.join(''), name:"Puzzle Designer", subtitle:s_designing[0].length + " x " + s_designing.length, exitURL:"SetHash('Design')", exitName:"BACK", thenCall:DesignerBegin}
+	return {content:controls.join(''), isEditor:true, side:output.join(''), name:"Puzzle Designer", subtitle:s_designing[0].length + " x " + s_designing.length, exitURL:"SetHash('Design')", exitName:"BACK", thenCall:DesignerBegin}
 }
 
 function DesignerBegin()
@@ -251,8 +259,15 @@ function NonoDesignMouseDown(e)
 	if (! s_autoPaint)
 	{
 		const {target} = e
-		const func = kDesignModes[GetElement("designMode").value]
-		func(target.gridX, target.gridY)
+		const func = kDesignModes[s_designerEditMode]
+		if (func)
+		{
+			func(target.gridX, target.gridY)
+		}
+		else
+		{
+			console.warn("No designer mouse down func, s_designerEditMode=" + s_designerEditMode)
+		}
 	}
 	
 	return false

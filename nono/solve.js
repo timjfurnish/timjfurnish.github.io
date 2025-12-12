@@ -1,8 +1,12 @@
 var s_autoSolveData = null
 
+const kEnableCheckForDupes = true
+
 function SolveStart(stopAfterSingleHint)
 {
-	s_autoSolveData = {solveColumns: false, solveIndex: 0, anythingChanged: true, skip: {cols: {}, rows: {}}, stopAfterSingleHint:stopAfterSingleHint}
+	s_autoSolveData = {solveColumns: true, solveIndex: 0, anythingChanged: true, skip: {cols: {}, rows: {}}, stopAfterSingleHint:stopAfterSingleHint}
+	s_autoSolveData.dupeInto = {cols: CheckForDupes(s_clues.cols), rows: CheckForDupes(s_clues.rows)}
+	
 	s_autoPaint = null
 
 	DisableButtonsIn("buttonsGoHere")
@@ -31,9 +35,42 @@ function ShouldSkipInitialPass(clues, cells)
 	return false
 }
 
+function CheckForDupes(cluesIn)
+{
+	var joined = []
+	var reply = []
+
+	cluesIn.forEach(data => joined.push(data.join(' ')))
+//	console.log("JOINED: [" + joined + "]");
+
+	for (var i = 0; i < joined.length; ++i)
+	{
+		var matchFound = 0
+//		console.log("Do any clues from " + (i + 1) + " onwards match " + i + " [" + joined[i] + "]")
+
+		if (kEnableCheckForDupes)
+		{
+			for (var copyTo = i + 1; copyTo < joined.length; ++ copyTo)
+			{
+				if (joined[i] == joined[copyTo])
+				{
+	//				console.log("Match found! Index " + i + " and index " + copyTo + " are both [" + joined[i] + "]")
+					matchFound = copyTo
+					break
+				}
+			}
+		}
+
+		reply.push(matchFound)
+	}
+
+	return reply
+}
+
 function SolveForDesigner(grid, solveColumns)
 {
 	var skip = {cols:{}, rows:{}}
+	var dupeInto = {}
 	var solveIndex = 0
 	var count = 0
 	var anythingChanged = true
@@ -64,6 +101,9 @@ function SolveForDesigner(grid, solveColumns)
 		}
 	}
 
+	dupeInto.cols = CheckForDupes(clues.cols)
+	dupeInto.rows = CheckForDupes(clues.rows)
+
 /*
 	console.log("==============================================================")
 	console.log("Trying to solve puzzle - " + (solveColumns ? "columns" : "rows") + " first")
@@ -77,53 +117,69 @@ function SolveForDesigner(grid, solveColumns)
 	{
 		const colsOrRows = solveColumns ? "cols" : "rows"
 		const skipColsOrRows = solveColumns ? "rows" : "cols"
+		const getRowOrColumnFunc = solveColumns ? GetColumnFromGrid : GetRowFromGrid
 	
 		if (! skip[colsOrRows][solveIndex] && !completeness[colsOrRows][solveIndex])
 		{
-			const already = solveColumns ? GetColumnFromGrid(solveHere, solveIndex) : solveHere[solveIndex]
+			const already = getRowOrColumnFunc(solveHere, solveIndex)
 			var bCompleteNow = !already.includes(' ')
 			
-			if (!bCompleteNow)
+			if (bCompleteNow)
+			{
+				skip[colsOrRows][solveIndex] = true
+			}
+			else
 			{
 				const newData = TryToSolve(already, clues[colsOrRows][solveIndex])
-				
-				if (newData)
+				var writeToIndex = solveIndex
+				const mustMatch = dupeInto[colsOrRows][writeToIndex] ? already.join('') : undefined
+
+				skip[colsOrRows][solveIndex] = true
+
+				do
 				{
-					for (var i = 0; i < newData.length; ++ i)
+					if (writeToIndex == solveIndex || mustMatch == getRowOrColumnFunc(solveHere, writeToIndex).join(''))
 					{
-						if (solveColumns)
+						if (newData)
 						{
-							if (solveHere[i][solveIndex] != newData[i])
+							for (var i = 0; i < newData.length; ++ i)
 							{
-								delete skip.rows[i]
-								solveHere[i][solveIndex] = newData[i]
-							}
-						}
-						else
-						{
-							if (solveHere[solveIndex][i] != newData[i])
-							{
-								delete skip.cols[i]
-								solveHere[solveIndex][i] = newData[i]
+								if (solveColumns)
+								{
+									if (solveHere[i][writeToIndex] != newData[i])
+									{
+										delete skip.rows[i]
+										solveHere[i][writeToIndex] = newData[i]
+									}
+								}
+								else
+								{
+									if (solveHere[writeToIndex][i] != newData[i])
+									{
+										delete skip.cols[i]
+										solveHere[writeToIndex][i] = newData[i]
+									}
+								}
 							}
 						}
 					}
 
+					writeToIndex = dupeInto[colsOrRows][writeToIndex]
+				}
+				while (writeToIndex)
+
+				if (newData)
+				{
 					bCompleteNow = !newData.includes(' ')
 					anythingChanged = true
 				}
-
-				if (! bCompleteNow)
-				{
-					++ count
-				}
 			}
-			
+
 			if (bCompleteNow)
 			{
 				completeness[colsOrRows][solveIndex] = true
 				++ completeness.total
-				
+
 				if (completeness.total == completeness.needed)
 				{
 //					console.timeEnd("Solve_" + colsOrRows)
@@ -131,8 +187,10 @@ function SolveForDesigner(grid, solveColumns)
 					return solveHere
 				}
 			}
-
-			skip[colsOrRows][solveIndex] = true
+			else
+			{
+				++ count
+			}
 		}
 		
 		++ solveIndex
@@ -157,91 +215,67 @@ function SolveForDesigner(grid, solveColumns)
 
 function Hint()
 {
-	var bSwitchColsRows = false
 	var bDidSomething = false
-
+	
 	while (!bDidSomething)
 	{
-		if (s_autoSolveData.solveColumns)
+		const colsOrRows = s_autoSolveData.solveColumns ? "cols" : "rows"
+
+		if (! s_autoSolveData.skip[colsOrRows][s_autoSolveData.solveIndex] && !s_completeness[colsOrRows][s_autoSolveData.solveIndex])
 		{
-			if (! s_autoSolveData.skip.cols[s_autoSolveData.solveIndex] && !s_completeness.cols[s_autoSolveData.solveIndex])
+			const skipColsOrRows = s_autoSolveData.solveColumns ? "rows" : "cols"
+			const getRowOrColumnFunc = s_autoSolveData.solveColumns ? GetColumnFromGrid : GetRowFromGrid
+			const alreadyGot = getRowOrColumnFunc(s_activePuzzleSolutionSoFar, s_autoSolveData.solveIndex)
+			const newData = TryToSolve(alreadyGot, s_clues[colsOrRows][s_autoSolveData.solveIndex])
+			var writeToIndex = s_autoSolveData.solveIndex
+			const highlightThese = []
+			const mustMatch = s_autoSolveData.dupeInto[colsOrRows][writeToIndex] ? alreadyGot.join('') : undefined
+
+			do
 			{
-				const alreadyInColumn = GetColumnFromGrid(s_activePuzzleSolutionSoFar, s_autoSolveData.solveIndex)
-				const newDataForColumn = TryToSolve(alreadyInColumn, s_clues.cols[s_autoSolveData.solveIndex])
-				const bUnfinished = (s_completeness.total < (s_clues.rows.length + s_clues.cols.length))
-				
-				if (newDataForColumn)
+				if (writeToIndex == s_autoSolveData.solveIndex || mustMatch == getRowOrColumnFunc(s_activePuzzleSolutionSoFar, writeToIndex).join(''))
 				{
-					Highlight(["col" + s_autoSolveData.solveIndex], "#66FF66")
-					for (var y = 0; y < newDataForColumn.length; ++ y)
+					if (newData)
 					{
-						if (SetCell(s_autoSolveData.solveIndex, y, newDataForColumn[y]))
+						for (var i = 0; i < newData.length; ++ i)
 						{
-							delete s_autoSolveData.skip.rows[y]
+							if (s_autoSolveData.solveColumns ? SetCell(writeToIndex, i, newData[i]) : SetCell(i, writeToIndex, newData[i]))
+							{
+								delete s_autoSolveData.skip[skipColsOrRows][i]
+							}
 						}
 					}
 
-					if (s_autoSolveData.stopAfterSingleHint)
-					{
-						Highlight()
-						return true
-					}
+					highlightThese.push(colsOrRows + writeToIndex)
+					s_autoSolveData.skip[colsOrRows][writeToIndex] = true
+				}
 
-					s_autoSolveData.anythingChanged = true
-				}
-				else
-				{
-					Highlight(["col" + s_autoSolveData.solveIndex], "red")
-					s_autoSolveData.skip.cols[s_autoSolveData.solveIndex] = true
-				}
-				
-				bDidSomething = true
+				writeToIndex = s_autoSolveData.dupeInto[colsOrRows][writeToIndex]
 			}
-			
-			++ s_autoSolveData.solveIndex
-			bSwitchColsRows = (s_autoSolveData.solveIndex >= s_activePuzzleSolutionSoFar[0].length)
-		}
-		else
-		{
-			if (! s_autoSolveData.skip.rows[s_autoSolveData.solveIndex] && !s_completeness.rows[s_autoSolveData.solveIndex])
+			while (writeToIndex)
+
+			if (newData)
 			{
-				const alreadyInRow = s_activePuzzleSolutionSoFar[s_autoSolveData.solveIndex]
-				const newDataForRow = TryToSolve(alreadyInRow, s_clues.rows[s_autoSolveData.solveIndex])
-				const bUnfinished = (s_completeness.total < (s_clues.rows.length + s_clues.cols.length))
-
-				if (newDataForRow)
+				if (s_autoSolveData.stopAfterSingleHint)
 				{
-					Highlight(["row" + s_autoSolveData.solveIndex], "#66FF66")
-					for (var x = 0; x < newDataForRow.length; ++ x)
-					{
-						if (SetCell(x, s_autoSolveData.solveIndex, newDataForRow[x]))
-						{
-							delete s_autoSolveData.skip.cols[x]
-						}
-					}
-
-					if (s_autoSolveData.stopAfterSingleHint)
-					{
-						Highlight()
-						return true
-					}
-
-					s_autoSolveData.anythingChanged = true
+					Highlight()
+					return true
 				}
-				else
-				{
-					Highlight(["row" + s_autoSolveData.solveIndex], "red")
-					s_autoSolveData.skip.rows[s_autoSolveData.solveIndex] = true
-				}
-
-				bDidSomething = true
+					
+				Highlight(highlightThese, "#66FF66")
+				s_autoSolveData.anythingChanged = true
 			}
-			
-			++ s_autoSolveData.solveIndex
-			bSwitchColsRows = (s_autoSolveData.solveIndex >= s_activePuzzleSolutionSoFar.length)
+			else
+			{
+				Highlight(highlightThese, "red")
+			}
+
+			bDidSomething = true
 		}
+
+		++ s_autoSolveData.solveIndex
 		
-		if (bSwitchColsRows)
+		if (s_autoSolveData.solveIndex >= s_clues[colsOrRows].length)
 		{
 //			console.log("Finished trying to solve " + (s_autoSolveData.solveColumns ? "columns" : "rows") + "; skip.cols=" + Object.keys(s_autoSolveData.skip.cols) + " skip.rows=" + Object.keys(s_autoSolveData.skip.rows))
 

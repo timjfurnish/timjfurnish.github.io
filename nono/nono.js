@@ -111,6 +111,16 @@ const s_menusWithNames =
 		const [width, height] = param.split('x')
 		return SetUpDesigner(parseInt(width), parseInt(height))
 	},
+	
+	//==============================
+	// Tests
+	//==============================
+
+	["AutoTest"]:param =>
+	{
+		return SetUpAutoTest()
+	},
+
 }
 
 function NonoSetUp()
@@ -167,6 +177,11 @@ function NonoBuildPage()
 	{
 		useName = setup.name
 	}
+	
+	if (! setup.isEditor)
+	{
+		s_designerEditMode = "Draw"
+	}
 
 	document.title = "Nonography: " + useName
 
@@ -198,7 +213,9 @@ function NonoBuildPage()
 const kButtonAvailabilityChecks =
 {
 	["button:SHARE"]: () => s_designCanBeSolved,
+	["button:PLAY"]:  () => s_designCanBeSolved,
 	["button:SOLVE"]: () => !s_completeness.done,
+	["button:STEP"]:  () => !s_completeness.done,
 	["button:HINT"]:  () => !s_completeness.done
 }
 
@@ -319,6 +336,7 @@ function SetUpPuzzle(title, puzzleIn, playingID)
 	const buildRowClues = []
 
 	var maxColumnClues = 0
+	var maxRowClues = 0
 
 	output.push('<TABLE HEIGHT=0><TR><TD STYLE="border: none"></TD>')
 	for (var x = 0; x < width; ++ x)
@@ -328,13 +346,20 @@ function SetUpPuzzle(title, puzzleIn, playingID)
 		maxColumnClues = Math.max(maxColumnClues, columnClues.length)
 	}
 
-	const cellWidthHeight = CalcCellWidthHeight(width, height + maxColumnClues)
+	for (var y = 0; y < height; ++ y)
+	{
+		const rowClues = CalcClues(puzzleIn[y])
+		buildRowClues.push(rowClues)
+		maxRowClues = Math.max(maxRowClues, rowClues.length)
+	}
+
+	const cellWidthHeight = CalcCellWidthHeight(width + maxRowClues + 1, height + maxColumnClues + 1)
 	const clueFontSize = 'font-size: ' + (cellWidthHeight * 0.8) + 'vmax'
 	const cellWH = 'style="' +clueFontSize + '; width: ' + cellWidthHeight + 'vmax; height: ' + cellWidthHeight + 'vmax"'
 
 	for (var x = 0; x < width; ++ x)
 	{
-		output.push('<TD STYLE="' + clueFontSize + '; border-top: none" CLASS="topClues" id="col' + x + '" align=center valign=bottom>' + FormatClues(buildColumnClues[x], '<BR>') + '</TD>')
+		output.push('<TD STYLE="' + clueFontSize + '; border-top: none" CLASS="topClues" id="cols' + x + '" align=center valign=bottom>' + FormatClues(buildColumnClues[x], '<BR>') + '</TD>')
 	}
 
 	output.push('<TD STYLE="border: none"></TD>')
@@ -342,16 +367,14 @@ function SetUpPuzzle(title, puzzleIn, playingID)
 	for (var y = 0; y < height; ++ y)
 	{
 		var buildLine = []
-		const rowClues = CalcClues(puzzleIn[y])
-		buildRowClues.push(rowClues)
-		output.push('<TR align=center><TD STYLE="' + clueFontSize + '; border-left: none; padding-left: 0.75vmax; padding-right: 0.75vmax" CLASS="sideClues" id="row' + y + '" align="right">' + FormatClues(rowClues, '&nbsp;') + '</TD>')
+		output.push('<TR align=center><TD STYLE="' + clueFontSize + '; border-left: none; padding-left: 0.75vmax; padding-right: 0.75vmax" CLASS="sideClues" id="rows' + y + '" align="right">' + FormatClues(buildRowClues[y], '&nbsp;') + '</TD>')
 		for (var x = 0; x < width; ++ x)
 		{
 			const coords = x + ',' + y
 			output.push('<TD id="gridCell.' + x + '.' + y + '" ' + cellWH + ' onDragStart="return false" onMouseOver="NonoPlayMouseOverGrid(' + coords + ')" onMouseOut="MouseOutGrid(' + coords + ')" onContextMenu="return false"></TD>')
 			buildLine.push(" ")
 		}
-		output.push(AddCellTickCross("rowsTick" + y, clueFontSize + "; padding-left:3px", rowClues.length))
+		output.push(AddCellTickCross("rowsTick" + y, clueFontSize + "; padding-left:3px", buildRowClues[y]))
 		output.push("</TR>")
 		emptyGrid.push(buildLine)
 	}
@@ -369,7 +392,7 @@ function SetUpPuzzle(title, puzzleIn, playingID)
 	s_completeness = {rows:[], cols:[], total:0}
 	s_playingID = playingID
 	
-	return {name:title, subtitle:width + " x " + height, content:BuildButtons({SOLVE:"SolveStart(false)", HINT:"SolveStart(true)"}), side:output.join(''), exitURL:"SetHash('Play')", exitName:'BACK', thenCall:SetUpPlayMouseHandlers}
+	return {name:title, subtitle:width + " x " + height, content:BuildButtons({SOLVE:"SolveStart(false)", STEP:"SolveStart(true)", HINT:"SmartHint()"}), side:output.join(''), exitURL:"SetHash('Play')", exitName:'BACK', thenCall:SetUpPlayMouseHandlers}
 }
 
 function SetUpPlayMouseHandlers()
@@ -392,7 +415,7 @@ function NonoPlayMouseOverGrid(x, y)
 {
 	if (! s_autoSolveData)
 	{
-		Highlight(["col" + x, "row" + y], "#FFFFAA")
+		Highlight(["cols" + x, "rows" + y], "#FFFFAA")
 		
 		if (s_autoPaint)
 		{
@@ -569,4 +592,9 @@ function GetColumnFromGrid(grid, columnNum)
 		out.push(row[columnNum])
 	}
 	return out
+}
+
+function GetRowFromGrid(grid, rowNum)
+{
+	return grid[rowNum]
 }
