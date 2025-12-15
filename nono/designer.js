@@ -48,7 +48,7 @@ const kDesignModes =
 	},
 }
 
-const kDesignerButtons = {SHARE:"DesignerSave()", TRIM:"DesignerTrim()", INVERT:"DesignerInv()", CLEAR:"DesignerClear()", PLAY:"DesignToPlay()"}
+const kDesignerButtons = {TRIM:"DesignerTrim()", INVERT:"DesignerInv()", CLEAR:"DesignerClear()", PLAY:"DesignToPlay()"}
 
 function SetUpDesignerFromID(myID)
 {
@@ -149,11 +149,6 @@ function DesignerBegin()
 	document.onmouseup = NonoDesignMouseUp
 
 	DesignerShowSolvability()
-}
-
-function DesignerSave()
-{
-	alert(NonoEncodePuzzle(s_designing))
 }
 
 function DesignToPlay()

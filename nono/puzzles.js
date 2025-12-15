@@ -55,7 +55,6 @@ AddPuzzle("Super Soaker", 17, 20, "dV89NSc.Ov_gf1B..5J37P.7.Pv_wP6kjy2AzAaByiV..
 AddPuzzle("Fangs Very Much", 13, 16, "aOrE6G_G9ERq.zjAq6ld59vf3v6kRk6kCGUE_x", "Halloween|Character", 110)
 AddPuzzle("WooOOooOOoo", 20, 20, "ZZ1m2D_.wPG8BxeOY5wa9dsnXPQegBgkpTnPf..77uYnfqGxmRc4rAh2opcG7oh4yXAOvg", "Halloween|Character", 117)
 AddPuzzle("Meep Morp Zeep", 15, 23, "iRilLmKZsQ7qUM_zqU8QxLvAQ_7LZg3SoKZr.0yRAZRi33.3O597OMXDnCgu", "Object|Character", 118)
-AddPuzzle("Hanging Around", 22, 20, "Cbv20B.5N7zHje6Yx6yvmIfohGBCxA5AE50OvnQ3sJe1wjYmFXdBC172qK894skmLzRf2A.7H..f", "Animal|Halloween", 119)
 AddPuzzle("Grab Bag", 13, 15, "NOspxoG04H..B239_TJXgnuiBIMsmixDH8Gs", "Object", 130)
 AddPuzzle("Deep In Thought", 20, 19, "GZFfge.gm8sVNQtuR8HPs0Bbf.wR_Zbx8kGPi_CegBE6IJq2F5NyC.24L6egfaH6K3", "Abstract", 133)
 AddPuzzle("Picking Up The Pieces", 24, 18, "3eylHzLjx7x757VjlLxJx95Xvfffd3RrXvbZznMl..1j..3Dd.ZH..f1dRNjd.ZTR31nJzhLPTz", "Object", 146)
@@ -72,7 +71,7 @@ AddPuzzle("Oh The Drama", 25, 15, "BfAheS9rpnpQbQpl6pLoxwr0G65p6k2zY0drYvgNNIPoy
 AddPuzzle("Pirhana", 20, 17, "dZLGtbvnPf.fd1jf.xwaiAXmchSNuon.gLSxyi018NAgd652_uJJCKw1ooAi", "Animal", 333)
 AddPuzzle("Downward", 20, 19, "GZGh.DGx65L66pnbTMzy3tI8pNb4MACo9KI.SFL9IFj2pL2dsL_aLnGq_Zh08YZSeV", "Abstract", 398)
 AddPuzzle("So Bright", 21, 25, "Yak2CnUakaolGRhSK6mj1zHMIUxc6x..jABq9YkYibHFAgxi4C2GJy9r5uQi365sfAI9yzEUgkDHLDEr08geABcfAeQ", "Animal|Xmas", 448)
-AddPuzzle("Giddy", 25, 22, "xfW6whDIgxjZ1f.540pR1DnORI5zJ9rT4RLw1fwHogNj2JcglhZjZ8kZUrHXJW4rsSNVVL1tJUBrffHXrfjb.9jLP4rnmAo", "Animal", 605)
+AddPuzzle("Giddy", 25, 22, "xfW6whDIgxjZ1f.540pR1DnORI5zJ9rT4RLw1fwHogNh49kQFhZjZ8kZUrHXJW4rsSNVVL1tJUBrffHXrfjb.9jLP4rnmAo", "Animal", 631)
 
 function FormatPuzzleNameAndSize(name, subtitle)
 {

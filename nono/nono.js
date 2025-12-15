@@ -2,21 +2,64 @@ var s_activePuzzleSolutionSoFar = null
 var s_completeness = null
 var s_clues = null
 var s_oldHighlightIdArray = []
-var s_easyText = ["EASY", "EASYISH", "MEDIUM", "TRICKSY", "HARD", "EVIL"]
 var s_playingID = null
+var s_startedPlaying = null
 var s_autoPaint = null
+var s_shareThis = null
 
 const s_cycle = {[' ']:'1', ['1']:'.', ['.']:' '}
 const s_cycleReverse = {[' ']:'.', ['.']:'1', ['1']:' '}
 
+const s_congratsButtons = ["WOO", "HOORAY", "GO ME", "YES", "YEAH", "AWESOME", "WOOP WOOP", "FUNKY", "NICE"]
+
+
 const kIconRedCross = "&#x274C;"
 const kIconMatch = "&#x2714;&#xFE0F;"
 
+const kCompletenessIcons =
+{
+	blank:{a:0,   html:kIconRedCross},
+	wrong:{a:0.3, html:kIconRedCross},
+	right:{a:1,   html:kIconMatch}
+}
+
+function GetCompletenessIconInfo(whichOne, rowsOrCols, num)
+{
+	return kCompletenessIcons[whichOne] ?? {a:0.2, html:'<A HREF="javascript:AutoComplete_' + rowsOrCols + '(' + num + ')">' + kIconMatch + '</A>'}
+}
+
+function AutoComplete_rows(y)
+{
+	const row = s_activePuzzleSolutionSoFar[y]
+	var reply = false
+
+	for (var x in row)
+	{
+		if (row[x] == ' ')
+		{
+			reply = SetCell(x, y, '.')
+		}
+	}
+	
+	return reply
+}
+
+function AutoComplete_cols(x)
+{
+	const col = GetColumnFromGrid(s_activePuzzleSolutionSoFar, x)
+
+	for (var y in col)
+	{
+		if (col[y] == ' ')
+		{
+			SetCell(x, y, '.')
+		}
+	}
+}
+
 function BuildMainMenu()
 {
-	const output = []
-	output.push(BuildButtons({PLAY:"SetHash('Play')", DESIGN:"SetHash('Design')"}))
-	return {name:"Main Menu", content:output.join(''), exitName:"EXIT", exitURL:(location.host ? (location.protocol + "//" + location.host) : "")}
+	return {name:"Main Menu", shareAs:"Nonography", content:BuildButtons({PLAY:"SetHash('Play')", DESIGN:"SetHash('Design')"}), exitName:"EXIT", exitURL:(location.host ? (location.protocol + "//" + location.host) : "")}
 }
 
 function SetHash(newHash, param)
@@ -146,7 +189,9 @@ function NonoBuildPage()
 	s_clues = null
 	s_oldHighlightIdArray = []
 	s_playingID = null
+	s_startedPlaying = null
 	s_autoPaint = null
+	s_shareThis = null
 	document.onmouseup = null
 
 	// Try and find some overrides for a particular page
@@ -199,7 +244,20 @@ function NonoBuildPage()
 		buildHere.push(setup.content)
 	}
 
-	buildHere.push('<P><BUTTON onClick="' + (setup.exitURL ?? 'SetHash(\'MainMenu\')') + '">' + (setup.exitName ?? "MAIN MENU") + '</BUTTON></P></DIV>')
+	buildHere.push('<P><BUTTON onClick="' + (setup.exitURL ?? 'SetHash(\'MainMenu\')') + '">' + (setup.exitName ?? "MAIN MENU") + '</BUTTON>')
+	
+	if (("shareAs" in setup) && ("share" in navigator))
+	{
+		s_shareThis =
+		{
+			title: setup.shareAs,
+			text: setup.shareAsDesc ?? "Play Nonogram puzzles in your browser!",
+			url: document.location,
+		}
+		buildHere.push(' <BUTTON onClick="navigator.share(s_shareThis)">' + ("SHARE") + '</BUTTON></P></DIV>')
+	}
+
+	buildHere.push('</P></DIV>')
 
 	if (setup.side)
 	{
@@ -312,11 +370,11 @@ function FormatClues(clues, joiner)
 	return out.join(joiner)
 }
 
-function AddCellTickCross(name, extraStyle, bHasClues)
+function AddCellTickCross(rowsOrCols, num, extraStyle, numClues)
 {
-	const op = bHasClues ? 0 : 0.2
-	const icon = bHasClues ? kIconRedCross : kIconMatch
-	return '<TD ID="' + name + '" STYLE="' + extraStyle + '; border:none; opacity: ' + op + '">' + icon + '</TD>'
+	const name = rowsOrCols + "Tick" + num
+	const iconInfo = GetCompletenessIconInfo(numClues ? "blank" : "", rowsOrCols, num)
+	return '<TD ID="' + name + '" STYLE="' + extraStyle + '; border:none; opacity: ' + iconInfo.a + '">' + iconInfo.html + '</TD>'
 }
 
 function CalcCellWidthHeight(gridWidth, gridHeight)
@@ -374,14 +432,14 @@ function SetUpPuzzle(title, puzzleIn, playingID)
 			output.push('<TD id="gridCell.' + x + '.' + y + '" ' + cellWH + ' onDragStart="return false" onMouseOver="NonoPlayMouseOverGrid(' + coords + ')" onMouseOut="MouseOutGrid(' + coords + ')" onContextMenu="return false"></TD>')
 			buildLine.push(" ")
 		}
-		output.push(AddCellTickCross("rowsTick" + y, clueFontSize + "; padding-left:3px", buildRowClues[y]))
+		output.push(AddCellTickCross("rows", y, clueFontSize + "; padding-left:3px", buildRowClues[y].length))
 		output.push("</TR>")
 		emptyGrid.push(buildLine)
 	}
 	output.push("<TR><TD STYLE=\"border: none\"></TD>")
 	for (var x = 0; x < width; ++ x)
 	{
-		output.push(AddCellTickCross("colsTick" + x, clueFontSize, buildColumnClues[x].length))
+		output.push(AddCellTickCross("cols", x, clueFontSize, buildColumnClues[x].length))
 	}
 	output.push('<TD STYLE=\"border: none\"></TD>')
 	output.push("</TR>")
@@ -391,8 +449,9 @@ function SetUpPuzzle(title, puzzleIn, playingID)
 	s_clues = {cols:buildColumnClues, rows:buildRowClues}
 	s_completeness = {rows:[], cols:[], total:0}
 	s_playingID = playingID
+	s_startedPlaying = Date.now()
 	
-	return {name:title, subtitle:width + " x " + height, content:BuildButtons({SOLVE:"SolveStart(false)", STEP:"SolveStart(true)", HINT:"SmartHint()"}), side:output.join(''), exitURL:"SetHash('Play')", exitName:'BACK', thenCall:SetUpPlayMouseHandlers}
+	return {name:title, subtitle:width + " x " + height, shareAs:"Nonography: " + title, content:BuildButtons({SOLVE:"SolveStart(false)", STEP:"SolveStart(true)" /*, HINT:"SmartHint()"*/}), side:output.join(''), exitURL:"SetHash('Play')", exitName:'BACK', thenCall:SetUpPlayMouseHandlers}
 }
 
 function SetUpPlayMouseHandlers()
@@ -435,6 +494,20 @@ function MouseOutGrid(x, y)
 	}
 }
 
+function TickPuzzleCompleted()
+{
+	for (var y in s_activePuzzleSolutionSoFar)
+	{
+		if (AutoComplete_rows(y))
+		{
+			setTimeout(TickPuzzleCompleted, 25)
+			return
+		}
+	}
+	
+	setTimeout(ShowCongrats, 200)
+}
+
 function NonoPlayMouseUp()
 {
 	if (s_autoPaint)
@@ -449,7 +522,7 @@ function NonoPlayMouseUp()
 			}
 			s_completeness.done = true
 			EnableButtons()
-			alert("Completed! Well done!")
+			setTimeout(TickPuzzleCompleted, 100)
 		}
 	}
 }
@@ -484,9 +557,12 @@ function SetCompleteness(setName, index, entireLine)
 	const myClues = CalcClues(entireLine)
 	const bMatch = s_clues[setName][index].join() == myClues.join()
 	const elem = GetElement(setName + "Tick" + index)
-	elem.innerHTML = bMatch ? kIconMatch : kIconRedCross
+	
 	const bGappy = entireLine.includes(" ")
-	elem.style.opacity = bGappy ? (bMatch || myClues.length) ? 0.2 : 0 : 1
+	const iconInfo = GetCompletenessIconInfo(bMatch ? bGappy ? "" : "right" : myClues.length ? "wrong" : "blank", setName, index)
+	
+	elem.innerHTML = iconInfo.html
+	elem.style.opacity = iconInfo.a
 	
 	if (bMatch)
 	{
@@ -597,4 +673,70 @@ function GetColumnFromGrid(grid, columnNum)
 function GetRowFromGrid(grid, rowNum)
 {
 	return grid[rowNum]
+}
+
+function ShowCongrats()
+{
+	const elemTop = GetElement("popUpTop")
+	const elemBack = GetElement("popUpBack")
+	const timePlaying = Math.floor((Date.now() - s_startedPlaying) / 1000)
+	const seconds = timePlaying % 60
+	const minutes = (timePlaying - seconds) / 60
+
+	var output = []
+
+	output.push('<h1>Completed!</h1><p id=results>')
+	
+	if (s_playingID)
+	{
+		output.push('Puzzle: <b>' + s_puzzles[s_playingID].name + '</b>')
+	}
+	else
+	{
+		output.push('Custom Puzzle')
+	}
+	
+	output.push('</p><p id=results>Size: <B>' + s_clues.cols.length + ' x ' + s_clues.rows.length + '</B>')
+	output.push('</p><p id=results>Time taken: <B>' + minutes + ':' + String(seconds).padStart(2, '0') + '</B>')
+	output.push('</p>')
+	output = output.join('')
+
+	elemTop.innerHTML = output + BuildButtons({[s_congratsButtons[Math.floor(Math.random() * s_congratsButtons.length)] + "!"]:"CloseCongrats()"})
+	elemBack.innerHTML = output
+
+	for (var each of [elemTop, elemBack])
+	{
+		each.style.display = "block"
+		each.style.pointerEvents = "auto"
+		each.style.transitionDuration = "0.8s"
+	}
+
+	setTimeout(() => {
+		for (var each of [elemTop, elemBack])
+		{
+			each.style.opacity = 1
+			each.removeEventListener("transitionend", OnTransitionDone)
+		}
+	}, 0)
+}
+
+function CloseCongrats()
+{
+	for (var each of [GetElement("popUpTop"), GetElement("popUpBack")])
+	{
+		each.style.transitionDuration = "0.4s"
+		each.style.opacity = 0
+		each.style.pointerEvents = "none"
+		each.addEventListener("transitionend", OnTransitionDone)
+	}
+}
+
+function OnTransitionDone(event)
+{
+	if (event.target.nodeName == "DIV")
+	{
+		event.target.removeEventListener("transitionEnd", OnTransitionDone)
+		event.target.style.display="none"
+		event.target.innerHTML = ""
+	}
 }

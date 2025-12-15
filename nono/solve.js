@@ -67,6 +67,19 @@ function CheckForDupes(cluesIn)
 	return reply
 }
 
+function ArraysMatch(a, b)
+{
+	for (var n in a)
+	{
+		if (a[n] != b[n])
+		{
+			return false
+		}
+	}
+
+	return true
+}
+
 function SolveForDesigner(grid, solveColumns)
 {
 	var skip = {cols:{}, rows:{}}
@@ -116,29 +129,28 @@ function SolveForDesigner(grid, solveColumns)
 	for (;;)
 	{
 		const colsOrRows = solveColumns ? "cols" : "rows"
-		const skipColsOrRows = solveColumns ? "rows" : "cols"
 		const getRowOrColumnFunc = solveColumns ? GetColumnFromGrid : GetRowFromGrid
+		const skipArray = skip[colsOrRows]
 	
-		if (! skip[colsOrRows][solveIndex] && !completeness[colsOrRows][solveIndex])
+		if (! skipArray[solveIndex] && !completeness[colsOrRows][solveIndex])
 		{
 			const already = getRowOrColumnFunc(solveHere, solveIndex)
 			var bCompleteNow = !already.includes(' ')
 			
 			if (bCompleteNow)
 			{
-				skip[colsOrRows][solveIndex] = true
+				skipArray[solveIndex] = true
 			}
 			else
 			{
 				const newData = TryToSolve(already, clues[colsOrRows][solveIndex])
 				var writeToIndex = solveIndex
-				const mustMatch = dupeInto[colsOrRows][writeToIndex] ? already.join('') : undefined
 
-				skip[colsOrRows][solveIndex] = true
+				skipArray[solveIndex] = true
 
 				do
 				{
-					if (writeToIndex == solveIndex || mustMatch == getRowOrColumnFunc(solveHere, writeToIndex).join(''))
+					if (writeToIndex == solveIndex || ArraysMatch(already, getRowOrColumnFunc(solveHere, writeToIndex)))
 					{
 						if (newData)
 						{
@@ -197,8 +209,6 @@ function SolveForDesigner(grid, solveColumns)
 
 		if (solveIndex >= sizes[colsOrRows])
 		{
-//			console.timeEnd("Solve_" + colsOrRows)
-
 			solveColumns = !solveColumns
 			solveIndex = 0
 			
@@ -207,7 +217,6 @@ function SolveForDesigner(grid, solveColumns)
 				return solveHere
 			}
 			
-//			console.time("Solve_" + skipColsOrRows)
 			anythingChanged = false
 		}
 	}
@@ -229,11 +238,10 @@ function Hint()
 			const newData = TryToSolve(alreadyGot, s_clues[colsOrRows][s_autoSolveData.solveIndex])
 			var writeToIndex = s_autoSolveData.solveIndex
 			const highlightThese = []
-			const mustMatch = s_autoSolveData.dupeInto[colsOrRows][writeToIndex] ? alreadyGot.join('') : undefined
 
 			do
 			{
-				if (writeToIndex == s_autoSolveData.solveIndex || mustMatch == getRowOrColumnFunc(s_activePuzzleSolutionSoFar, writeToIndex).join(''))
+				if (writeToIndex == s_autoSolveData.solveIndex || ArraysMatch(alreadyGot, getRowOrColumnFunc(s_activePuzzleSolutionSoFar, writeToIndex)))
 				{
 					if (newData)
 					{
@@ -333,14 +341,12 @@ function SolveFail()
 	s_autoSolveData = null
 }
 
-function CombineSolve(combineHere, startWith, alreadyContains)
+function CombineSolve(combineHere, paddedWithDots, alreadyContains)
 {
-	var paddedWithDots = startWith.padEnd(alreadyContains.length, ".")
-
 	for (var checkMatch in alreadyContains)
 	{
 		const chr = alreadyContains[checkMatch]
-		if (! (chr == ' ' || chr == paddedWithDots[checkMatch]))
+		if (chr != ' ' && chr != paddedWithDots[checkMatch])
 		{
 			return false
 		}
@@ -367,9 +373,16 @@ function CombineSolve(combineHere, startWith, alreadyContains)
 
 function TryToSolveSection(combineHere, startWith, clues, fromClueIndex, alreadyContains)
 {
-	if (fromClueIndex >= clues.length)
+	const remainingClues = clues.length - fromClueIndex
+	
+	if (remainingClues <= 0)
 	{
-		return CombineSolve(combineHere, startWith, alreadyContains)
+		return CombineSolve(combineHere, startWith.padEnd(alreadyContains.length, "."), alreadyContains)
+	}
+
+	if (startWith.length >= alreadyContains.length - (remainingClues * 2 - 1))
+	{
+		return
 	}
 
 	var buildPotential = startWith
@@ -409,6 +422,7 @@ function TryToSolveSection(combineHere, startWith, clues, fromClueIndex, already
 		{
 			return
 		}
+
 		buildPotential += "."
 	}
 }
@@ -418,8 +432,6 @@ function TryToSolve(alreadyContains, clues)
 	var combineHere = []
 	TryToSolveSection(combineHere, "", clues, 0, alreadyContains)
 
-	var was = alreadyContains.join('')
-	var isNow = combineHere.join('')
-
-	return (was != isNow) ? combineHere : null
+	// Return combineHere if there are any changes
+	return ArraysMatch(alreadyContains, combineHere) ? null : combineHere
 }

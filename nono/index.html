@@ -11,8 +11,9 @@
 			html { margin: auto; }
 			button { opacity: 1; color: black; cursor:pointer; font-size: 1.5vmax; font-family:Arial, Helvetica, sans-serif; font-weight: 1000; border: 1px solid #000000DD; border-radius:1.7vmax; padding: 5px 20px; margin: 5px; background-color:rgba(0, 0, 0, 0.1); transition: opacity 0.3s }
 			button:hover { opacity: 0.7 }
-			button:disabled { opacity: 0.4; color: #00000066}
+			button:disabled { opacity: 0.4; color: #00000066; cursor:not-allowed; }
 			h1, h2, h3, h4 { font-family: Arial, Helvetica, sans-serif }
+			a { cursor:pointer; text-decoration: none }
 			h1 { font-size: 3.0vmax }
 			h2 { font-size: 2.2vmax }
 			h3 { font-size: 1.6vmax }
@@ -24,6 +25,16 @@
 			table { border-collapse: collapse }
 			div { margin: 10px; vertical-align: middle }
 			.tag { border:1px solid rgba(0, 0, 0, 0.2);	border-radius:4px; background-color:rgba(0, 0, 0, 0.1); padding:2px 3px 2px 3px; font-size:1vmax; font-family:Arial, Helvetica, sans-serif }
+			#popUpTop, #popUpBack { text-align:center; left:0px; top:0px; bottom:0px; right: 0px; position:fixed; margin:0px; display:none; pointer-events: none; transition: opacity 0.8s ease-out; opacity: 0 }
+			#popUpTop { z-index:11 }
+			#popUpBack { z-index:10; background-image:linear-gradient(rgba(180,180,180,0.4), rgba(90,90,90,0.4)); backdrop-filter:blur(4px) }
+			#popUpTop h1, #popUpBack h1 { margin-top:22vh; margin-bottom:10vh; font-size: 12.0vmin }
+			#popUpTop h1 { background-image:linear-gradient(red, yellow); color:transparent; background-clip:text }
+			#popUpBack h1 { color:black; text-shadow:-2px 0px 1px, 2px 0px 1px, 0px -2px 1px, 0px 2px 1px, -1px -1px 1px, 1px -1px 1px, 1px 1px 1px, -1px 1px 1px, 4px 4px 3px }
+			#results { font-size: 4vh; background-image:linear-gradient(#77FF77, #77FFFF); color:transparent; background-clip:text; font-family: Arial, Helvetica, sans-serif; margin: 2vh }
+			#popUpBack #results { color:black; text-shadow:-2px 0px 1px, 2px 0px 1px, 0px -2px 1px, 0px 2px 1px, -1px -1px 1px, 1px -1px 1px, 1px 1px 1px, -1px 1px 1px, 4px 4px 3px }
+			#popUpTop button { font-size: 3vh; background-image:linear-gradient(rgba(240,240,240,0.8), rgba(170,170,170,0.8)); margin-top: 8vh }
+
 		</style>
 		<script type="text/javascript" src="nono.js"></script>
 		<script type="text/javascript" src="solve.js"></script>
@@ -36,5 +47,7 @@
 	<body onLoad="NonoSetUp()" style="margin: 0px; border: 0px" background="../gfx/paper.png">
 		<div style="display: flex; flex-wrap: wrap; justify-content: center; align-items: center; margin: auto; min-height: 100vh" id="outer">
 		</div>
+		<div id=popUpTop></div>
+		<div id=popUpBack></div>
 	</body>
 </html>
