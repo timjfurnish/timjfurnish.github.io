@@ -2,6 +2,28 @@ const s_puzzles = {}
 const s_tags = {}
 const g_regex = /&[^;]+;|[^a-z\.0-9]+/gi
 const s_solved = {}
+const s_removeTheseTags = PickInvalidSeasonalTags()
+
+function PickInvalidSeasonalTags()
+{
+	const ignoreThese = []
+	const today = new Date
+	const todayAsFourDigits = (today.getMonth() + 1) * 100 + today.getDate()
+	
+	// Only allow Xmas puzzles before 6th Jan or in December
+	if (todayAsFourDigits >= 0106 && todayAsFourDigits <= 1200)
+	{
+		ignoreThese.push("Xmas")
+	}
+	
+	// Only allow Halloween puzzles in the week leading up to Halloween or on 1 November
+	if (todayAsFourDigits < 1025 || todayAsFourDigits > 1101)
+	{
+		ignoreThese.push("Halloween")
+	}
+	
+	return ignoreThese
+}
 
 var s_lowestDifficulty = 1000
 var s_highestDifficulty = 0
@@ -22,6 +44,15 @@ function AddPuzzle(name, w, h, data, tags, complexity)
 {
 	const myID = name.replaceAll(g_regex, '')
 	const tagsArray = tags.split('|')
+	
+	for (var removeThis of s_removeTheseTags)
+	{
+		const here = tagsArray.indexOf(removeThis)
+		if (here >= 0)
+		{
+			tagsArray.splice(here, 1)
+		}
+	}
 
 	s_puzzles[myID] = {name:name, width:w, height:h, data:data, tags:tagsArray, complexity:complexity}
 	tagsArray.forEach(tag => AddTag(myID, tag))
@@ -57,12 +88,13 @@ AddPuzzle("WooOOooOOoo", 20, 20, "ZZ1m2D_.wPG8BxeOY5wa9dsnXPQegBgkpTnPf..77uYnfq
 AddPuzzle("Meep Morp Zeep", 15, 23, "iRilLmKZsQ7qUM_zqU8QxLvAQ_7LZg3SoKZr.0yRAZRi33.3O597OMXDnCgu", "Object|Character", 118)
 AddPuzzle("Grab Bag", 13, 15, "NOspxoG04H..B239_TJXgnuiBIMsmixDH8Gs", "Object", 130)
 AddPuzzle("Deep In Thought", 20, 19, "GZFfge.gm8sVNQtuR8HPs0Bbf.wR_Zbx8kGPi_CegBE6IJq2F5NyC.24L6egfaH6K3", "Abstract", 133)
+AddPuzzle("Spiky", 18, 18, "PW3bvfjjHxAi5QQ.GJtfAfPR.cA.dfjdBL.Pf__3yEHmcN0_zscxk2RiG", "Xmas", 142)
 AddPuzzle("Picking Up The Pieces", 24, 18, "3eylHzLjx7x757VjlLxJx95Xvfffd3RrXvbZznMl..1j..3Dd.ZH..f1dRNjd.ZTR31nJzhLPTz", "Object", 146)
 AddPuzzle("Cackle", 23, 25, "JdiBE013sbABA3ABA3ABce.2D210Pwxc_._B650Xgi3.A_._2D.__B..ANw.A9I.H7._A.fbD_AXn1Ah_TCvaNk9jwkkJqfeB65", "Halloween|Character", 147)
 AddPuzzle("Not Today, Early Bird", 21, 14, "xaFhDbjHKKlLoABA613wIxjZhDE2JT5hDAoxj3DZuQuvx9PE4IOQ", "Animal", 178)
 AddPuzzle("The Ruins", 20, 17, "dZNXPPf5ZwhXnm8GEt.on2A2wvwbN73bbznMMoSRTzzvtSjL862DpRBojwBj", "Object|Halloween", 186)
 AddPuzzle("The King", 25, 15, "BfA5b7vpJTnwUVrCgRNaLXOo02uDwX7E5I.z0KLAhjaSlb5pZ9tVuOuf6MBFgVmLDY", "Animal", 208)
-AddPuzzle("Stocking Filler", 11, 20, "lLsHC46Eisx8OReupw.gjYvqKZ3f23wF4jXvRdCk", "Xmas|Character", 235)
+AddPuzzle("Stocking Filler", 11, 20, "lLsHC46Eisx8OReupw.gjYvqKZ3f23wF4jXvRdCk", "Xmas", 235)
 AddPuzzle("Warp Speed", 25, 25, "2fffAcB2F6E1wPg.m7AKrF_yvPQG9BYaL.GE33FrZzEQlDIKm2zxVbTJMEFrIgQwdHksh1ZVFQ4NtI_tJUyjHSk.HTvPhbBD14jhdV3zg7P", "Object", 240)
 AddPuzzle("Do You Smell Carrots?", 17, 20, "dV8OsJXXDfbDmSAFw4Lw2RARtG09sfQtwAH_Itc_Kx7674VSMDG9pN_WxDX.", "Xmas|Character", 295)
 AddPuzzle("Broom With A View", 24, 25, "jehB.DHOuNb0UBDIvABC4BDA7wxn9BDGxPSjb2MtUOHHQc2KafAfuvou7pOKr65zY2136M13I65wb_.2cmggyqY5LwAx.ss1haYRb_O", "Halloween|Character", 306)
@@ -98,21 +130,31 @@ function BuildBigButton(col, click, name, tagsHTML)
 	return output.join('')
 }
 
-function BuildButtonsForPuzzles(pageName, set, darkIfHere)
+function BuildButtonsForPuzzles(pageName, set, darkIfHere, maxBright)
 {
 	const output = []
+	var numBright = 0
 
 	for (var id of Object.keys(set).sort(ByComplexity))
 	{
 		const puzzle = s_puzzles[id]
-		const tagsHTML = []
-		puzzle.tags.forEach(tag => tagsHTML.push("<NOBR CLASS=tag>" + tag + "</NOBR>"))
-		const complexityFraction = ((puzzle.complexity - s_lowestDifficulty) / (s_highestDifficulty - s_lowestDifficulty))
-		const red = Math.pow(complexityFraction, 0.4)
-		const green = 1 - complexityFraction
-		const scaleCol = (id in darkIfHere) ? 90 : 127
-		const col = "rgb(" + Math.floor(scaleCol + scaleCol * Math.sqrt(red)) + ", " + Math.floor(scaleCol + scaleCol * Math.sqrt(green)) + ", " + scaleCol + ")"
-		output.push(BuildBigButton(col, "SetHash('" + pageName + "', '" + id + "')", FormatPuzzleNameAndSize(puzzle.name, puzzle.width + " x " + puzzle.height), tagsHTML.join(' ')))
+		
+		if (puzzle.tags)
+		{
+			const bDark = (id in darkIfHere)
+
+			if (bDark || !maxBright || (++numBright <= maxBright))
+			{
+				const tagsHTML = []
+				puzzle.tags.forEach(tag => tagsHTML.push("<NOBR CLASS=tag>" + tag + "</NOBR>"))
+				const complexityFraction = ((puzzle.complexity - s_lowestDifficulty) / (s_highestDifficulty - s_lowestDifficulty))
+				const red = Math.pow(complexityFraction, 0.4)
+				const green = 1 - complexityFraction
+				const scaleCol = bDark ? 90 : 127
+				const col = "rgb(" + Math.floor(scaleCol + scaleCol * Math.sqrt(red)) + ", " + Math.floor(scaleCol + scaleCol * Math.sqrt(green)) + ", " + scaleCol + ")"
+				output.push(BuildBigButton(col, "SetHash('" + pageName + "', '" + id + "')", FormatPuzzleNameAndSize(puzzle.name, puzzle.width + " x " + puzzle.height), tagsHTML.join(' ')))			
+			}
+		}
 	}
 	
 	return output.join('<wbr>')

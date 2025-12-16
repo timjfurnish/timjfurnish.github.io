@@ -1,5 +1,5 @@
 var s_designing = null
-var s_designCanBeSolved = null
+var s_blockPlayAndShare = null
 var s_designerEditMode = "Draw"
 
 const s_cycleDesigner = {[' ']:'1', ['1']:' '}
@@ -95,11 +95,6 @@ function SetUpDesignerForGrid(grid)
 	return RebuildDesignScreen()
 }
 
-function DesignerUpdateEditMode()
-{
-	s_designerEditMode = GetElement("designMode").value
-}
-
 function RebuildDesignScreen()
 {	
 	const output = []
@@ -120,7 +115,7 @@ function RebuildDesignScreen()
 	output.push("</TABLE>")
 
 	controls.push("<P ID=diffHere></P>")
-	controls.push('<P><SELECT ID="designMode" ONCHANGE="DesignerUpdateEditMode()">')
+	controls.push('<P><SELECT ID="designMode" ONCHANGE="s_designerEditMode = GetElement(\'designMode\').value">')
 
 	for (var modeName of Object.keys(kDesignModes))
 	{
@@ -130,7 +125,7 @@ function RebuildDesignScreen()
 
 	controls.push('</SELECT></P>')
 	controls.push(BuildButtons(kDesignerButtons))
-	return {content:controls.join(''), isEditor:true, side:output.join(''), name:"Puzzle Designer", subtitle:s_designing[0].length + " x " + s_designing.length, exitURL:"SetHash('Design')", exitName:"BACK", thenCall:DesignerBegin}
+	return {content:controls.join(''), shareAs:"Nonography: Custom Puzzle", shareHash:MakeDesignShareHash, isEditor:true, side:output.join(''), name:"Puzzle Designer", subtitle:s_designing[0].length + " x " + s_designing.length, exitCalls:"SetHash('Design')", exitName:"BACK", thenCall:DesignerBegin}
 }
 
 function DesignerBegin()
@@ -146,7 +141,7 @@ function DesignerBegin()
 		}
 	}
 	
-	document.onmouseup = NonoDesignMouseUp
+	onmouseup = NonoDesignMouseUp
 
 	DesignerShowSolvability()
 }
@@ -159,6 +154,12 @@ function DesignToPlay()
 	{
 		SetHash('Custom', encoded)
 	}
+}
+
+function MakeDesignShareHash()
+{
+	const encoded = NonoEncodePuzzle(s_designing)
+	return encoded ? "Custom=" + encoded : undefined
 }
 
 function DesignerInv()
@@ -283,12 +284,12 @@ function DesignerShowSolvability()
 		console.timeEnd("SolveForDesignerColsFirst")
 
 		GetElement("diffHere").innerHTML = "Difficulty: <B>" + difficulty + "</B>"
-		s_designCanBeSolved = (difficulty > 0)
+		s_blockPlayAndShare = !difficulty
 	}
 	else
 	{
-		GetElement("diffHere").innerHTML = "Difficulty: <B>unsolvable</B>"
-		s_designCanBeSolved = false
+		GetElement("diffHere").innerHTML = "Difficulty: <B><font color=#990000>unsolvable</font></B>"
+		s_blockPlayAndShare = true
 	}
 	
 	EnableButtons()

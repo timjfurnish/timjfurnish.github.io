@@ -380,7 +380,7 @@ function TryToSolveSection(combineHere, startWith, clues, fromClueIndex, already
 		return CombineSolve(combineHere, startWith.padEnd(alreadyContains.length, "."), alreadyContains)
 	}
 
-	if (startWith.length >= alreadyContains.length - (remainingClues * 2 - 1))
+	if (startWith.length > alreadyContains.length - (remainingClues * 2 - 1))
 	{
 		return
 	}

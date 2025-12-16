@@ -2,16 +2,13 @@ var s_activePuzzleSolutionSoFar = null
 var s_completeness = null
 var s_clues = null
 var s_oldHighlightIdArray = []
-var s_playingID = null
-var s_startedPlaying = null
 var s_autoPaint = null
-var s_shareThis = null
 
 const s_cycle = {[' ']:'1', ['1']:'.', ['.']:' '}
 const s_cycleReverse = {[' ']:'.', ['.']:'1', ['1']:' '}
 
-const s_congratsButtons = ["WOO", "HOORAY", "GO ME", "YES", "YEAH", "AWESOME", "WOOP WOOP", "FUNKY", "NICE"]
-
+const s_congratsButtons = ["WOO!", "HOORAY!", "GO ME!", "YEAH!", "AWESOME!", "WOOP WOOP!", "FUNKY!", "NICE!", "I'M AMAZING!"]
+const s_congratsHeaders = ["Completed!", "Well Done!", "Nice Work!", "Good Work!", "Great Work!", "You Did It!", "Fantastic!", "Awesome!"]
 
 const kIconRedCross = "&#x274C;"
 const kIconMatch = "&#x2714;&#xFE0F;"
@@ -59,7 +56,7 @@ function AutoComplete_cols(x)
 
 function BuildMainMenu()
 {
-	return {name:"Main Menu", shareAs:"Nonography", content:BuildButtons({PLAY:"SetHash('Play')", DESIGN:"SetHash('Design')"}), exitName:"EXIT", exitURL:(location.host ? (location.protocol + "//" + location.host) : "")}
+	return {name:"Main Menu", shareAs:"Nonography", shareDesc:"Play Nonogram puzzles in your browser!", content:BuildButtons({PLAY:"SetHash('Play')", DESIGN:"SetHash('Design')"}), exitName:"EXIT", exitCalls:"location = location.protocol + '//' + location.host"}
 }
 
 function SetHash(newHash, param)
@@ -81,8 +78,8 @@ const s_menusWithNames =
 	["Play"]:param =>
 	{
 		const output = []
-		output.push(BuildButtonsForPuzzles("Puzzle", s_puzzles, s_solved))
-		output.push('<P><B>Or enter a puzzle code here!</B><BR><INPUT STYLE="max-width: 85vw" ID="puzzleData" TYPE=text SIZE=80 ONCHANGE="EnteredCustom(\'Custom\')"></P>')
+		output.push("<P>" + BuildButtonsForPuzzles("Puzzle", s_puzzles, s_solved, Math.min(Object.keys(s_solved).length + 1, 5)) + "</P>")
+//		output.push('<P><B>Or enter a puzzle code here!</B><BR><INPUT STYLE="max-width: 85vw" ID="puzzleData" TYPE=text SIZE=80 ONCHANGE="EnteredCustom(\'Custom\')"></P>')
 		return {name:"Choose A Puzzle", content:output.join('')}
 	},
 	
@@ -96,7 +93,7 @@ const s_menusWithNames =
 		}
 		else
 		{
-			return {content:"Failed to find a puzzle with ID '" + param + "'"}
+			return {content:"<p>Failed to find a puzzle with ID '" + param + "'</p>"}
 		}
 	},
 	
@@ -130,7 +127,8 @@ const s_menusWithNames =
 			output.push('</P><P><B>Or start from a puzzle you\'ve solved!</B><BR>')
 			output.push(solvedPuzzleButtons)
 		}
-		output.push('</P><P><B>Or enter a puzzle code here!</B><BR><INPUT ID="puzzleData" TYPE=text STYLE="max-width: 85vw" SIZE=80 ONCHANGE="EnteredCustom(\'DesignCustom\')"></P>')
+		output.push('</P>')
+//		output.push('<P><B>Or enter a puzzle code here!</B><BR><INPUT ID="puzzleData" TYPE=text STYLE="max-width: 85vw" SIZE=80 ONCHANGE="EnteredCustom(\'DesignCustom\')"></P>')
 		return {content:output.join('')}
 	},
 	
@@ -175,24 +173,19 @@ function NonoSetUp()
 function NonoBuildPage()
 {
 	var [goHere, param] = location.hash?.replace('#', '').split('=', 2)
-	
-	// Defaults if we don't find what we're looking for...
 	var callFunc
 	var useName
 
 	// Nullify some things
 	s_designing = null
-	s_designCanBeSolved = null
+	s_blockPlayAndShare = null
 	s_activePuzzleSolutionSoFar = null
 	s_completeness = null
 	s_autoSolveData = null
 	s_clues = null
 	s_oldHighlightIdArray = []
-	s_playingID = null
-	s_startedPlaying = null
 	s_autoPaint = null
-	s_shareThis = null
-	document.onmouseup = null
+	onmouseup = null
 
 	// Try and find some overrides for a particular page
 	for (var [key, func] of Object.entries(s_menusWithNames))
@@ -205,73 +198,68 @@ function NonoBuildPage()
 		}
 	}
 
-	var setup = callFunc?.(param)
+	s_lastSetup = callFunc?.(param)
 	
-	if (setup)
+	if (s_lastSetup)
 	{
 		console.log("Displaying page '" + useName + "'" + (param ? " with param '" + param + "'" : ""))
 	}
 	else
 	{
 		// If no function (or if function returned something nullish) then show main menu
-		setup = BuildMainMenu()
+		s_lastSetup = BuildMainMenu()
 		console.log("Displaying main menu")
 	}
 	
-	if (setup.name)
+	if (s_lastSetup.name)
 	{
-		useName = setup.name
+		useName = s_lastSetup.name
 	}
 	
-	if (! setup.isEditor)
+	if (! s_lastSetup.isEditor)
 	{
 		s_designerEditMode = "Draw"
 	}
 
 	document.title = "Nonography: " + useName
 
-	if (setup.subtitle)
+	if (s_lastSetup.subtitle)
 	{
-		useName = FormatPuzzleNameAndSize(useName, setup.subtitle)
+		useName = FormatPuzzleNameAndSize(useName, s_lastSetup.subtitle)
 	}
 
 	const buildHere = []
 
 	buildHere.push('<DIV STYLE="flex-grow: 0.05; text-align: center" id="buttonsGoHere"><H1>NONOGRAPHY</H1><H2 ID="subtitle">' + useName + '</H2>')
 
-	if (setup.content)
+	if (s_lastSetup.content)
 	{
-		buildHere.push(setup.content)
+		buildHere.push(s_lastSetup.content)
 	}
 
-	buildHere.push('<P><BUTTON onClick="' + (setup.exitURL ?? 'SetHash(\'MainMenu\')') + '">' + (setup.exitName ?? "MAIN MENU") + '</BUTTON>')
-	
-	if (("shareAs" in setup) && ("share" in navigator))
+	const backAndMaybeShare = {[s_lastSetup.exitName ?? "MAIN MENU"]:s_lastSetup.exitCalls ?? 'SetHash(\'MainMenu\')'}
+
+	if (("shareAs" in s_lastSetup) && ("share" in navigator))
 	{
-		s_shareThis =
-		{
-			title: setup.shareAs,
-			text: setup.shareAsDesc ?? "Play Nonogram puzzles in your browser!",
-			url: document.location,
-		}
-		buildHere.push(' <BUTTON onClick="navigator.share(s_shareThis)">' + ("SHARE") + '</BUTTON></P></DIV>')
+		backAndMaybeShare.SHARE = "DoShare()"
 	}
 
-	buildHere.push('</P></DIV>')
+	buildHere.push('<BR>' + BuildButtons(backAndMaybeShare) + '</DIV>')
 
-	if (setup.side)
+	if (s_lastSetup.side)
 	{
-		buildHere.push('<DIV style="flex-grow: 0.05"><CENTER>' + setup.side + '</CENTER></DIV>')
+		buildHere.push('<DIV style="flex-grow: 0.05"><CENTER>' + s_lastSetup.side + '</CENTER></DIV>')
 	}
 	
 	GetElement("outer").innerHTML = buildHere.join('')
-	setup.thenCall?.()
+	EnableButtons()
+	s_lastSetup.thenCall?.()
 }
 
 const kButtonAvailabilityChecks =
 {
-	["button:SHARE"]: () => s_designCanBeSolved,
-	["button:PLAY"]:  () => s_designCanBeSolved,
+	["button:SHARE"]: () => !s_blockPlayAndShare,
+	["button:PLAY"]:  () => !s_blockPlayAndShare,
 	["button:SOLVE"]: () => !s_completeness.done,
 	["button:STEP"]:  () => !s_completeness.done,
 	["button:HINT"]:  () => !s_completeness.done
@@ -299,16 +287,17 @@ function EnableButtons()
 	EnableButtonsIn("buttonsGoHere")
 }
 
-function BuildButtons(info)
+function BuildButtons(info, useClass)
 {
 	const output = []
+	const extra = useClass ? ' class="' + useClass + '"' : ""
 	
 	for (var [label, callThis] of Object.entries(info))
 	{
-		output.push('<BUTTON id="button:' + label + '" onClick="' + callThis + '">' + label + '</BUTTON>')
+		output.push('<BUTTON ' + extra + ' id="button:' + label + '" onClick="' + callThis + '">' + label + '</BUTTON>')
 	}
 	
-	return output.join(' ')
+	return output.join('')
 }
 
 function Highlight(idArray, col)
@@ -383,6 +372,66 @@ function CalcCellWidthHeight(gridWidth, gridHeight)
 	return Math.min(2.5, baseSize / Math.max(gridHeight, gridWidth))
 }
 
+function RandomFromArray(array)
+{
+	return array[Math.floor(Math.random() * array.length)]
+}
+
+function MakeShareDesc()
+{
+	const output = []
+	const data = s_puzzles[s_lastSetup.currentPuzzleID]
+	
+	var adjective = "custom"
+	
+	if (data)
+	{
+		const {name, tags} = data
+		const trickyFraction = (data.complexity - s_lowestDifficulty) / (s_highestDifficulty - s_lowestDifficulty)
+
+		adjective = (trickyFraction > 0.4) ? "tricky" : RandomFromArray(["cool", "awesome", "great", "fantastic", "wonderful", "brilliant", "neat"])
+
+		if (tags.includes("Xmas"))
+		{
+			output.push("Ho ho ho!")
+			adjective += RandomFromArray([" holiday", " Christmas"])
+		}
+		else if (tags.includes("Halloween"))
+		{
+			if (Math.random() >= 0.5)
+			{
+				output.push("Spooky!")
+				adjective += " Halloween"
+			}
+			else
+			{
+				output.push("Happy Halloween!")
+				adjective += " spooky"
+			}
+		}
+	}
+
+	if (s_completeness?.done)
+	{
+		output.push("I just solved this " + adjective + " Nonogram puzzle in " + s_completeness.done + " - ")
+		output.push(RandomFromArray(["can you?", "can you do better?", "beat that!", "now you try!", "can you beat my time?", "your turn!", "try and beat my time!"]))
+	}
+	else if (Math.random() >= 0.75)
+	{
+		output.push("I saw this " + adjective + " Nonogram puzzle and thought " + RandomFromArray(["of you!", "you'd like it!"]))
+	}
+	else if (Math.random() >= 0.25)
+	{
+		output.push(RandomFromArray(["Try solving this ", "Try to solve this ", "Try this ", "I thought you'd like this ", "I think you'll like this "]) + adjective + " Nonogram puzzle!")
+	}
+	else
+	{
+		output.push("Can you solve this " + adjective + " Nonogram puzzle?")
+	}
+	
+	return output.join(' ')
+}
+
 function SetUpPuzzle(title, puzzleIn, playingID)
 {
 	const output = []
@@ -448,10 +497,9 @@ function SetUpPuzzle(title, puzzleIn, playingID)
 	s_activePuzzleSolutionSoFar = emptyGrid
 	s_clues = {cols:buildColumnClues, rows:buildRowClues}
 	s_completeness = {rows:[], cols:[], total:0}
-	s_playingID = playingID
-	s_startedPlaying = Date.now()
 	
-	return {name:title, subtitle:width + " x " + height, shareAs:"Nonography: " + title, content:BuildButtons({SOLVE:"SolveStart(false)", STEP:"SolveStart(true)" /*, HINT:"SmartHint()"*/}), side:output.join(''), exitURL:"SetHash('Play')", exitName:'BACK', thenCall:SetUpPlayMouseHandlers}
+	const subtitle = width + " x " + height
+	return {name:title, startTime:Date.now(), subtitle:subtitle, currentPuzzleID:playingID, shareAs:"Nonography: " + title, content:BuildButtons({SOLVE:"SolveStart(false)", STEP:"SolveStart(true)" /*, HINT:"SmartHint()"*/}), side:output.join(''), exitCalls:"SetHash('Play')", exitName:'BACK', thenCall:SetUpPlayMouseHandlers}
 }
 
 function SetUpPlayMouseHandlers()
@@ -467,7 +515,7 @@ function SetUpPlayMouseHandlers()
 		}
 	}
 	
-	document.onmouseup = NonoPlayMouseUp
+	onmouseup = NonoPlayMouseUp
 }
 
 function NonoPlayMouseOverGrid(x, y)
@@ -516,15 +564,41 @@ function NonoPlayMouseUp()
 		
 		if (s_completeness.total == s_clues.rows.length + s_clues.cols.length)
 		{
-			if (s_playingID)
+			if (s_lastSetup.currentPuzzleID)
 			{
-				s_solved[s_playingID] = true
+				s_solved[s_lastSetup.currentPuzzleID] = true
 			}
-			s_completeness.done = true
+			
+			const timePlaying = Math.floor((Date.now() - s_lastSetup.startTime) / 1000)
+			const seconds = timePlaying % 60
+			const minutes = (timePlaying - seconds) / 60
+
+			if (minutes)
+			{
+				s_completeness.done = minutes + ':' + String(seconds).padStart(2, '0')
+			}
+			else
+			{
+				s_completeness.done = seconds + " seconds"
+			}
+			
 			EnableButtons()
 			setTimeout(TickPuzzleCompleted, 100)
 		}
 	}
+}
+
+function DoShare()
+{
+	const customHash = s_lastSetup.shareHash?.()
+	const shareThis =
+	{
+		title: s_lastSetup.shareAs,
+		text: s_lastSetup.shareDesc ?? MakeShareDesc(),
+		url: customHash ? location.origin + location.pathname + '#' + customHash : location.href,
+	}
+	console.table(shareThis)
+	navigator.share(shareThis)
 }
 
 function NonoPlayMouseDown(e)
@@ -679,17 +753,23 @@ function ShowCongrats()
 {
 	const elemTop = GetElement("popUpTop")
 	const elemBack = GetElement("popUpBack")
-	const timePlaying = Math.floor((Date.now() - s_startedPlaying) / 1000)
-	const seconds = timePlaying % 60
-	const minutes = (timePlaying - seconds) / 60
 
 	var output = []
 
-	output.push('<h1>Completed!</h1><p id=results>')
+	const headerText = RandomFromArray(s_congratsHeaders)
+	var buttonText
 	
-	if (s_playingID)
+	do
 	{
-		output.push('Puzzle: <b>' + s_puzzles[s_playingID].name + '</b>')
+		buttonText = RandomFromArray(s_congratsButtons)
+	}
+	while (buttonText == headerText.toUpperCase())
+
+	output.push('<h1>' + headerText + '</h1><p id=results>')
+	
+	if (s_lastSetup.currentPuzzleID)
+	{
+		output.push('Puzzle: <b>' + s_puzzles[s_lastSetup.currentPuzzleID].name + '</b>')
 	}
 	else
 	{
@@ -697,11 +777,11 @@ function ShowCongrats()
 	}
 	
 	output.push('</p><p id=results>Size: <B>' + s_clues.cols.length + ' x ' + s_clues.rows.length + '</B>')
-	output.push('</p><p id=results>Time taken: <B>' + minutes + ':' + String(seconds).padStart(2, '0') + '</B>')
+	output.push('</p><p id=results>Time taken: <B>' + s_completeness.done + '</B>')
 	output.push('</p>')
 	output = output.join('')
 
-	elemTop.innerHTML = output + BuildButtons({[s_congratsButtons[Math.floor(Math.random() * s_congratsButtons.length)] + "!"]:"CloseCongrats()"})
+	elemTop.innerHTML = output + "<P>" + BuildButtons({[buttonText]:"CloseCongrats()"}, "biggy") + "<BR>" + BuildButtons({["SHARE PUZZLE"]:"DoShare()", ["CONTINUE"]:"SetHash('Play'); setTimeout(CloseCongrats, 200)"}) + "</P>"
 	elemBack.innerHTML = output
 
 	for (var each of [elemTop, elemBack])

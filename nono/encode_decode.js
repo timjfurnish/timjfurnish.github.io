@@ -231,7 +231,7 @@ function NonoDecodePuzzleInner(stringIn)
 
 function NonoDecodePuzzle(stringIn)
 {
-	const reply = NonoDecodePuzzleInner(stringIn)
+	const reply = stringIn && NonoDecodePuzzleInner(stringIn)
 	
 	if (! reply)
 	{
