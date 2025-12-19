@@ -103,7 +103,43 @@ AddPuzzle("Oh The Drama", 25, 15, "BfAheS9rpnpQbQpl6pLoxwr0G65p6k2zY0drYvgNNIPoy
 AddPuzzle("Pirhana", 20, 17, "dZLGtbvnPf.fd1jf.xwaiAXmchSNuon.gLSxyi018NAgd652_uJJCKw1ooAi", "Animal", 333)
 AddPuzzle("Downward", 20, 19, "GZGh.DGx65L66pnbTMzy3tI8pNb4MACo9KI.SFL9IFj2pL2dsL_aLnGq_Zh08YZSeV", "Abstract", 398)
 AddPuzzle("So Bright", 21, 25, "Yak2CnUakaolGRhSK6mj1zHMIUxc6x..jABq9YkYibHFAgxi4C2GJy9r5uQi365sfAI9yzEUgkDHLDEr08geABcfAeQ", "Animal|Xmas", 448)
+AddPuzzle("Shipshape", 25, 25, "2feJKUpXok5znHXvuyH5MiTnu1sJjwQ51ya.wxqNbPC73GKpDCeYBHMoFhusju78wT7DnYchxNIWc9vt8HXKjIj2Ix2O77YO3DAm7.wwd.g", "Object", 474)
 AddPuzzle("Giddy", 25, 22, "xfW6whDIgxjZ1f.540pR1DnORI5zJ9rT4RLw1fwHogNh49kQFhZjZ8kZUrHXJW4rsSNVVL1tJUBrffHXrfjb.9jLP4rnmAo", "Animal", 631)
+LoadSolvedPuzzles()
+
+function GetTimeDisplayText(timePlaying)
+{
+	const seconds = timePlaying % 60
+	const minutes = (timePlaying - seconds) / 60
+
+	if (minutes)
+	{
+		return minutes + ':' + String(seconds).padStart(2, '0')
+	}
+	
+	return seconds + " seconds"
+}
+
+function LoadSolvedPuzzles()
+{
+	const solvedString = window?.localStorage?.getItem("nono_solved")
+	solvedString?.split('+')?.forEach(entry =>
+	{
+		const [id, timeStr] = entry.split('=', 2)
+		const time = parseInt(timeStr)
+		if (s_puzzles[id] && (time + "") == timeStr)
+		{
+			s_solved[id] = {time:time, display:GetTimeDisplayText(time)}
+		}
+	})
+}
+
+function SaveSolvedPuzzles()
+{
+	const saveThis = []
+	Object.entries(s_solved).forEach(([id, {time}]) => saveThis.push(id + "=" + time))
+	window?.localStorage?.setItem("nono_solved", saveThis.join('+'))
+}
 
 function FormatPuzzleNameAndSize(name, subtitle)
 {
@@ -115,10 +151,10 @@ function ByComplexity(a, b)
 	return s_puzzles[a].complexity - s_puzzles[b].complexity
 }
 
-function BuildBigButton(col, click, name, tagsHTML)
+function BuildBigButton(colTop, colBot, click, name, tagsHTML)
 {
 	const output = []
-	output.push('<BUTTON CLASS="puzzleButton" STYLE="background-color: ' + col + '" onClick="' + click + '"><DIV class=buttonPuzzleName>' + name + '</DIV>')
+	output.push('<BUTTON CLASS="puzzleButton" STYLE="background-image:linear-gradient(' + colTop + ', ' + colBot + ')" onClick="' + click + '"><DIV class=buttonPuzzleName>' + name + '</DIV>')
 
 	if (tagsHTML && tagsHTML != "")
 	{
@@ -141,18 +177,30 @@ function BuildButtonsForPuzzles(pageName, set, darkIfHere, maxBright)
 		
 		if (puzzle.tags)
 		{
-			const bDark = (id in darkIfHere)
+			const bDark = darkIfHere && (id in darkIfHere)
 
 			if (bDark || !maxBright || (++numBright <= maxBright))
 			{
 				const tagsHTML = []
+				var addToSubtitle = ""
+
+				if (darkIfHere)
+				{
+					const bestTime = darkIfHere[id]
+					addToSubtitle = bestTime ? '<BR>Best time: ' + bestTime.display : "<BR>Unsolved!"
+				}
+
 				puzzle.tags.forEach(tag => tagsHTML.push("<NOBR CLASS=tag>" + tag + "</NOBR>"))
-				const complexityFraction = ((puzzle.complexity - s_lowestDifficulty) / (s_highestDifficulty - s_lowestDifficulty))
-				const red = Math.pow(complexityFraction, 0.4)
+				const complexityFraction = Math.min(1, ((puzzle.complexity - s_lowestDifficulty) / (s_highestDifficulty - s_lowestDifficulty) * 1.3))
+				const red = Math.pow(complexityFraction, 0.6)
 				const green = 1 - complexityFraction
-				const scaleCol = bDark ? 90 : 127
-				const col = "rgb(" + Math.floor(scaleCol + scaleCol * Math.sqrt(red)) + ", " + Math.floor(scaleCol + scaleCol * Math.sqrt(green)) + ", " + scaleCol + ")"
-				output.push(BuildBigButton(col, "SetHash('" + pageName + "', '" + id + "')", FormatPuzzleNameAndSize(puzzle.name, puzzle.width + " x " + puzzle.height), tagsHTML.join(' ')))			
+				var scaleCol = bDark ? 100 : 160
+				var baseCol = scaleCol
+				const colTop = "rgb(" + Math.floor(baseCol + scaleCol * Math.sqrt(red)) + ", " + Math.floor(baseCol + scaleCol * Math.sqrt(green)) + ", " + (baseCol) + ")"
+				baseCol /= 2
+				const colBot = "rgb(" + Math.floor(baseCol + scaleCol * Math.sqrt(red)) + ", " + Math.floor(baseCol + scaleCol * Math.sqrt(green)) + ", " + (baseCol) + ")"
+				
+				output.push(BuildBigButton(colTop, colBot, "SetHash('" + pageName + "', '" + id + "')", FormatPuzzleNameAndSize(puzzle.name, puzzle.width + " x " + puzzle.height + addToSubtitle), tagsHTML.join(' ')))			
 			}
 		}
 	}

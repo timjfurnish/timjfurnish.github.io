@@ -2,7 +2,7 @@ var s_activePuzzleSolutionSoFar = null
 var s_completeness = null
 var s_clues = null
 var s_oldHighlightIdArray = []
-var s_autoPaint = null
+var s_lastSetup
 
 const s_cycle = {[' ']:'1', ['1']:'.', ['.']:' '}
 const s_cycleReverse = {[' ']:'.', ['.']:'1', ['1']:' '}
@@ -16,7 +16,7 @@ const kIconMatch = "&#x2714;&#xFE0F;"
 const kCompletenessIcons =
 {
 	blank:{a:0,   html:kIconRedCross},
-	wrong:{a:0.3, html:kIconRedCross},
+	wrong:{a:1,   html:kIconRedCross},
 	right:{a:1,   html:kIconMatch}
 }
 
@@ -56,7 +56,15 @@ function AutoComplete_cols(x)
 
 function BuildMainMenu()
 {
-	return {name:"Main Menu", shareAs:"Nonography", shareDesc:"Play Nonogram puzzles in your browser!", content:BuildButtons({PLAY:"SetHash('Play')", DESIGN:"SetHash('Design')"}), exitName:"EXIT", exitCalls:"location = location.protocol + '//' + location.host"}
+	const reply = {name:"Main Menu", shareAs:"Nonography", shareDesc:"Play Nonogram puzzles in your browser!", content:BuildButtons({PLAY:"SetHash('Play')", DESIGN:"SetHash('Design')"})}
+
+	if (location.host != "" && !window.navigator.standalone)
+	{
+		reply.exitName = "EXIT"
+		reply.exitCalls = "location = location.protocol + '//' + location.host"
+	}
+
+	return reply
 }
 
 function SetHash(newHash, param)
@@ -78,9 +86,9 @@ const s_menusWithNames =
 	["Play"]:param =>
 	{
 		const output = []
-		output.push("<P>" + BuildButtonsForPuzzles("Puzzle", s_puzzles, s_solved, Math.min(Object.keys(s_solved).length + 1, 5)) + "</P>")
+		output.push("<P>" + BuildButtonsForPuzzles("Puzzle", s_puzzles, s_solved, s_lastSetup?.unlockAll ? 0 : Math.min(Object.keys(s_solved).length + 1, 5)) + "</P>")
 //		output.push('<P><B>Or enter a puzzle code here!</B><BR><INPUT STYLE="max-width: 85vw" ID="puzzleData" TYPE=text SIZE=80 ONCHANGE="EnteredCustom(\'Custom\')"></P>')
-		return {name:"Choose A Puzzle", content:output.join('')}
+		return {name:"Choose A Puzzle", exitName:"MAIN MENU", content:output.join('')}
 	},
 	
 	["Puzzle"]:param =>
@@ -115,13 +123,13 @@ const s_menusWithNames =
 	{
 		const output = []
 		output.push('<P><B>Start from an empty grid!</B><BR>')
-		output.push(BuildBigButton("#DDDDFF", "SetHash('DesignSize', '15x15')", FormatPuzzleNameAndSize("Empty", "15 x 15")))
+		output.push(BuildBigButton("#DDDDFF", "#99DDDD", "SetHash('DesignSize', '15x15')", FormatPuzzleNameAndSize("Empty", "15 x 15")))
 		output.push('<WBR>')
-		output.push(BuildBigButton("#DDDDFF", "SetHash('DesignSize', '20x20')", FormatPuzzleNameAndSize("Empty", "20 x 20")))
+		output.push(BuildBigButton("#DDDDFF", "#99DDDD", "SetHash('DesignSize', '20x20')", FormatPuzzleNameAndSize("Empty", "20 x 20")))
 		output.push('<WBR>')
-		output.push(BuildBigButton("#DDDDFF", "SetHash('DesignSize', '25x25')", FormatPuzzleNameAndSize("Empty", "25 x 25")))
+		output.push(BuildBigButton("#DDDDFF", "#99DDDD", "SetHash('DesignSize', '25x25')", FormatPuzzleNameAndSize("Empty", "25 x 25")))
 		
-		const solvedPuzzleButtons = BuildButtonsForPuzzles("DesignFrom", s_solved, {})
+		const solvedPuzzleButtons = BuildButtonsForPuzzles("DesignFrom", s_solved)
 		if (solvedPuzzleButtons != "")
 		{
 			output.push('</P><P><B>Or start from a puzzle you\'ve solved!</B><BR>')
@@ -129,7 +137,7 @@ const s_menusWithNames =
 		}
 		output.push('</P>')
 //		output.push('<P><B>Or enter a puzzle code here!</B><BR><INPUT ID="puzzleData" TYPE=text STYLE="max-width: 85vw" SIZE=80 ONCHANGE="EnteredCustom(\'DesignCustom\')"></P>')
-		return {content:output.join('')}
+		return {content:output.join(''), exitName:"MAIN MENU"}
 	},
 	
 	["DesignCustom"]:param =>
@@ -154,7 +162,7 @@ const s_menusWithNames =
 	},
 	
 	//==============================
-	// Tests
+	// Tests and hacks
 	//==============================
 
 	["AutoTest"]:param =>
@@ -162,6 +170,10 @@ const s_menusWithNames =
 		return SetUpAutoTest()
 	},
 
+	["UnlockAll"]:param =>
+	{
+		return {exitName:"YAY HACKS!", exitCalls:"SetHash('Play')", unlockAll:true}
+	},
 }
 
 function NonoSetUp()
@@ -184,7 +196,6 @@ function NonoBuildPage()
 	s_autoSolveData = null
 	s_clues = null
 	s_oldHighlightIdArray = []
-	s_autoPaint = null
 	onmouseup = null
 
 	// Try and find some overrides for a particular page
@@ -216,11 +227,6 @@ function NonoBuildPage()
 		useName = s_lastSetup.name
 	}
 	
-	if (! s_lastSetup.isEditor)
-	{
-		s_designerEditMode = "Draw"
-	}
-
 	document.title = "Nonography: " + useName
 
 	if (s_lastSetup.subtitle)
@@ -237,14 +243,19 @@ function NonoBuildPage()
 		buildHere.push(s_lastSetup.content)
 	}
 
-	const backAndMaybeShare = {[s_lastSetup.exitName ?? "MAIN MENU"]:s_lastSetup.exitCalls ?? 'SetHash(\'MainMenu\')'}
+	const backAndShare = {}
+	
+	if (s_lastSetup.exitName)
+	{
+		backAndShare[s_lastSetup.exitName] = s_lastSetup.exitCalls ?? 'SetHash(\'MainMenu\')'
+	}
 
 	if (("shareAs" in s_lastSetup) && ("share" in navigator))
 	{
-		backAndMaybeShare.SHARE = "DoShare()"
+		backAndShare.SHARE = "DoShare()"
 	}
 
-	buildHere.push('<BR>' + BuildButtons(backAndMaybeShare) + '</DIV>')
+	buildHere.push('<BR>' + BuildButtons(backAndShare) + '</DIV>')
 
 	if (s_lastSetup.side)
 	{
@@ -254,6 +265,15 @@ function NonoBuildPage()
 	GetElement("outer").innerHTML = buildHere.join('')
 	EnableButtons()
 	s_lastSetup.thenCall?.()
+	
+	// Don't need to keep all the contents...
+	delete s_lastSetup.thenCall
+	delete s_lastSetup.side
+	delete s_lastSetup.content
+	delete s_lastSetup.exitName
+	delete s_lastSetup.exitCalls
+	delete s_lastSetup.subtitle
+	delete s_lastSetup.name
 }
 
 const kButtonAvailabilityChecks =
@@ -445,12 +465,20 @@ function SetUpPuzzle(title, puzzleIn, playingID)
 	var maxColumnClues = 0
 	var maxRowClues = 0
 
+	s_completeness = {rows:[], cols:[], total:0}
+
 	output.push('<TABLE HEIGHT=0><TR><TD STYLE="border: none"></TD>')
 	for (var x = 0; x < width; ++ x)
 	{
 		const columnClues = CalcClues(GetColumnFromGrid(puzzleIn, x))
 		buildColumnClues.push(columnClues)
 		maxColumnClues = Math.max(maxColumnClues, columnClues.length)
+		
+		if (columnClues.length == 0)
+		{
+			s_completeness.cols[x] = false
+			++ s_completeness.total
+		}
 	}
 
 	for (var y = 0; y < height; ++ y)
@@ -458,6 +486,12 @@ function SetUpPuzzle(title, puzzleIn, playingID)
 		const rowClues = CalcClues(puzzleIn[y])
 		buildRowClues.push(rowClues)
 		maxRowClues = Math.max(maxRowClues, rowClues.length)
+
+		if (rowClues.length == 0)
+		{
+			s_completeness.rows[y] = false
+			++ s_completeness.total
+		}
 	}
 
 	const cellWidthHeight = CalcCellWidthHeight(width + maxRowClues + 1, height + maxColumnClues + 1)
@@ -496,10 +530,9 @@ function SetUpPuzzle(title, puzzleIn, playingID)
 
 	s_activePuzzleSolutionSoFar = emptyGrid
 	s_clues = {cols:buildColumnClues, rows:buildRowClues}
-	s_completeness = {rows:[], cols:[], total:0}
 	
 	const subtitle = width + " x " + height
-	return {name:title, startTime:Date.now(), subtitle:subtitle, currentPuzzleID:playingID, shareAs:"Nonography: " + title, content:BuildButtons({SOLVE:"SolveStart(false)", STEP:"SolveStart(true)" /*, HINT:"SmartHint()"*/}), side:output.join(''), exitCalls:"SetHash('Play')", exitName:'BACK', thenCall:SetUpPlayMouseHandlers}
+	return {name:title, startTime:Date.now(), subtitle:subtitle, currentPuzzleID:playingID, shareAs:"Nonography: " + title, content:BuildButtons({SOLVE:"SolveStart(0)", STEP:"SolveStart(2)", HINT:"SmartHint()"}), side:output.join(''), exitCalls:"SetHash('Play')", exitName:'BACK', thenCall:SetUpPlayMouseHandlers}
 }
 
 function SetUpPlayMouseHandlers()
@@ -524,11 +557,11 @@ function NonoPlayMouseOverGrid(x, y)
 	{
 		Highlight(["cols" + x, "rows" + y], "#FFFFAA")
 		
-		if (s_autoPaint)
+		if (s_lastSetup.paint)
 		{
-			if (s_autoPaint.to != "1" || s_activePuzzleSolutionSoFar[y][x] == s_autoPaint.from)
+			if (s_lastSetup.paint.to != "1" || s_activePuzzleSolutionSoFar[y][x] == s_lastSetup.paint.from)
 			{
-				SetCell(x, y, s_autoPaint.to)
+				SetCell(x, y, s_lastSetup.paint.to)
 			}
 		}
 	}
@@ -558,28 +591,26 @@ function TickPuzzleCompleted()
 
 function NonoPlayMouseUp()
 {
-	if (s_autoPaint)
+	if (s_lastSetup.paint)
 	{
-		s_autoPaint = null
+		delete s_lastSetup.paint
 		
 		if (s_completeness.total == s_clues.rows.length + s_clues.cols.length)
 		{
-			if (s_lastSetup.currentPuzzleID)
-			{
-				s_solved[s_lastSetup.currentPuzzleID] = true
-			}
-			
 			const timePlaying = Math.floor((Date.now() - s_lastSetup.startTime) / 1000)
 			const seconds = timePlaying % 60
 			const minutes = (timePlaying - seconds) / 60
 
-			if (minutes)
+			s_completeness.done = GetTimeDisplayText(timePlaying)
+
+			if (s_lastSetup.currentPuzzleID)
 			{
-				s_completeness.done = minutes + ':' + String(seconds).padStart(2, '0')
-			}
-			else
-			{
-				s_completeness.done = seconds + " seconds"
+				const dataHere = s_solved[s_lastSetup.currentPuzzleID]
+				if (!dataHere || dataHere.time > timePlaying)
+				{
+					s_solved[s_lastSetup.currentPuzzleID] = {time:timePlaying, display:s_completeness.done}
+					SaveSolvedPuzzles()
+				}
 			}
 			
 			EnableButtons()
@@ -603,12 +634,12 @@ function DoShare()
 
 function NonoPlayMouseDown(e)
 {
-	if (! s_autoSolveData && ! s_autoPaint && ! s_completeness.done)
+	if (! s_autoSolveData && ! s_lastSetup.paint && ! s_completeness.done)
 	{
 		const {target, button} = e
 		const from = s_activePuzzleSolutionSoFar[target.gridY][target.gridX]
-		s_autoPaint = {from:from, to:(button ? s_cycleReverse : s_cycle)[from]}
-		SetCell(target.gridX, target.gridY, s_autoPaint.to)
+		s_lastSetup.paint = {from:from, to:(button ? s_cycleReverse : s_cycle)[from]}
+		SetCell(target.gridX, target.gridY, s_lastSetup.paint.to)
 	}
 	
 	return false
@@ -633,7 +664,7 @@ function SetCompleteness(setName, index, entireLine)
 	const elem = GetElement(setName + "Tick" + index)
 	
 	const bGappy = entireLine.includes(" ")
-	const iconInfo = GetCompletenessIconInfo(bMatch ? bGappy ? "" : "right" : myClues.length ? "wrong" : "blank", setName, index)
+	const iconInfo = GetCompletenessIconInfo(bMatch ? bGappy ? "" : "right" : bGappy ? "blank" : "wrong", setName, index)
 	
 	elem.innerHTML = iconInfo.html
 	elem.style.opacity = iconInfo.a
@@ -751,9 +782,6 @@ function GetRowFromGrid(grid, rowNum)
 
 function ShowCongrats()
 {
-	const elemTop = GetElement("popUpTop")
-	const elemBack = GetElement("popUpBack")
-
 	var output = []
 
 	const headerText = RandomFromArray(s_congratsHeaders)
@@ -766,38 +794,12 @@ function ShowCongrats()
 	while (buttonText == headerText.toUpperCase())
 
 	output.push('<h1>' + headerText + '</h1><p id=results>')
-	
-	if (s_lastSetup.currentPuzzleID)
-	{
-		output.push('Puzzle: <b>' + s_puzzles[s_lastSetup.currentPuzzleID].name + '</b>')
-	}
-	else
-	{
-		output.push('Custom Puzzle')
-	}
-	
+	output.push(s_lastSetup.currentPuzzleID ? 'Puzzle: <b>' + s_puzzles[s_lastSetup.currentPuzzleID].name + '</b>' : 'Custom Puzzle')
 	output.push('</p><p id=results>Size: <B>' + s_clues.cols.length + ' x ' + s_clues.rows.length + '</B>')
 	output.push('</p><p id=results>Time taken: <B>' + s_completeness.done + '</B>')
 	output.push('</p>')
-	output = output.join('')
 
-	elemTop.innerHTML = output + "<P>" + BuildButtons({[buttonText]:"CloseCongrats()"}, "biggy") + "<BR>" + BuildButtons({["SHARE PUZZLE"]:"DoShare()", ["CONTINUE"]:"SetHash('Play'); setTimeout(CloseCongrats, 200)"}) + "</P>"
-	elemBack.innerHTML = output
-
-	for (var each of [elemTop, elemBack])
-	{
-		each.style.display = "block"
-		each.style.pointerEvents = "auto"
-		each.style.transitionDuration = "0.8s"
-	}
-
-	setTimeout(() => {
-		for (var each of [elemTop, elemBack])
-		{
-			each.style.opacity = 1
-			each.removeEventListener("transitionend", OnTransitionDone)
-		}
-	}, 0)
+	PopUp(output.join(''), BuildButtons({[buttonText]:"CloseCongrats()"}, "biggy") + "<BR>" + BuildButtons({["SHARE PUZZLE"]:"DoShare()", ["CONTINUE"]:"SetHash('Play'); setTimeout(CloseCongrats, 200)"}))
 }
 
 function CloseCongrats()

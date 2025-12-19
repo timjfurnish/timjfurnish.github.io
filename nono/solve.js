@@ -2,12 +2,12 @@ var s_autoSolveData = null
 
 const kEnableCheckForDupes = true
 
-function SolveStart(stopAfterSingleHint)
+function SolveStart(stopAfterSinglePass)
 {
-	s_autoSolveData = {solveColumns: true, solveIndex: 0, anythingChanged: true, skip: {cols: {}, rows: {}}, stopAfterSingleHint:stopAfterSingleHint}
+	s_autoSolveData = {solveColumns: true, solveIndex: 0, anythingChanged: true, skip: {cols: {}, rows: {}}, stopAfterSinglePass:stopAfterSinglePass}
 	s_autoSolveData.dupeInto = {cols: CheckForDupes(s_clues.cols), rows: CheckForDupes(s_clues.rows)}
 	
-	s_autoPaint = null
+	delete s_lastSetup.paint
 
 	DisableButtonsIn("buttonsGoHere")
 	SolveStep()
@@ -222,54 +222,70 @@ function SolveForDesigner(grid, solveColumns)
 	}
 }
 
+function FillInSolution(newData, numbers)
+{
+	if (s_autoSolveData.calcBest)
+	{
+		const myScore = newData.canFill / newData.num
+		
+		if (! s_autoSolveData.calcBest.numPossibilities || (myScore > s_autoSolveData.calcBest.myScore))
+		{
+			s_autoSolveData.calcBest.myScore = myScore
+			s_autoSolveData.calcBest.numbers = numbers
+			s_autoSolveData.calcBest.bIsColumn = s_autoSolveData.solveColumns
+			s_autoSolveData.calcBest.numPossibilities = newData
+		}
+	}
+	else
+	{
+		const skipColsOrRows = s_autoSolveData.solveColumns ? "rows" : "cols"
+
+		for (var writeToIndex of numbers)
+		{
+			for (var i = 0; i < newData.length; ++ i)
+			{
+				if (s_autoSolveData.solveColumns ? SetCell(writeToIndex, i, newData[i]) : SetCell(i, writeToIndex, newData[i]))
+				{
+					delete s_autoSolveData.skip[skipColsOrRows][i]
+				}
+			}
+		}
+	}	
+}
+
 function Hint()
 {
-	var bDidSomething = false
-	
-	while (!bDidSomething)
+	var bDone = undefined
+
+	while (!bDone)
 	{
 		const colsOrRows = s_autoSolveData.solveColumns ? "cols" : "rows"
 
 		if (! s_autoSolveData.skip[colsOrRows][s_autoSolveData.solveIndex] && !s_completeness[colsOrRows][s_autoSolveData.solveIndex])
 		{
-			const skipColsOrRows = s_autoSolveData.solveColumns ? "rows" : "cols"
 			const getRowOrColumnFunc = s_autoSolveData.solveColumns ? GetColumnFromGrid : GetRowFromGrid
 			const alreadyGot = getRowOrColumnFunc(s_activePuzzleSolutionSoFar, s_autoSolveData.solveIndex)
 			const newData = TryToSolve(alreadyGot, s_clues[colsOrRows][s_autoSolveData.solveIndex])
 			var writeToIndex = s_autoSolveData.solveIndex
 			const highlightThese = []
+			const numbers = []
 
 			do
 			{
 				if (writeToIndex == s_autoSolveData.solveIndex || ArraysMatch(alreadyGot, getRowOrColumnFunc(s_activePuzzleSolutionSoFar, writeToIndex)))
 				{
-					if (newData)
-					{
-						for (var i = 0; i < newData.length; ++ i)
-						{
-							if (s_autoSolveData.solveColumns ? SetCell(writeToIndex, i, newData[i]) : SetCell(i, writeToIndex, newData[i]))
-							{
-								delete s_autoSolveData.skip[skipColsOrRows][i]
-							}
-						}
-					}
-
+					numbers.unshift(writeToIndex)
 					highlightThese.push(colsOrRows + writeToIndex)
 					s_autoSolveData.skip[colsOrRows][writeToIndex] = true
 				}
-
+			
 				writeToIndex = s_autoSolveData.dupeInto[colsOrRows][writeToIndex]
 			}
 			while (writeToIndex)
 
 			if (newData)
 			{
-				if (s_autoSolveData.stopAfterSingleHint)
-				{
-					Highlight()
-					return true
-				}
-					
+				FillInSolution(newData, numbers)
 				Highlight(highlightThese, "#66FF66")
 				s_autoSolveData.anythingChanged = true
 			}
@@ -278,7 +294,7 @@ function Hint()
 				Highlight(highlightThese, "red")
 			}
 
-			bDidSomething = true
+			bDone = "CONTINUE"
 		}
 
 		++ s_autoSolveData.solveIndex
@@ -290,40 +306,45 @@ function Hint()
 			s_autoSolveData.solveColumns = !s_autoSolveData.solveColumns
 			s_autoSolveData.solveIndex = 0
 			
-			if (! s_autoSolveData.anythingChanged)
+			if (s_autoSolveData.stopAfterSinglePass && ! -- s_autoSolveData.stopAfterSinglePass)
 			{
-				Highlight()
-				return true
+				bDone = "PASS_DONE"
+			}
+			else if (! s_autoSolveData.anythingChanged)
+			{
+				bDone = "NO_CHANGES"
 			}
 			
 			s_autoSolveData.anythingChanged = false
 		}
 	}
 	
-	return false
+	return bDone
 }
 
 function SolveStep()
 {
-	if (Hint())
+	const hintReply = Hint()
+	
+	if (hintReply == "CONTINUE")
 	{
-		if (s_autoSolveData.stopAfterSingleHint)
-		{
-			EnableButtons()
-			s_autoSolveData = null
-		}
-		else if (s_completeness.total < (s_clues.rows.length + s_clues.cols.length))
-		{
-			setTimeout(SolveFail, 200)
-		}
-		else
-		{
-			setTimeout(SolveDone, 1)
-		}
+		setTimeout(SolveStep, 1)
+	}
+	else if (hintReply == "PASS_DONE")
+	{
+		Highlight()
+		EnableButtons()
+		s_autoSolveData = null
+	}
+	else if (s_completeness.total < (s_clues.rows.length + s_clues.cols.length))
+	{
+		Highlight()
+		setTimeout(SolveFail, 200)
 	}
 	else
 	{
-		setTimeout(SolveStep, 1)
+		Highlight()
+		setTimeout(SolveDone, 1)
 	}
 }
 
@@ -341,8 +362,10 @@ function SolveFail()
 	s_autoSolveData = null
 }
 
-function CombineSolve(combineHere, paddedWithDots, alreadyContains)
+function CombineSolve(solveWorkspace, paddedWithDots)
 {
+	const {alreadyContains, combineHere} = solveWorkspace
+
 	for (var checkMatch in alreadyContains)
 	{
 		const chr = alreadyContains[checkMatch]
@@ -369,15 +392,18 @@ function CombineSolve(combineHere, paddedWithDots, alreadyContains)
 			combineHere.push(chr)
 		}
 	}
+	
+	++ solveWorkspace.numPossibilities
 }
 
-function TryToSolveSection(combineHere, startWith, clues, fromClueIndex, alreadyContains)
+function TryToSolveSection(solveWorkspace, startWith, fromClueIndex)
 {
+	const {clues, alreadyContains} = solveWorkspace
 	const remainingClues = clues.length - fromClueIndex
 	
 	if (remainingClues <= 0)
 	{
-		return CombineSolve(combineHere, startWith.padEnd(alreadyContains.length, "."), alreadyContains)
+		return CombineSolve(solveWorkspace, startWith.padEnd(alreadyContains.length, "."))
 	}
 
 	if (startWith.length > alreadyContains.length - (remainingClues * 2 - 1))
@@ -415,7 +441,7 @@ function TryToSolveSection(combineHere, startWith, clues, fromClueIndex, already
 		
 		if (bCheckIt)
 		{
-			TryToSolveSection(combineHere, buildPotential + thisClueTxt, clues, fromClueIndex + 1, alreadyContains)
+			TryToSolveSection(solveWorkspace, buildPotential + thisClueTxt, fromClueIndex + 1)
 		}
 
 		if (alreadyContains[len] == '1')
@@ -429,9 +455,137 @@ function TryToSolveSection(combineHere, startWith, clues, fromClueIndex, already
 
 function TryToSolve(alreadyContains, clues)
 {
-	var combineHere = []
-	TryToSolveSection(combineHere, "", clues, 0, alreadyContains)
+	const solveWorkspace = {combineHere:[], clues:clues, alreadyContains:alreadyContains, numPossibilities:0}
+	TryToSolveSection(solveWorkspace, "", 0)
 
-	// Return combineHere if there are any changes
-	return ArraysMatch(alreadyContains, combineHere) ? null : combineHere
+	// Return null if there are no changes
+	if (ArraysMatch(alreadyContains, solveWorkspace.combineHere))
+	{
+		return null
+	}
+
+	if (s_autoSolveData.calcBest)
+	{
+		var canFill = 0
+
+		for (var n in alreadyContains)
+		{
+			if (alreadyContains[n] != solveWorkspace.combineHere[n])
+			{
+				++ canFill
+			}
+		}
+
+		return {num:solveWorkspace.numPossibilities, canFill:canFill}
+	}
+
+	return solveWorkspace.combineHere
+}
+
+function SmartHint()
+{
+	// First pick the row/column with the fewest possibilities
+	
+	s_autoSolveData = {solveColumns: true, solveIndex: 0, anythingChanged: true, skip: {cols: {}, rows: {}}, stopAfterSinglePass:2, calcBest:{}}
+	s_autoSolveData.dupeInto = {cols: CheckForDupes(s_clues.cols), rows: CheckForDupes(s_clues.rows)}
+
+	delete s_lastSetup.paint
+
+	DisableButtonsIn("buttonsGoHere")
+	setTimeout(TickSmartHintPhase1, 1)
+}
+
+function TickSmartHintPhase1()
+{
+	if (Hint() == "PASS_DONE")
+	{
+		if (s_autoSolveData.calcBest.numPossibilities)
+		{
+			var numberList = ""
+			var joiner = " and "
+			var colOrRow = (s_autoSolveData.calcBest.bIsColumn ? "column" : "row")
+			var thisOrThese = "this "
+			var highlightMe = []
+
+			for (var eachNumber of s_autoSolveData.calcBest.numbers)
+			{
+				highlightMe.push((s_autoSolveData.calcBest.bIsColumn ? "cols" : "rows") + eachNumber)
+
+				if (numberList != "")
+				{
+					numberList = (eachNumber + 1) + joiner + numberList
+
+					if (joiner != ", ")
+					{
+						colOrRow += "s"
+						thisOrThese = "each of these "
+						joiner = ", "
+					}
+				}
+				else
+				{
+					numberList = (eachNumber + 1)
+				}
+			}
+
+			Highlight(highlightMe, "#FFFFFF")
+			
+			var output = ['<P id=results style="margin-top: 40vh">']
+
+			if (s_autoSolveData.calcBest.numPossibilities.num == 1)
+			{
+				output.push("There's only one way to complete " + colOrRow + " " + numberList + "...")
+				output.push("<BR><SMALL>You can finish " + thisOrThese + colOrRow + "!")
+			}
+			else
+			{
+				output.push("There are " + s_autoSolveData.calcBest.numPossibilities.num + " ways to complete " + colOrRow + " " + numberList + "...")
+				output.push("<BR><SMALL>You can fill in " + s_autoSolveData.calcBest.numPossibilities.canFill + " cells in " + thisOrThese + colOrRow + "!")
+			}
+
+			output.push("</P>")
+			
+			PopUp(output.join(''), BuildButtons({["TELL ME MORE"]:"SmartHintTellMeMore()"}, "biggy") + "<BR>" + BuildButtons({["DO IT FOR ME"]:"CloseCongrats()", ["CLOSE"]:"CloseCongrats()"}))
+		}
+		else
+		{
+			Highlight()
+		}
+		
+		s_autoSolveData = null
+		EnableButtons()
+	}
+	else
+	{
+		setTimeout(TickSmartHintPhase1, 1)
+	}
+}
+
+function SmartHintTellMeMore()
+{
+	PopUp('<P id=results style="margin-top: 40vh">Here\'s more info</P>', BuildButtons({["DO IT FOR ME"]:"CloseCongrats()", ["CLOSE"]:"CloseCongrats()"}))
+}
+
+function PopUp(content, buttons)
+{
+	const elemTop = GetElement("popUpTop")
+	const elemBack = GetElement("popUpBack")
+	
+	elemTop.innerHTML = content + "<P>" + buttons + "</P>"
+	elemBack.innerHTML = content
+
+	for (var each of [elemTop, elemBack])
+	{
+		each.style.display = "block"
+		each.style.pointerEvents = "auto"
+		each.style.transitionDuration = "0.8s"
+	}
+
+	setTimeout(() => {
+		for (var each of [elemTop, elemBack])
+		{
+			each.style.opacity = 1
+			each.removeEventListener("transitionend", OnTransitionDone)
+		}
+	}, 0)
 }

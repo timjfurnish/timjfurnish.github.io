@@ -1,6 +1,5 @@
 var s_designing = null
 var s_blockPlayAndShare = null
-var s_designerEditMode = "Draw"
 
 const s_cycleDesigner = {[' ']:'1', ['1']:' '}
 
@@ -11,7 +10,7 @@ const kDesignModes =
 {
 	["Draw"]:(x,y) =>
 	{
-		s_autoPaint = s_cycleDesigner[s_designing[y][x]]
+		s_lastSetup.paint = s_cycleDesigner[s_designing[y][x]]
 		NonoDesignMouseOverGrid(x, y)
 	},
 	["Duplicate Row"]:(x,y) =>
@@ -115,17 +114,17 @@ function RebuildDesignScreen()
 	output.push("</TABLE>")
 
 	controls.push("<P ID=diffHere></P>")
-	controls.push('<P><SELECT ID="designMode" ONCHANGE="s_designerEditMode = GetElement(\'designMode\').value">')
-
+	controls.push('<P><SELECT ID="designMode" ONCHANGE="s_lastSetup.designerEditMode = GetElement(\'designMode\').value">')
+	const selectThisMode = s_lastSetup?.designerEditMode ?? "Draw"
 	for (var modeName of Object.keys(kDesignModes))
 	{
-		const openTag = (modeName == s_designerEditMode) ? "<OPTION SELECTED>" : "<OPTION>"
+		const openTag = (modeName == selectThisMode) ? "<OPTION SELECTED>" : "<OPTION>"
 		controls.push(openTag + modeName + '</OPTION>')
 	}
 
 	controls.push('</SELECT></P>')
 	controls.push(BuildButtons(kDesignerButtons))
-	return {content:controls.join(''), shareAs:"Nonography: Custom Puzzle", shareHash:MakeDesignShareHash, isEditor:true, side:output.join(''), name:"Puzzle Designer", subtitle:s_designing[0].length + " x " + s_designing.length, exitCalls:"SetHash('Design')", exitName:"BACK", thenCall:DesignerBegin}
+	return {content:controls.join(''), designerEditMode:selectThisMode, shareAs:"Nonography: Custom Puzzle", shareHash:MakeDesignShareHash, side:output.join(''), name:"Puzzle Designer", subtitle:s_designing[0].length + " x " + s_designing.length, exitCalls:"SetHash('Design')", exitName:"BACK", thenCall:DesignerBegin}
 }
 
 function DesignerBegin()
@@ -234,35 +233,35 @@ function DesignerTrim()
 
 function NonoDesignMouseOverGrid(x, y)
 {
-	if (s_autoPaint && s_designing[y][x] != s_autoPaint)
+	if (s_lastSetup.paint && s_designing[y][x] != s_lastSetup.paint)
 	{
-		s_designing[y][x] = s_autoPaint
-		GetElement('designCell.' + x + '.' + y).bgColor = (s_autoPaint == '1') ? '#222222' : '#DDDDDD'
+		s_designing[y][x] = s_lastSetup.paint
+		GetElement('designCell.' + x + '.' + y).bgColor = (s_lastSetup.paint == '1') ? '#222222' : '#DDDDDD'
 	}
 }
 
 function NonoDesignMouseUp()
 {
-	if (s_autoPaint)
+	if (s_lastSetup.paint)
 	{
-		s_autoPaint = null
+		delete s_lastSetup.paint
 		DesignerShowSolvability()
 	}
 }
 
 function NonoDesignMouseDown(e)
 {
-	if (! s_autoPaint)
+	if (! s_lastSetup.paint)
 	{
 		const {target} = e
-		const func = kDesignModes[s_designerEditMode]
+		const func = kDesignModes[s_lastSetup.designerEditMode]
 		if (func)
 		{
 			func(target.gridX, target.gridY)
 		}
 		else
 		{
-			console.warn("No designer mouse down func, s_designerEditMode=" + s_designerEditMode)
+			console.warn("No designer mouse down func, s_lastSetup.designerEditMode=" + s_lastSetup.designerEditMode)
 		}
 	}
 	

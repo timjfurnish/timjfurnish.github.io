@@ -3,7 +3,7 @@ var s_thingsToAutoTest
 function SetUpAutoTest()
 {	
 	s_thingsToAutoTest = Object.keys(s_puzzles)
-	return {name:"Auto Test", content:"<DIV ID=autoTestResults></DIV>", thenCall:() =>
+	return {name:"Auto Test", exitName:"DONE", content:"<P ID=autoTestCounter></P><P ID=autoTestResults></P>", thenCall:() =>
 	{
 		DisableButtonsIn("buttonsGoHere")
 		setTimeout(tickAutoTest, 0)
@@ -53,7 +53,10 @@ function AutoTestGetErrorForPuzzle(puzzleData)
 
 function tickAutoTest()
 {
+	const fracLeft = s_thingsToAutoTest.length / Object.keys(s_puzzles).length
 	const autoTestThis = s_thingsToAutoTest.pop()
+	
+	GetElement("autoTestCounter").innerHTML = Math.floor(100 * (1 - fracLeft)) + "%"
 	
 	if (autoTestThis)
 	{
