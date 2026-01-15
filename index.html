@@ -12,26 +12,38 @@
 		p { color: #666; font-size: 20px; font-family: Arial, sans-serif; margin-top: 10px; margin-bottom: 10px; margin-left: 5vw; margin-right: 5vw }
 		h1 { color: #778fbd; font-size: 40px; word-spacing: -0.1em; font-family: Monospace; font-weight: 500; line-height: 32px; margin-top: 4px }
 		h2 { color: #444; font-size: 18px; font-family: Arial, sans-serif; margin: 0.83em 0 0 }
-		h3 { color: #333; font-size: 26px; word-spacing: -0.3em; font-family: Monospace; margin-top: 4px; margin-bottom:24px; font-weight: bold; line-height: 27px; width: auto }
-		h4 { letter-spacing: -0.066em; background: -webkit-linear-gradient(rgba(100, 100, 100, 0.5), rgba(110, 110, 110, 1)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; font-size: 20px; margin: 0px; text-align: center }
+		h3, h4 { word-spacing: -0.2em; letter-spacing: -0.04em; font-family: Monospace; background: -webkit-linear-gradient(rgba(0, 0, 0, 0.9), rgba(110, 110, 110, 0.5)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; font-size: 3vmax; margin: 0px; text-align: center }
+		h4 { font-size: 2vmax }
 		h5 { font-size: 10px; margin: 0px; padding: 0px }
+		a { cursor:pointer; font-weight: bold; color: #333 }
+		a:hover { color: #FFFFAA; text-shadow: 0px 0px 3px #000000; }
+		.button, .bigButton, .icon { letter-spacing:-0.08em; font-family: Arial, sans-serif; color: black; font-size: 14px; text-decoration: none; padding: 8px 12px 8px 12px; background-image: linear-gradient(white, rgba(75,125,75,0.4)); border-radius: 15px; border: 1px solid #252}
 		.bigButton { font-size: 20px; background-image: linear-gradient(white, #FFFF88) }
-		a { letter-spacing:-0.08em; font-family: Arial, sans-serif; cursor:pointer; color: black; font-size: 14px; font-weight: bold; text-decoration: none; padding: 8px 12px 8px 12px; background-image: linear-gradient(white, rgba(75,125,75,0.4)); border-radius: 15px; border: 1px solid #252}
 		.box { min-width:300px; width: 75%; color: #444; font-family: Arial, sans-serif; padding:20px; font-size: 20px; margin: 10px; background-image: linear-gradient(rgba(200,100,100,0.2), rgba(120,60,60,0.2)); border-radius: 2px; border: 2px solid #A55}
 		img { margin: 0px 3px 0px 3px }
 		.buttonBar { line-height:40px; margin:15px 0px 0px 0px }
 		.flotman { border: 1px solid black; border-radius: 5px; max-width:200px }
 		.screeny { border: 2px solid black; border-radius: 15px }
+		.icon { user-select: none; font-size: calc(6px + 3vw) }
+		.iconFade { user-select: none; font-size: 5vmax; line-height: 1vmax; translate: 0 2.2vmax; opacity:0.1 }
 		table { min-width:320px }
 	</style>
 	<script type="text/javascript" src="fade.js"></script>
 	<script type="text/javascript">
-var g_hiddenSections = {}
-var g_creatingHiddenSection
-var g_openThings = []
-var g_pageOpen = undefined
-const kAlwaysOpen = ["FURTHERREADING"]
+var s_elements = []
+var s_selectedTag
 const kImages = {}
+const gap = '<h5>&nbsp;</h5>'
+const bigGap = '<h5>&nbsp;<BR>&nbsp;</h5>'
+
+const kTagIcons =
+{
+	playable:"&#x1F3AE;",
+	writing: "&#x1F4D6;",
+	music:   "&#x1F3BC;",
+	work:    "&#x1F3ED;",
+	misc:    "&#x1F6AA;"
+}
 
 function PreloadImage(src)
 {
@@ -47,82 +59,21 @@ PreloadImage("gfx/flotman-love.jpg")
 PreloadImage("gfx/flotman-sky.jpg")
 PreloadImage("gfx/flotman-walk.jpg")
 PreloadImage("gfx/ooo_bedroom.png")
+PreloadImage("gfx/ducks_icy.png")
+PreloadImage("gfx/ducks_inn.png")
+PreloadImage("gfx/ducks_xmas.png")
+PreloadImage("gfx/ducks_beak.png")
+PreloadImage("gfx/ducks_castle.png")
+PreloadImage("gfx/ducks_cheese.gif")
 
 function AddSection(collection, section)
 {
 	collection.push(BuildText(section.join(''), 'td style="opacity:0" align=center id="' + FadeGetNextName() + '"|tr'))
 }
 
-function AddExpandSection(section)
+function AddButtons(big, buttons)
 {
-	g_hiddenSections[g_creatingHiddenSection] += BuildText(section.join(''), "DIV CLASS=box")
-}
-
-function BeginExpand(collection, title, years)
-{
-	const code = SimplifyText(title)
-
-	if (g_creatingHiddenSection)
-	{
-		EndExpand(collection)
-	}
-	
-	if (years)
-	{
-		title += ' <NOBR><SMALL>[' + years + ']</SMALL></NOBR>'
-	}
-	
-	const tag = kAlwaysOpen.includes(code) ? 'h4' : ('h4 style="cursor:pointer" onClick="Expand(\'' + code + '\')"')
-	AddSection(collection, [BuildText(title, tag)])
-	g_hiddenSections[code] = ""
-	g_creatingHiddenSection = code
-}
-
-function EndExpand(collection)
-{
-	if (g_openThings.includes(g_creatingHiddenSection) || kAlwaysOpen.includes(g_creatingHiddenSection))
-	{
-//		QueueFade(g_creatingHiddenSection)
-		collection.push(BuildText(g_hiddenSections[g_creatingHiddenSection], 'div align=center id="' + g_creatingHiddenSection + '"'))
-	}
-	else
-	{
-		collection.push(BuildText('', 'div align=center id="' + g_creatingHiddenSection + '"'))
-	}
-	
-	g_creatingHiddenSection = undefined
-}
-
-function Expand(code)
-{
-	const elem = document.getElementById(code)
-	
-	if (elem)
-	{
-		const index = g_openThings.indexOf(code)
-
-		if (index >= 0)
-		{
-			elem.innerHTML = ""
-			g_openThings.splice(index, 1)
-		}
-		else
-		{
-			elem.innerHTML = g_hiddenSections[code]
-			g_openThings.push(code)
-			elem.scrollIntoView({behavior:"smooth", block:"center"})
-		}
-		
-		window?.sessionStorage?.setItem?.("entertainmentmongerOpenSections", g_openThings.join('+'))
-	}
-	else
-	{
-		console.log("There's no element with ID '" + code + "'")
-	}
-}
-
-function AddButtons(big, section, ...buttons)
-{
+	const section = []
 	section.push('<DIV class=buttonBar>')
 
 	for (var deets of buttons)
@@ -139,202 +90,168 @@ function AddButtons(big, section, ...buttons)
 		}
 		else if (link.startsWith("https://"))
 		{
-			tag += ' target="_blank" rel="noopener noreferrer"'
+			tag += ' class=button target="_blank" rel="noopener noreferrer"'
 			text = '&#10157; ' + text
+		}
+		else
+		{
+			tag += ' class=button'
 		}
 
 		section.push(tag + '>' + text.replaceAll(' ', '&nbsp;') + '</A>')
 	}
 
 	section.push('</DIV>')
+	return section.join('')
 }
 
 function ShowStuff(what)
 {
-	g_hiddenSections = []
-
-	if (what == g_pageOpen)
+	if (what == s_selectedTag)
 	{
 		what = undefined
 	}
 
-	const oldButton = document.getElementById(g_pageOpen)
+	const oldButton = document.getElementById(s_selectedTag)
 	const newButton = document.getElementById(what)
 
 	if (oldButton)
 	{
 		oldButton.style.opacity = 1
 	}
-	
+
 	if (newButton)
 	{
 		newButton.style.opacity = 0.25
 	}
-	
-	g_pageOpen = what
 
-	var collection = [], section
-	const gap = '<h5>&nbsp;</h5>'
-	const bigGap = '<h5>&nbsp;<BR>&nbsp;</h5>'
+	s_selectedTag = what
 
-	if (what == "fun")
+	var collection = []
+
+	for (var each of s_elements)
 	{
-		BeginExpand(collection, 'THE FLYWHEEL', '2020')
-
-		section = []
-		section.push("An interactive story thing. It's like a text adventure in that you have to read words and then interact with the objects you find. It's also nothing like a text adventure because you do so without typing. No dead ends, just good old-fashioned puzzling and kleptomania.")
-		section.push(bigGap)
-		section.push('<IMG SRC="gfx/flywheel_rotate.png" CLASS="screeny" STYLE="max-width:850px" width=85%>')
-		AddButtons(true, section, 'flywheel/|PLAY')
-		AddExpandSection(section)
-
-		BeginExpand(collection, 'ASSORTED POTTERY', '2015-present')
-		
-		section = []
-		section.push("You know - songs without tunes.")
-		AddButtons(true, section, 'pottery/|READ')
-		AddExpandSection(section)
-			
-		BeginExpand(collection, 'CAPTAIN FLOTMAN', '2015-2018')
-		
-		section = []
-		section.push("Captain Flotman is the name under which I snuck my mash-ups onto the internet. If you've ever wanted to hear Coolio, Adele and the Beach Boys collaborate on a song you're (a) odd and (b) in a whole heap of luck.")
-		section.push(bigGap)
-		section.push('<IMG SRC="gfx/flotman-crazy.jpg" CLASS="flotman" width=30%>')
-		section.push('<IMG SRC="gfx/flotman-grapevine.jpg" CLASS="flotman" width=30%>')
-		section.push('<IMG SRC="gfx/flotman-love.jpg" CLASS="flotman" width=30%>')
-		section.push('<IMG SRC="gfx/flotman-sky.jpg" CLASS="flotman" width=30%>')
-		section.push('<IMG SRC="gfx/flotman-walk.jpg" CLASS="flotman" width=30%>')
-		AddButtons(false, section, 'https://hearthis.at/captain-flotman/|HEARTHIS', 'https://soundcloud.com/captain-flotman|SOUNDCLOUD')
-		AddExpandSection(section)
-
-		BeginExpand(collection, 'OUT OF ORDER', '2003')
-
-		section = []
-		section.push("An award-winning comedy science-fiction adventure game.")
-		section.push(gap)
-		section.push("Ever woken up in the middle of the night to find you've been kidnapped... and so's your bedroom? Ever had to fend for yourself in the face of strangely hypnotic music, alien doctors, talking computers a-plenty and half-finished bathrooms? Ever found something unpleasant in a burger?")
-		section.push(bigGap)
-		section.push('<IMG SRC="gfx/ooo_bedroom.png" CLASS="screeny" STYLE="max-width:640px" width=85%>')
-		AddButtons(true, section, 'https://web.archive.org/web/20110818231839fw_/http://outoforder.adventuredevelopers.com/files/OOO_full.exe|DOWNLOAD INSTALLER')
-		AddButtons(false, section, 'https://en.wikipedia.org/wiki/Out_of_Order_(video_game)|WIKIPEDIA', 'https://tvtropes.org/pmwiki/pmwiki.php/VideoGame/OutOfOrder2003|TV TROPES')
-		AddExpandSection(section)
-		
-		BeginExpand(collection, 'SLUDGE', '2003-2008')
-
-		section = []
-		section.push("An adventure game engine (it stands for Scripting Language for Unhindered Development of a Gaming Environment, as a nod to SCUMM). Used for Out Of Order and a whole bunch of other early-21st-century adventure-me-bobs.")
-		section.push(gap)
-		section.push("In 2008 the source code was released into the wild and the team that took it over added, among other changes, support for non-Windows platforms. In 2017 support for running SLUDGE games was added to ScummVM.")
-		AddButtons(false, section, 'https://opensludge.github.io/|GITHUB', 'https://wiki.scummvm.org/index.php/SLUDGE|SCUMMVM')
-		AddExpandSection(section)
-		
-		EndExpand(collection)
-		collection.push("<BR>")
+		if (each.tags.includes(s_selectedTag))
+		{
+			collection.push(BuildText(each.content, 'div class=box'))
+		}
 	}
-	else if (what == "work")
-	{
-		BeginExpand(collection, 'SUMO DIGITAL', '2016-present')
-		
-		section = []
-		section.push("Programmer on <B>Gears of War: Reloaded</B> (2025).")
-		section.push(gap)
-		section.push("Associate tech director on <B>The Texas Chain Saw Massacre</B> (2023).")
-		section.push(gap)
-		section.push("Lead engineer on <B>Forza Horizon 4</B> and <B>Forza Horizon 5</B> (2021).")
-		section.push(gap)
-		section.push("Lead programmer on <B>Team Sonic Racing</B> (2019).")
-		AddButtons(false, section, 'https://www.sumo-digital.com/|SUMO DIGITAL', 'https://www.gearsofwar.com/games/gears-reloaded/|GEARS OF WAR: RELOADED', 'https://www.txchainsawgame.com/|THE TEXAS CHAIN SAW MASSACRE', 'https://forza.net/horizon|FORZA HORIZON', 'https://www.sonicthehedgehog.com/en-gb/teamsonicracing/|TEAM SONIC RACING')
-		AddExpandSection(section)
-		
-		BeginExpand(collection, 'DEEP SILVER DAMBUSTER STUDIOS', '2014-2016')
 
-		section = []
-		section.push("Senior programmer on <B>Homefront: The Revolution</B> (2016).")
-		AddButtons(false, section, 'https://www.dsdambuster.com/studio|DEEP SILVER DAMBUSTER STUDIOS')
-		AddExpandSection(section)
-		
-		BeginExpand(collection, 'CRYTEK UK', '2009-2014')
-
-		section = []
-		section.push("Senior programmer on <B>Crysis</B> and <B>Crysis 2</B> (2011).")
-		AddButtons(false, section, 'https://www.crytek.com/|CRYTEK')
-		AddExpandSection(section)
-		
-		BeginExpand(collection, 'FREE RADICAL DESIGN', '2002-2009')
-
-		section = []
-		section.push("Senior programmer on <B>Haze</B> (2008).")
-		section.push(gap)
-		section.push("Programmer on <B>TimeSplitters: Future Perfect</B> (2005).")
-		section.push(gap)
-		section.push("Designer and programmer on <B>Second Sight</B> (2004).")
-		AddButtons(false, section, 'https://en.wikipedia.org/wiki/Free_Radical_Design|WIKIPEDIA')
-		AddExpandSection(section)
-				
-		EndExpand(collection)
-		collection.push("<BR>")
-	}
-	else if (what == "more")
-	{	
-		BeginExpand(collection, 'FURTHER READING')
-
-		section = []
-		section.push("Additional exits are available here and here.")
-		AddButtons(false, section, 'https://www.mobygames.com/person/138001/tim-furnish/credits/sort:date/|MOBYGAMES', 'https://www.instagram.com/timjfurnish/|INSTAGRAM', 'https://www.threads.net/@timjfurnish|THREADS')
-		AddExpandSection(section)
-		
-		EndExpand(collection)
-		collection.push("<BR>")
-	}
-	else
-	{
-		collection.push("")
-	}
-	
 	document.getElementById('flip').innerHTML = collection.join('')
+}
+
+function DefineElement(title, year, tags, content, bigButtonDefs, smallButtonDefs)
+{
+	tags = tags.split('+')
+	year = year ? BuildText('[' + year + ']', 'h4') : ""
+
+	const icons = []
+	tags.forEach(name => icons.push(kTagIcons[name]))
+
+	if (bigButtonDefs)
+	{
+		content += AddButtons(true, bigButtonDefs)
+	}
+
+	if (smallButtonDefs)
+	{
+		content += AddButtons(false, smallButtonDefs)
+	}
+
+	s_elements.push({content:BuildText(icons.join(''), 'div class="iconFade"') + BuildText(title, 'h3') + year + bigGap + content, tags:tags})
 }
 
 function SetUp()
 {
 	var collection = [], section
-	
-	const openThingsString = window?.sessionStorage?.getItem?.("entertainmentmongerOpenSections")
-	
-	if (openThingsString)
-	{
-		g_openThings = openThingsString.split('+')
-	}
 
 	AddSection(collection, ["<HR>"])
-	
+
 	section = []
 	section.push(BuildText("Tim Furnish", "h1"))
 	section.push(BuildText("E N T E R T A I N M E N T M O N G E R", "nobr|h2"))
 	AddSection(collection, section)
 	AddSection(collection, ["<HR>"])
-	
+
 	section = []
-	section.push("<I><BIG>")
+	section.push("<BIG>")
 	section.push(BuildText("Hello.", "p"))
-	section.push(BuildText("My name is Tim. I make games. I write things. I smush tunes together. I'm currently redecorating my house. I own one of those old iPhones which uses a thumbprint reader instead of face recognition out of fear that, should I switch, my utterly generic and nondescript appearance would allow anyone vaguely dishevelled to access my emails. I live and work on a planet called Earth, on one of the dry land bits. I share my house with two other humans and two cats, although the latter are not contributing much to the aforementioned redecorating. (Granted, as I type this, nor am I.)", "p"))
-	section.push(BuildText("This website is about the first few things in the above paragraph.", "p"))
-	section.push("</BIG></I>")
+	section.push(BuildText("My name is Tim. I <A ONCLICK=\"ShowStuff('playable')\">make games</A>. I <A ONCLICK=\"ShowStuff('writing')\">write things</A>. I <A ONCLICK=\"ShowStuff('music')\">smush tunes together</A>. I'm currently redecorating my house. I own one of those old iPhones which uses a thumbprint reader instead of face recognition out of fear that, should I switch, my utterly generic and nondescript appearance would allow anyone vaguely dishevelled to access my emails. I live and work on a planet called Earth, on one of the dry land bits. I share my house with two other humans and two cats, although the latter are not contributing much to the aforementioned redecorating. (Granted, as I type this, nor am I.)", "p"))
+	section.push("</BIG>")
+	section.push(gap)
 	AddSection(collection, section)
-	
+
 	section = []
-	section.push('<DIV class=buttonBar STYLE="margin-top:0px">')
-	section.push('<A ONCLICK="ShowStuff(\'fun\')" ID=fun><NOBR>PERSONAL / FUNTIMES / INTERACTIVE</NOBR></A>\n')
-	section.push('<A ONCLICK="ShowStuff(\'work\')" ID=work><NOBR>CAREER / PROFESSIONALISM / CORPORATE</NOBR></A>\n')
-	section.push('<A ONCLICK="ShowStuff(\'more\')" ID=more><NOBR>MISCELLANY / SOCIAL / WAFFLE</NOBR></A>')
+	section.push('<DIV class=buttonBar STYLE="margin-top:10px">')
+	for (var [tag, icon] of Object.entries(kTagIcons))
+	{
+		section.push('<A ONCLICK="ShowStuff(\'' + tag + '\')" CLASS="icon" ID="' + tag + '">' + icon + '</A>\n')
+	}
 	section.push('</DIV>')
 	AddSection(collection, section)
 
-	AddSection(collection, ["<DIV ID=flip></DIV>", '<HR>', BuildText("&copy; Tim Furnish " + (new Date().getUTCFullYear()), "small|p")])
-	
+	AddSection(collection, ["<DIV ID=flip></DIV>" + bigGap, '<HR>', BuildText("&copy; Tim Furnish " + (new Date().getUTCFullYear()), "small|p")])
+
 	document.getElementById('toHere')
 	toHere.innerHTML = BuildText(collection.join(''), "TABLE WIDTH=90% CELLPADDING=6 CELLSPACING=3")
-	
+
+	DefineElement('PROJECT CUCKOOBRAIN', null, 'writing',
+		"A work in progress. Watch this space!")
+
+	DefineElement('ASSORTED POTTERY', null, 'writing',
+		"You know - songs without tunes.",
+		['pottery/|READ'])
+
+	DefineElement('THE FLYWHEEL', '2020', 'playable+writing',
+		"An interactive story thing. It's like a text adventure in that you have to read words and then interact with the objects you find. It's also nothing like a text adventure because you do so without typing. No dead ends, just good old-fashioned puzzling and kleptomania." + bigGap + '<IMG SRC="gfx/flywheel_rotate.png" CLASS="screeny" STYLE="max-width:850px" width=85%>',
+		['flywheel/|PLAY'])
+
+	DefineElement('CAPTAIN FLOTMAN', '2015-2018', 'music',
+		"Captain Flotman is the name under which I snuck my mash-ups onto the internet. If you've ever wanted to hear Coolio, Adele and the Beach Boys collaborate on a song you're (a) odd and (b) in a whole heap of luck." + bigGap + '<IMG SRC="gfx/flotman-crazy.jpg" CLASS="flotman" width=30%><IMG SRC="gfx/flotman-grapevine.jpg" CLASS="flotman" width=30%><IMG SRC="gfx/flotman-love.jpg" CLASS="flotman" width=30%><IMG SRC="gfx/flotman-sky.jpg" CLASS="flotman" width=30%><IMG SRC="gfx/flotman-walk.jpg" CLASS="flotman" width=30%>',
+		null,
+		['https://hearthis.at/captain-flotman/|HEARTHIS', 'https://soundcloud.com/captain-flotman|SOUNDCLOUD'])
+
+	DefineElement('OUT OF ORDER', '2003', 'playable',
+		"An award-winning comedy science-fiction adventure game." + gap + "Ever woken up in the middle of the night to find you've been kidnapped... and so's your bedroom? Ever had to fend for yourself in the face of strangely hypnotic music, alien doctors, talking computers a-plenty and half-finished bathrooms? Ever found something unpleasant in a burger?" + bigGap + '<IMG SRC="gfx/ooo_bedroom.png" CLASS="screeny" STYLE="max-width:640px" width=85%>',
+		['https://web.archive.org/web/20110818231839fw_/http://outoforder.adventuredevelopers.com/files/OOO_full.exe|DOWNLOAD INSTALLER'],
+		['https://en.wikipedia.org/wiki/Out_of_Order_(video_game)|WIKIPEDIA', 'https://tvtropes.org/pmwiki/pmwiki.php/VideoGame/OutOfOrder2003|TV TROPES', 'https://www.mobygames.com/game/13762/out-of-order/|MOBYGAMES'])
+
+	DefineElement('SLUDGE', '2003-2008', 'playable',
+		"An adventure game engine (it stands for Scripting Language for Unhindered Development of a Gaming Environment, as a nod to SCUMM). Used for <B>Out Of Order</B> and a whole bunch of other early-21st-century adventure-me-bobs." + gap + "In 2008 the source code was released into the wild and the team that took it over added, among other changes, support for non-Windows platforms. In 2017 support for running SLUDGE games was added to ScummVM.",
+		null,
+		['https://opensludge.github.io/|GITHUB', 'https://wiki.scummvm.org/index.php/SLUDGE|SCUMMVM', 'https://www.mobygames.com/group/9177/game-engine-sludge/|MOBYGAMES'])
+
+	DefineElement('DUCKS', '1998-2000', 'playable',
+		"80 levels of 2D side-scrolling herd-'em-up fun for DOS. Help the ducks get to their rockets." + gap + "The add-ons <B>Xmas Ducks 2000</B>, <B>Beak To The Future</B> and <B>World Wide Webbed</B> brought the total number of official levels to over 150." + gap + "A free level editor and toolkit let people create their own content for the game, adding over 650 player-made levels." + bigGap + '<IMG SRC="gfx/ducks_icy.png" CLASS="screeny" STYLE="max-width:640px" width=40%><IMG SRC="gfx/ducks_inn.png" CLASS="screeny" STYLE="max-width:640px" width=40%><IMG SRC="gfx/ducks_xmas.png" CLASS="screeny" STYLE="max-width:640px" width=40%><IMG SRC="gfx/ducks_beak.png" CLASS="screeny" STYLE="max-width:640px" width=40%><IMG SRC="gfx/ducks_castle.png" CLASS="screeny" STYLE="max-width:640px" width=40%><IMG SRC="gfx/ducks_cheese.gif" CLASS="screeny" STYLE="max-width:640px" width=40%>',
+		null,
+		['https://www.mobygames.com/game/37036/ducks/|MOBYGAMES'])
+
+	DefineElement('SUMO DIGITAL', '2016-present', 'work',
+		"Programmer on <B>Gears of War: Reloaded</B> (2025)." + gap + "Associate tech director on <B>The Texas Chain Saw Massacre</B> (2023)." + gap + "Lead engineer on <B>Forza Horizon 4</B> and <B>Forza Horizon 5</B> (2021)." + gap + "Lead programmer on <B>Team Sonic Racing</B> (2019).",
+		null,
+		['https://www.sumo-digital.com/|SUMO DIGITAL', 'https://www.gearsofwar.com/games/gears-reloaded/|GEARS OF WAR: RELOADED', 'https://www.txchainsawgame.com/|THE TEXAS CHAIN SAW MASSACRE', 'https://forza.net/horizon|FORZA HORIZON', 'https://www.sonicthehedgehog.com/en-gb/teamsonicracing/|TEAM SONIC RACING'])
+
+	DefineElement('DEEP SILVER DAMBUSTER STUDIOS', '2014-2016', 'work',
+		"Senior programmer on <B>Homefront: The Revolution</B> (2016).",
+		null,
+		['https://www.dsdambuster.com/studio|DEEP SILVER DAMBUSTER STUDIOS'])
+
+	DefineElement('CRYTEK UK', '2009-2014', 'work',
+		"Senior programmer on <B>Crysis</B> and <B>Crysis 2</B> (2011).",
+		null,
+		['https://www.crytek.com/|CRYTEK'])
+
+	DefineElement('FREE RADICAL DESIGN', '2002-2009', 'work',
+		"Senior programmer on <B>Haze</B> (2008)." + gap + "Programmer on <B>TimeSplitters: Future Perfect</B> (2005)." + gap + "Designer and programmer on <B>Second Sight</B> (2004).",
+		null,
+		['https://en.wikipedia.org/wiki/Free_Radical_Design|WIKIPEDIA'])
+
+	DefineElement('FURTHER READING', null, 'misc',
+		"Additional exits are available here and here.",
+		null,
+		['https://www.mobygames.com/person/138001/tim-furnish/credits/sort:date/|MOBYGAMES', 'https://www.instagram.com/timjfurnish/|INSTAGRAM', 'https://www.threads.net/@timjfurnish|THREADS'])
+
+	collection.push("<BR>")
 	StartFading(250, 20)
 }
 	</script>
