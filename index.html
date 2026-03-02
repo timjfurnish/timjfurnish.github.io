@@ -32,7 +32,7 @@
 	<script type="text/javascript" src="fade.js"></script>
 	<script type="text/javascript">
 var s_elements = []
-var s_selectedTag
+var s_selectedTag = "none"
 const kImages = {}
 const gap = '<h5>&nbsp;</h5>'
 const bigGap = '<h5>&nbsp;<BR>&nbsp;</h5>'
@@ -66,6 +66,64 @@ PreloadImage("gfx/ducks_xmas.png")
 PreloadImage("gfx/ducks_beak.png")
 PreloadImage("gfx/ducks_castle.png")
 PreloadImage("gfx/ducks_cheese.gif")
+
+// User enables or disables a category
+function SetActiveContent(what)
+{
+	SetHash((what == s_selectedTag) ? "none" : what)
+}
+
+// When hash changes, display relevant page and scroll to selected section (including when going back/forwards through history)
+window.onhashchange = function()
+{
+	const [goHere, scrollToSection] = location.hash?.replace('#', '').split('.', 2)
+
+	if (goHere && goHere != "")
+	{
+		if (s_selectedTag != goHere)
+		{
+			const oldButton = document.getElementById('__' + s_selectedTag)
+			const newButton = document.getElementById('__' + goHere)
+
+			s_selectedTag = goHere
+
+			if (oldButton)
+			{
+				oldButton.style.opacity = 1
+			}
+
+			if (newButton)
+			{
+				newButton.style.opacity = 0.25
+
+				var topLinks = []
+				var collection = []
+
+				for (var each of s_elements)
+				{
+					if (each.tags.includes(s_selectedTag))
+					{
+						const fullAnchorName = goHere + "." + each.anchorName
+						collection.push('<P STYLE="margin: 0px; font-size: 3px; padding: 0px" ID="' + fullAnchorName + '">&nbsp;</P>' + BuildText(each.content, 'DIV CLASS="box"'))
+						topLinks.push('<SPAN><A HREF="#' + fullAnchorName + '">&nbsp;' + each.justName + '&nbsp;</A></SPAN>')
+					}
+				}
+
+				document.getElementById('flip').innerHTML = '<DIV STYLE="margin: 1vw">' + topLinks.join('<wbr>') + "</DIV>" + collection.join('')
+			}
+			else
+			{
+				document.getElementById('flip').innerHTML = ''
+			}
+		}
+
+		const scrollToMe = (scrollToSection && scrollToSection != '') ? document.getElementById(goHere + '.' + scrollToSection) : document.getElementById("mainButtons")
+		if (scrollToMe)
+		{
+			scrollToMe.scrollIntoView({behaviour:"smooth", block:"start"})
+		}
+	}
+}
 
 function AddSection(collection, section)
 {
@@ -106,50 +164,12 @@ function AddButtons(big, buttons)
 	return section.join('')
 }
 
-function ShowStuff(what)
-{
-	if (what == s_selectedTag)
-	{
-		what = undefined
-	}
-
-	const oldButton = document.getElementById(s_selectedTag)
-	const newButton = document.getElementById(what)
-
-	if (oldButton)
-	{
-		oldButton.style.opacity = 1
-	}
-
-	if (newButton)
-	{
-		newButton.style.opacity = 0.25
-	}
-
-	s_selectedTag = what
-
-	var topLinks = []
-	var collection = []
-
-	for (var each of s_elements)
-	{
-		if (each.tags.includes(s_selectedTag))
-		{
-			collection.push('<P STYLE="margin: 0px; font-size: 3px; padding: 0px" ID="' + each.anchorName + '">&nbsp;</P>' + BuildText(each.content, 'DIV CLASS="box"'))
-			topLinks.push('<SPAN><A HREF="#' + each.anchorName + '">&nbsp;' + each.justName + '&nbsp;</A></SPAN>')
-		}
-	}
-
-	document.getElementById('flip').innerHTML = '<DIV STYLE="margin: 1vw">' + topLinks.join('<wbr>') + "</DIV>" + collection.join('')
-}
-
 function DefineElement(title, year, tags, content, bigButtonDefs, smallButtonDefs)
 {
-	tags = tags.split('+')
 	year = year ? BuildText('[' + year + ']', 'h4') : ""
 
 	const icons = []
-	tags.forEach(name => icons.push(kTagIcons[name]))
+	tags.split('+').forEach(name => icons.push(kTagIcons[name]))
 
 	if (bigButtonDefs)
 	{
@@ -168,7 +188,7 @@ function DefineElement(title, year, tags, content, bigButtonDefs, smallButtonDef
 function SetUp()
 {
 	var collection = [], section
-
+	
 	AddSection(collection, ["<HR>"])
 
 	section = []
@@ -180,16 +200,16 @@ function SetUp()
 	section = []
 	section.push("<BIG>")
 	section.push(BuildText("Hello.", "p"))
-	section.push(BuildText("My name is Tim. I <A ONCLICK=\"ShowStuff('playable')\">make games</A>. I <A ONCLICK=\"ShowStuff('writing')\">write things</A>. I <A ONCLICK=\"ShowStuff('music')\">smush tunes together</A>. I'm currently redecorating my house. I own one of those old iPhones which uses a thumbprint reader instead of face recognition out of fear that, should I switch, my utterly generic and nondescript appearance would allow anyone vaguely dishevelled to access my emails. I live and work on a planet called Earth, on one of the dry land bits. I share my house with two other humans and two cats, although the latter are not contributing much to the aforementioned redecorating. (Granted, as I type this, nor am I.)", "p"))
+	section.push(BuildText("My name is Tim. I <A ONCLICK=\"SetActiveContent('playable')\">make games</A>. I <A ONCLICK=\"SetActiveContent('writing')\">write things</A>. I <A ONCLICK=\"SetActiveContent('music')\">smush tunes together</A>. I'm currently redecorating my house. I own one of those old iPhones which uses a thumbprint reader instead of face recognition out of fear that, should I switch, my utterly generic and nondescript appearance would allow anyone vaguely dishevelled to access my emails. I live and work on a planet called Earth, on one of the dry land bits. I share my house with two other humans and two cats, although the latter are not contributing much to the aforementioned redecorating. (Granted, as I type this, nor am I.)", "p"))
 	section.push("</BIG>")
-	section.push(gap)
+	section.push('<h5 ID="mainButtons">&nbsp;</h5>')
 	AddSection(collection, section)
 
 	section = []
-	section.push('<DIV class=buttonBar STYLE="margin-top:10px">')
+	section.push('<DIV class="buttonBar" STYLE="margin-top:10px">')
 	for (var [tag, icon] of Object.entries(kTagIcons))
 	{
-		section.push('<A ONCLICK="ShowStuff(\'' + tag + '\')" CLASS="icon" ID="' + tag + '">' + icon + '</A>\n')
+		section.push('<A ONCLICK="SetActiveContent(\'' + tag + '\')" CLASS="icon" ID="__' + tag + '">' + icon + '</A>\n')
 	}
 	section.push('</DIV>')
 	AddSection(collection, section)
@@ -260,7 +280,8 @@ function SetUp()
 		null,
 		['https://www.mobygames.com/person/138001/tim-furnish/credits/sort:date/|MOBYGAMES', 'https://www.instagram.com/timjfurnish/|INSTAGRAM', 'https://www.threads.net/@timjfurnish|THREADS'])
 
-	collection.push("<BR>")
+	window.onhashchange()
+
 	StartFading(250, 20)
 }
 	</script>
